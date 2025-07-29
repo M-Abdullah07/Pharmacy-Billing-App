@@ -1,0 +1,41 @@
+/* --- src/styles/StatsPanel.css --- */
+.stats-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.stat-card {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card h3 {
+  font-size: 14px;
+  color: #555;
+}
+
+.stat-card p {
+  font-size: 24px;
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+.stat-card span {
+  font-size: 12px;
+}
+
+.positive {
+  color: #22c55e;
+}
+
+.negative {
+  color: #ef4444;
+}
+
+.neutral {
+  color: #a855f7;
+}
+

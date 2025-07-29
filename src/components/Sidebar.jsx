@@ -1,18 +1,27 @@
+// src/components/Sidebar.jsx
 import React from "react";
-import "../styles/SideBar.css";
+import "../styles/Sidebar.css";
 
-export default function Sidebar({ onNavigate }) {
-  const handleNavigation = (target) => {
-    onNavigate(target);
-  };
+const menuItems = [
+  "Dashboard",
+  "Calendar",
+  "Receipt",
+  "Drugs",
+  "Activity",
+  "Transaction",
+  "Customer",
+  "Help Center"
+];
 
+export default function Sidebar() {
   return (
-    <div className="sidebar">
-      <button onClick={() => handleNavigation("addSale")}>🧾 Add Sale</button>
-      <button onClick={() => handleNavigation("inventory")}>💊 Inventory</button>
-      <button onClick={() => handleNavigation("customers")}>👥 Customers</button>
-      <button onClick={() => handleNavigation("reports")}>📊 Reports</button>
-      <button onClick={() => handleNavigation("settings")}>⚙️ Settings</button>
-    </div>
+    <aside className="sidebar">
+      <div className="logo">Pharmax.</div>
+      <ul className="menu">
+        {menuItems.map((item, index) => (
+          <li key={index} className={index === 0 ? "active" : ""}>{item}</li>
+        ))}
+      </ul>
+    </aside>
   );
 }

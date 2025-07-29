@@ -1,0 +1,19 @@
+/* --- src/styles/Dashboard.css --- */
+.dashboard-container {
+  display: flex;
+  height: 100vh;         /* Full viewport height */
+  width: 100vw;          /* Full viewport width */
+  background-color: #f7f8fc;
+  font-family: "Segoe UI", sans-serif;
+}
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.content-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+}

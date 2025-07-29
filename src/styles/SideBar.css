@@ -1,28 +1,33 @@
+/* --- src/styles/Sidebar.css --- */
 .sidebar {
-  position: absolute;
-  top: 60px; /* height of topbar */
-  left: 0;
-  width: 180px;
-  background-color: #f0f0f0;
-  height: calc(100vh - 60px);
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  z-index: 10;
+  width: 220px;
+  background: white;
+  padding: 24px;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
 }
 
-.sidebar button {
-  display: block;
-  width: 100%;
-  margin-bottom: 12px;
-  background: none;
-  border: none;
-  padding: 10px;
-  text-align: left;
-  font-size: 16px;
+.logo {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+}
+
+.menu li {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  color: #333;
+  transition: background 0.2s;
 }
 
-.sidebar button:hover {
-  background-color: #dcdcdc;
+.menu li:hover,
+.menu li.active {
+  background: #edf2f7;
+  font-weight: 500;
 }
