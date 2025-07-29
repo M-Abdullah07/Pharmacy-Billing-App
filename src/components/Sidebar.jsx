@@ -4,22 +4,25 @@ import "../styles/Sidebar.css";
 
 const menuItems = [
   "Dashboard",
-  "Calendar",
-  "Receipt",
-  "Drugs",
-  "Activity",
-  "Transaction",
-  "Customer",
-  "Help Center"
+  "Add Sale",
+  "Inventory",
+  "Add Batch",
+  "Credit Dues",
+  "Sales Reports",
+  "Customers",
+  "Settings",
+  "Backup & Export",
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   return (
     <aside className="sidebar">
       <div className="logo">Pharmax.</div>
       <ul className="menu">
         {menuItems.map((item, index) => (
-          <li key={index} className={index === 0 ? "active" : ""}>{item}</li>
+          <li key={index} onClick={() => onNavigate(item)}>
+            {item}
+          </li>
         ))}
       </ul>
     </aside>

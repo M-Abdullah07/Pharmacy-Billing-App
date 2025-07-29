@@ -1,7 +1,5 @@
-// See the Electron documentation for details on how to use preload scripts:
-// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  queryDb: (query, params) => ipcRenderer.invoke('db-query', query, params),
+contextBridge.exposeInMainWorld('api', {
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
 });
