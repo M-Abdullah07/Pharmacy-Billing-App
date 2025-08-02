@@ -1,23 +1,38 @@
 /* --- src/styles/Header.css --- */
+/* src/styles/Header.css */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  padding: 10px 20px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 
 .search {
-  width: 60%;
-  padding: 10px 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.logout-btn {
+  background-color: #f87171;
+  border: none;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.logout-btn:hover {
+  background-color: #ef4444;
 }
 
 .user-info img {

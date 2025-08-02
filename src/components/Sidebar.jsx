@@ -5,7 +5,9 @@ import "../styles/Sidebar.css";
 const menuItems = [
   "Dashboard",
   "Add Sale",
-  "Inventory",
+  "Companies",
+  "Products",
+  "Areas",
   "Add Batch",
   "Credit Dues",
   "Sales Reports",
@@ -28,3 +30,5 @@ export default function Sidebar({ onNavigate }) {
     </aside>
   );
 }
+
+
