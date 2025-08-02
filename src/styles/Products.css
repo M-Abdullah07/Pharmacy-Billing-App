@@ -325,6 +325,7 @@
   .products-table th {
     background: #f0f0f0 !important;
     -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   
   .products-table tbody tr:hover {
