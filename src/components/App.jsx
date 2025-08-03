@@ -10,6 +10,7 @@ import Customers from "./AddCustomers";
 import Companies from "./Companies";
 import Products from "./Products"; // Assuming you have a Products component
 import "../styles/AppLayout.css";
+import "../index.css";
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
