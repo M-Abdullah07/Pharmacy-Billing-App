@@ -1,29 +1,27 @@
-// src/components/StatsPanel.jsx
 import React from "react";
-import "../styles/StatsPanel.css";
 
 export default function StatsPanel() {
   return (
-    <div className="stats-panel">
-      <div className="stat-card">
+    <div className="grid grid-cols-4 gap-2">
+      <div className="bg-white p-4 rounded-xl shadow-lg">
         <h3>Total Profit</h3>
-        <p>$19,679</p>
-        <span className="positive">+17% /month</span>
+        <p className="text-xl font-bold py-1">$19,679</p>
+        <span className="text-sm text-green-400 py-1">+17% /month</span>
       </div>
-      <div className="stat-card">
+      <div className="bg-white p-4 rounded-xl shadow-lg">
         <h3>Total Sale</h3>
-        <p>$87,857</p>
-        <span className="positive">+12% /month</span>
+        <p className="text-xl font-bold py-1">$87,857</p>
+        <span className="text-sm text-green-400 py-1">+12% /month</span>
       </div>
-      <div className="stat-card">
+      <div className="bg-white p-4 rounded-xl shadow-lg">
         <h3>Out of Stock</h3>
-        <p>679</p>
-        <span className="neutral">+19% /month</span>
+        <p className="text-xl font-bold py-1">679</p>
+        <span className="text-sm text-fuchsia-500 py-1">+19% /month</span>
       </div>
-      <div className="stat-card">
+      <div className="bg-white p-4 rounded-xl shadow-lg">
         <h3>Expired</h3>
-        <p>67</p>
-        <span className="negative">-12% /month</span>
+        <p className="text-xl font-bold py-1">67</p>
+        <span className="text-sm text-red-400 py-1">-12% /month</span>
       </div>
     </div>
   );

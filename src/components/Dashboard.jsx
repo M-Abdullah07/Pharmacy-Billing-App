@@ -1,20 +1,17 @@
-// src/components/Dashboard.jsx
 import React from "react";
 import StatsPanel from "./StatsPanel";
 import ActivityList from "./ActivityList";
-import AnalyticsChart from "./AnalyticsChart";
-import "../styles/Dashboard.css";
-import "../styles/StatsPanel.css";
-import "../styles/ActivityList.css";
-import "../styles/AnalyticsChart.css";
+// import AnalyticsChart from "./AnalyticsChart";
 
 export default function Dashboard() {
   return (
-    <div className="dashboard-content">
+    <div className="flex flex-col h-screen w-full max-w-[calc(100vw-100px)] bg-white font-segoe">
       <StatsPanel />
-      <div className="content-row">
+      <div className="flex flex-col gap-4 mt-8">
         <ActivityList />
-        <AnalyticsChart />
+        {/* Commenting this out for now
+          <AnalyticsChart />
+        */}
       </div>
     </div>
   );

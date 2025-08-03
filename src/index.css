@@ -1,6 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 @import "tailwindcss";
 
+@layer base {
+  :root {
+    --font-segoe: "Segoe UI", sans-serif;
+  }
+}
+
 .btn {
   @apply w-full bg-gradient-to-br from-blue-500 to-indigo-700 text-lg text-white px-4 py-3
          rounded-md font-medium font-sans outline-none
