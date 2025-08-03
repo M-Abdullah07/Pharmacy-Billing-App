@@ -9,11 +9,13 @@ import Areas from "./AddArea";
 import Customers from "./AddCustomers";
 import Companies from "./Companies";
 import Products from "./Products"; // Assuming you have a Products component
+import Signup from "./Signup";
 import "../styles/AppLayout.css";
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
   const [user, setUser] = useState(null);
+  const [signup, setSignup] = useState(false);
 
   // 🔄 Load logged-in user from localStorage on first render
   useEffect(() => {
@@ -31,6 +33,10 @@ export default function App() {
     setUser(userData);
     localStorage.setItem("loggedInUser", userData.username);
   };
+
+  const handleSignup = () => {
+
+  }
 
   const handleLogout = () => {
     setUser(null);
@@ -57,7 +63,11 @@ export default function App() {
   };
 
   if (!user) {
-    return <Login onLogin={handleLogin} />;
+    return signup ? (
+      <Signup onSignup={handleSignup} setSignup={setSignup} />
+    ) : (
+      <Login onLogin={handleLogin} setSignup={setSignup} />
+    )
   }
 
   return (

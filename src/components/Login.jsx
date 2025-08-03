@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import "../index.css"
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, setSignup }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -38,31 +39,7 @@ const Login = ({ onLogin }) => {
   };
 
   const styles = {
-    container: {
-      height: '100vh',
-      width: '100vw',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      background: 'linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '16px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      boxSizing: 'border-box'
-    },
-    wrapper: {
-      width: '100%',
-      maxWidth: '400px'
-    },
-    card: {
-      backgroundColor: 'white',
-      borderRadius: '16px',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      padding: '32px',
-      border: '1px solid #f3f4f6'
-    },
+
     header: {
       textAlign: 'center',
       marginBottom: '32px'
@@ -114,28 +91,6 @@ const Login = ({ onLogin }) => {
       transform: 'translateY(-50%)',
       pointerEvents: 'none',
       color: '#9ca3af'
-    },
-    input: {
-      width: '100%',
-      paddingLeft: '40px',
-      paddingRight: '16px',
-      paddingTop: '12px',
-      paddingBottom: '12px',
-      border: '1px solid #d1d5db',
-      borderRadius: '8px',
-      fontSize: '14px',
-      backgroundColor: '#f9fafb',
-      transition: 'all 0.2s ease',
-      boxSizing: 'border-box',
-      outline: 'none'
-    },
-    inputFocus: {
-      borderColor: '#3b82f6',
-      backgroundColor: 'white',
-      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
-    },
-    passwordInput: {
-      paddingRight: '48px'
     },
     toggleButton: {
       position: 'absolute',
@@ -238,34 +193,31 @@ const Login = ({ onLogin }) => {
   }, []);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.wrapper}>
+    <div className="flex fixed w-screen h-screen items-center justify-center p-[16px] bg-gradient-to-br from-[#eff6ff] to-[#e0e7ff]">
+      <div className="w-full max-w-[400px]">
         {/* Login Card */}
-        <div style={styles.card}>
+        <div class="bg-white rounded-[16px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-8 border border-[#f3f4f6]">
           {/* Header */}
-          <div style={styles.header}>
-            <div style={styles.iconContainer}>
+          <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-br from-[#3b82f6] to-[#4f46e5] rounded-full flex items-center justify-center mb-4 mx-auto">
               <Lock size={32} color="white" />
             </div>
-            <h1 style={styles.title}>Welcome Back</h1>
-            <p style={styles.subtitle}>Sign in to your account</p>
+            <h1 className="text-2xl font-bold text-[#111827]">Welcome Back</h1>
+            <p className="text-[#6b7280] text-sm mt-[8px]">Sign in to your account</p>
           </div>
 
           {/* Form */}
-          <div style={styles.form}>
+          <div className="flex flex-col gap-[24px]">
             {/* Email Field */}
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Email Address</label>
-              <div style={styles.inputContainer}>
+            <div className="flex flex-col">
+              <label className="block text-[14px] font-medium text-[#374151] mb-2">Email Address</label>
+              <div className="relative">
                 <Mail size={20} style={styles.inputIcon} />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{
-                    ...styles.input,
-                    ...(email && styles.inputFocus)
-                  }}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:border-blue-500 transition-all"
                   placeholder="Enter your email"
                   required
                 />
@@ -281,11 +233,7 @@ const Login = ({ onLogin }) => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    ...styles.input,
-                    ...styles.passwordInput,
-                    ...(password && styles.inputFocus)
-                  }}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:border-blue-500 transition-all"
                   placeholder="Enter your password"
                   required
                 />
@@ -301,7 +249,7 @@ const Login = ({ onLogin }) => {
 
             {/* Error Message */}
             {error && (
-              <div style={styles.errorContainer}>
+              <div className="flex items-center gap-4 text-red-600 bg-red-50 p-3 rounded-md border border-red-200 text-sm">
                 <AlertCircle size={20} />
                 <span>{error}</span>
               </div>
@@ -311,67 +259,34 @@ const Login = ({ onLogin }) => {
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              style={{
-                ...styles.submitButton,
-                ...(isLoading && styles.submitButtonDisabled)
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  Object.assign(e.target.style, styles.submitButtonHover);
-                }
-              }}
-              onMouseLeave={(e) => {
-                Object.assign(e.target.style, styles.submitButton);
-              }}
-              onMouseDown={(e) => {
-                if (!isLoading) {
-                  Object.assign(e.target.style, {
-                    ...styles.submitButtonHover,
-                    ...styles.submitButtonActive
-                  });
-                }
-              }}
-              onMouseUp={(e) => {
-                if (!isLoading) {
-                  Object.assign(e.target.style, styles.submitButtonHover);
-                }
-              }}
+              className="btn"
             >
               {isLoading ? (
-                <div style={styles.loadingContainer}>
-                  <div style={styles.spinner}></div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Signing in...</span>
                 </div>
               ) : (
                 "Sign In"
               )}
             </button>
+
           </div>
 
           {/* Footer */}
-          <div style={styles.footer}>
-            <p style={styles.footerText}>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
               Don't have an account?{" "}
-              <a
-                style={styles.footerLink}
-                onMouseEnter={(e) => {
-                  e.target.style.color = '#2563eb';
-                  e.target.style.textDecoration = 'underline';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = '#3b82f6';
-                  e.target.style.textDecoration = 'none';
-                }}
-              >
+              <button onClick={() => setSignup(true)} className="text-blue-500 font-medium hover:text-blue-600 hover:underline transition-colors" >
                 Sign up
-              </a>
+              </button>
             </p>
           </div>
         </div>
 
         {/* Additional Info */}
-        <div style={styles.additionalInfo}>
-          <p style={styles.securityText}>
+        <div className="text-center mt-6">
+          <p className="text-gray-400">
             Secure login protected by encryption
           </p>
         </div>
