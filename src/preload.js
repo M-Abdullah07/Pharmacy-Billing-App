@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteCustomer: (id) => ipcRenderer.invoke('delete-customer', id),
   getCompanies: () => ipcRenderer.invoke('get-companies'),
   addCompany: (company) => ipcRenderer.invoke('add-company', company),
-  getProducts: () => ipcRenderer.invoke('getProducts'),
+  getProducts: () => ipcRenderer.invoke('get-products'),
+  addProduct: (data) => ipcRenderer.invoke('add-product', data),
+
 });
 

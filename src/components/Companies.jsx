@@ -17,10 +17,10 @@ export default function Companies() {
   }, []);
 
 const loadCompanies = async () => {
-  console.log("📞 Calling getCompanies...");
+  //console.log("📞 Calling getCompanies...");
   const data = await window.electronAPI.getCompanies();
-  console.log("📦 Fetched companies:", data);
-  
+  //console.log("📦 Fetched companies:", data);
+
   if (Array.isArray(data)) {
     setCompanies(data);
   } else {

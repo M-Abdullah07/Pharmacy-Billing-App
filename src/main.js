@@ -130,6 +130,15 @@ db.run(`
 }
 
 
+// Helper to run SQL with Promise
+function runSql(query, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(query, params, function (err) {
+      if (err) reject(err);
+      else resolve(this);
+    });
+  });
+}
 
 
 // IPC handlers
@@ -151,15 +160,6 @@ ipcMain.handle('run-db', async (event, query, params = []) => {
   });
 });
 
-// Helper to run SQL with Promise
-function runSql(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
-  });
-}
 
 
 ipcMain.handle("add-medicine", async (event, medicine) => {
@@ -288,7 +288,7 @@ ipcMain.handle('get-companies', async () => {
         console.error('❌ Error fetching companies:', err);
         resolve([]); // Always resolve to avoid hanging
       } else {
-        console.log('✅ Companies fetched:', rows);
+        //console.log('✅ Companies fetched:', rows);
         resolve(rows);
       }
     });
@@ -305,6 +305,47 @@ ipcMain.handle('add-company', (event, query, values) => {
   } catch (error) {
     console.error('Error adding company:', error);
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-products', async () => {
+  return new Promise((resolve, reject) => {
+    db.all(`SELECT * FROM products ORDER BY created_at DESC`, [], (err, rows) => {
+      if (err) {
+        console.error("❌ Error fetching products:", err.message);
+        return resolve([]);
+      }
+      resolve(rows);
+    });
+  });
+});
+
+ipcMain.handle('add-product', async (event, data) => {
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO products (
+        name, form, uom, quantity_in_uom,
+        is_addictive, is_imported, retail_price,
+        withheld_price, shelf_no, hold_sale
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      data.name,
+      data.form || '',
+      data.uom || '',
+      data.quantity_in_uom || 0,
+      data.is_addictive ? 1 : 0,
+      data.is_imported ? 1 : 0,
+      data.retail_price || 0,
+      data.withheld_price || 0,
+      data.shelf_no || '',
+      data.hold_sale ? 1 : 0
+    );
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 });
 
