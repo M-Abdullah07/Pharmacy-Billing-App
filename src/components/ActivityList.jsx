@@ -14,7 +14,7 @@ const activities = [
 
 export default function ActivityList() {
   return (
-    <div className="flex-1 bg-white p-4">
+    <div className="flex-1 p-4">
       <h3 className="text-xl font-bold p-6">Recent Activity</h3>
       <Table>
         <TableCaption>A List of Recent Activity</TableCaption>
