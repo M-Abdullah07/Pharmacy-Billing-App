@@ -352,7 +352,17 @@ const Login = ({ onLogin }) => {
           <div style={styles.footer}>
             <p style={styles.footerText}>
               Don't have an account?{" "}
-              <a className="hover:underline text-blue-500 hover:text-blue-700 cursor-pointer">
+              <a
+                style={styles.footerLink}
+                onMouseEnter={(e) => {
+                  e.target.style.color = '#2563eb';
+                  e.target.style.textDecoration = 'underline';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = '#3b82f6';
+                  e.target.style.textDecoration = 'none';
+                }}
+              >
                 Sign up
               </a>
             </p>
