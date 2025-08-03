@@ -12,7 +12,14 @@ function initializeDatabase() {
   });
 
   db.serialize(() => {
-
+    // Medicines
+    db.run(`CREATE TABLE IF NOT EXISTS medicines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      company TEXT,
+      category TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
 
     // Batches
     db.run(`CREATE TABLE IF NOT EXISTS batches (
@@ -107,6 +114,7 @@ function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    db.run(`Drop TABLE IF EXISTS medicines`);
 
     // PRODUCTS TABLE
 db.run(`
@@ -349,6 +357,15 @@ ipcMain.handle('add-product', async (event, data) => {
   }
 });
 
+
+ipcMain.handle('getProducts', () => {
+  try {
+    const products = db.prepare('SELECT * FROM products ORDER BY created_at DESC').all();
+    return products;
+  } catch (err) {
+    return { error: err.message };
+  }
+});
 
 
 
