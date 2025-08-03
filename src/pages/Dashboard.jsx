@@ -5,7 +5,7 @@ import ActivityList from "../components/ActivityList";
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col h-screen w-full max-w-[calc(100vw-100px)] bg-white font-segoe">
+    <div className="flex flex-col h-fit w-full max-w-[calc(100vw-100px)] overflow-auto">
       <StatsPanel />
       <div className="flex flex-col gap-4 mt-8">
         <ActivityList />
