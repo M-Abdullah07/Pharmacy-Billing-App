@@ -2,10 +2,10 @@
 * Sidebar is now responsive and also closes and opens (use `ctrl+b` or icon on the header)
 * Sidebar navigation is also functioning
 * Sidebar signout and user info moved from header to sidebar
+* `ctrl+j` to open up the command
+* searching added to the command
 
 # Up Next...
-* `ctrl+k` to open up the command
-* searching will be added to the command
 * quick naviagation through the command
 
 # TO-DO
