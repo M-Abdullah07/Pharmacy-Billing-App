@@ -1,7 +1,7 @@
 # TO-DO
 * Have to think about logins and user access and controls
 * Complete the following pages
-    - [ ] Signup
+    - [X] Signup
     - [ ] Add Batch
     - [ ] Credit Dues
     - [ ] Sales Report
