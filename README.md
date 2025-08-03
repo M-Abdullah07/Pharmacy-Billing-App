@@ -1,3 +1,13 @@
+# New!
+* Sidebar is now responsive and also closes and opens (use `ctrl+b` or icon on the header)
+* Sidebar navigation is also functioning
+* Sidebar signout and user info moved from header to sidebar
+
+# Up Next...
+* `ctrl+k` to open up the command
+* searching will be added to the command
+* quick naviagation through the command
+
 # TO-DO
 * Have to think about logins and user access and controls
 * Complete the following pages
@@ -17,13 +27,13 @@ npm start
 
 ## DEBUG mode (if startup fails)
 ```sh
-DEBUG=electron-forge:* npm start 
+DEBUG=electron-forge:* npm start
 ```
 This starts electron app and sets the env variable DEBUG to log for all the namespaces under electron-forge
 
 ## Specific Debugging
 
-### 1. Logs from Forge plugins like webpack, vite etc 
+### 1. Logs from Forge plugins like webpack, vite etc
 ```sh
 DEBUG=electron-forge:plugin:* npm start
 ```
