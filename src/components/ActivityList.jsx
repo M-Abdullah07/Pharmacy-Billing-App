@@ -1,5 +1,5 @@
-// src/components/ActivityList.jsx
 import React from "react";
+import { Table } from "./ui/table";
 
 const activities = [
   { name: "Ralph Edwards", id: 6527, time: "10:32 am", status: "Delivered" },
