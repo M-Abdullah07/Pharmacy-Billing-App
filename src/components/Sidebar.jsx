@@ -90,18 +90,30 @@ export default function AppSidebar({ onNavigate, onLogout, username }) {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton className="cursor-pointer">
-              <MdOutlineBackup />Backup & Export
-            </SidebarMenuButton>
-            <SidebarMenuButton className="cursor-pointer">
-              <IoSettingsOutline />Settings
-            </SidebarMenuButton>
-            <SidebarMenuButton className="cursor-pointer" onClick={onLogout}>
-              <IoLogOutOutline />SignOut
-            </SidebarMenuButton>
 
-            <SidebarSeparator className="mb-2 mt-2"/>
+          <SidebarMenuItem>
+            <SidebarMenuButton className="cursor-pointer" onClick={() => onNavigate("Backup & Export")}>
+              <MdOutlineBackup />
+              <span>Backup & Export</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton className="cursor-pointer" onClick={() => onNavigate("Settings")}>
+              <IoSettingsOutline />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton className="cursor-pointer" onClick={onLogout}>
+              <IoLogOutOutline />
+              <span>SignOut</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarSeparator className="mb-2 mt-2" />
             <SidebarMenuButton>
               <Avatar>
                 <AvatarImage src="https://i.pravatar.cc/20" />

@@ -12,6 +12,11 @@ import Signup from "../pages/Signup";
 import CommandMenu from "./Command";
 import { SidebarProvider } from "./ui/sidebar";
 import "../index.css"
+import AddBatch from "@/pages/AddBatch";
+import SalesReport from "@/pages/SalesReport";
+import CreditDues from "@/pages/CreditDues";
+import Backup from "@/pages/Backup";
+import Settings from "@/pages/Settings";
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
@@ -53,6 +58,7 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null);
+    document.documentElement.classList.toggle("dark");
     localStorage.removeItem("loggedInUser");
   };
 
@@ -70,6 +76,16 @@ export default function App() {
         return <Companies />;
       case "Products":
         return <Products />;
+      case "Add Batch":
+        return <AddBatch />
+      case "Sales Reports":
+        return <SalesReport />
+      case "Credit Dues":
+        return <CreditDues />
+      case "Backup & Export":
+        return <Backup />
+      case "Settings":
+        return <Settings />
       default:
         return <Dashboard />;
     }
@@ -88,9 +104,9 @@ export default function App() {
       <SidebarProvider>
         <AppSidebar onNavigate={handleNavigate} username={user.username} onLogout={handleLogout} />
         <CommandMenu open={open} setOpen={setOpen} onNavigate={handleNavigate} />
-        <div className="flex flex-1 flex-col">
-          <Header username={user.username} onLogout={handleLogout} />
-          <div className="flex-1 overflow-auto p-2">{renderPage()}</div>
+        <div className="flex flex-1 flex-col justify-center">
+          <Header currentPage={activePage} />
+          <div className="flex flex-1 items-center justify-center overflow-auto p-2">{renderPage()}</div>
         </div>
       </SidebarProvider>
     </div>
