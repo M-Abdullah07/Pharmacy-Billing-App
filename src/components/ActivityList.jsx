@@ -1,5 +1,6 @@
 import React from "react";
-import { Table } from "./ui/table";
+import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow, } from "@/components/ui/table"
+import { Badge } from "./ui/badge";
 
 const activities = [
   { name: "Ralph Edwards", id: 6527, time: "10:32 am", status: "Delivered" },
@@ -15,26 +16,29 @@ export default function ActivityList() {
   return (
     <div className="flex-1 bg-white p-4">
       <h3 className="text-xl font-bold p-6">Recent Activity</h3>
-      <table className="w-full table-auto border-separate border-spacing-0 rounded-xl overflow-hidden shadow">
-        <thead>
-          <tr className="bg-gray-200 text-left text-gray-800 uppercase tracking-wider">
-            <th className="px-6 py-3 rounded-tl-xl">Name</th>
-            <th className="px-9 py-3">ID</th>
-            <th className="px-9 py-3">Time</th>
-            <th className="px-6 py-3 rounded-tr-xl">Status</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableCaption>A List of Recent Activity</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="px-6 py-3 rounded-tl-xl">Name</TableHead>
+            <TableHead className="px-9 py-3">ID</TableHead>
+            <TableHead className="px-9 py-3">Time</TableHead>
+            <TableHead className="px-6 py-3 rounded-tr-xl">Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {activities.map((act, index) => (
-            <tr key={index} className="hover:bg-gray-300 transition-colors">
-              <td className="px-6 py-4">{act.name}</td>
-              <td className="px-6 py-4">#{act.id}</td>
-              <td className="px-6 py-4">{act.time}</td>
-              <td className="px-6 py-4">{act.status}</td>
-            </tr>
+            <TableRow key={index} >
+              <TableCell className="px-6 py-4">{act.name}</TableCell>
+              <TableCell className="px-6 py-4">#{act.id}</TableCell>
+              <TableCell className="px-6 py-4">{act.time}</TableCell>
+              <TableCell className="px-6 py-4">
+                <Badge variant={act.status.toLowerCase()}>{act.status}</Badge>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
