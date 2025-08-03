@@ -1,3 +1,13 @@
+# TO-DO
+* Have to think about logins and user access and controls
+* Complete the following pages
+    - [ ] Signup
+    - [ ] Add Batch
+    - [ ] Credit Dues
+    - [ ] Sales Report
+    - [ ] Settings
+    - [ ] Backup & Export
+
 # Electron
 
 ## Normal Startup
