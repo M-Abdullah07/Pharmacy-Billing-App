@@ -1,4 +1,4 @@
-/*import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/AddSale.css';
 
 export default function AddSale() {
@@ -296,7 +296,7 @@ export default function AddSale() {
 
       {isLoading && <p>Loading...</p>}
 
-      {/* Customer select *//*}
+      {/* Customer select */}
       <label>
         Customer:
         <select
@@ -311,7 +311,7 @@ export default function AddSale() {
         <button type="button" onClick={() => setShowAddCustomer(true)}>+ Add Customer</button>
       </label>
 
-      {/* Add Customer Inline Form }
+      {/* Add Customer Inline Form */}
       {showAddCustomer && (
         <div className="add-customer-form">
           <h4>Add New Customer</h4>
@@ -332,7 +332,7 @@ export default function AddSale() {
         </div>
       )}
 
-      {/* Medicine select }
+      {/* Medicine select */}
       <label>
         Medicine:
         <select
@@ -347,7 +347,7 @@ export default function AddSale() {
         <button type="button" onClick={() => setShowAddMedicine(true)}>+ Add Medicine</button>
       </label>
 
-      {/* Add Medicine Inline Form }
+      {/* Add Medicine Inline Form */}
       {showAddMedicine && (
         <div className="add-medicine-form">
           <h4>Add New Medicine</h4>
@@ -368,7 +368,7 @@ export default function AddSale() {
         </div>
       )}
 
-      {/* Batch select }
+      {/* Batch select */}
       <label>
         Batch:
         <select
@@ -398,7 +398,7 @@ export default function AddSale() {
         </button>
       </label>
 
-      {/* Add Batch Inline Form }
+      {/* Add Batch Inline Form */}
       {showAddBatch && (
         <div className="add-batch-form">
           <h4>Add New Batch</h4>
@@ -431,7 +431,7 @@ export default function AddSale() {
         </div>
       )}
 
-      {/* Quantity and Sale Rate Inputs }
+      {/* Quantity and Sale Rate Inputs */}
       <div className="sale-item-inputs">
         <input
           type="number"
@@ -455,7 +455,7 @@ export default function AddSale() {
         </button>
       </div>
 
-      {/* Sale items table }
+      {/* Sale items table */}
       <table className="sale-items-table">
         <thead>
           <tr>
@@ -494,7 +494,7 @@ export default function AddSale() {
         </tbody>
       </table>
 
-      {/* Credit sale }
+      {/* Credit sale */}
       <label>
         <input
           type="checkbox"
@@ -504,7 +504,7 @@ export default function AddSale() {
         Credit Sale
       </label>
 
-      {/* Submit }
+      {/* Submit */}
       <button onClick={handleSubmitSale} disabled={saleItems.length === 0 || !selectedCustomer}>
         Submit Sale
       </button>
@@ -512,4 +512,3 @@ export default function AddSale() {
     </div>
   );
 }
-*/

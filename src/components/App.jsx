@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Dashboard from "./Dashboard";
-//import AddSale from "./AddSale";
+import AddSale from "./AddSale";
 import Login from "./Login";
 import Areas from "./AddArea";
 import Customers from "./AddCustomers";
@@ -39,8 +39,8 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      //case "Add Sale":
-        //return <AddSale />;
+      case "Add Sale":
+        return <AddSale />;
       case "Dashboard":
         return <Dashboard />;
       case "Areas":
