@@ -1,16 +1,16 @@
-// src/components/App.jsx
 import React, { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
+import AppSidebar from "./Sidebar";
 import Header from "./Header";
-import Dashboard from "./Dashboard";
-import AddSale from "./AddSale";
-import Login from "./Login";
-import Areas from "./AddArea";
-import Customers from "./AddCustomers";
-import Companies from "./Companies";
-import Products from "./Products"; // Assuming you have a Products component
-import Signup from "./Signup";
-import "../styles/AppLayout.css";
+import Dashboard from "../pages/Dashboard";
+import AddSale from "../pages/AddSale";
+import Login from "../pages/Login";
+import Areas from "../pages/AddArea";
+import Customers from "../pages/AddCustomers";
+import Companies from "../pages/Companies";
+import Products from "../pages/Products";
+import Signup from "../pages/Signup";
+import { SidebarProvider } from "./ui/sidebar";
+import "../index.css"
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
@@ -71,12 +71,14 @@ export default function App() {
   }
 
   return (
-    <div className="app-layout">
-      <Sidebar onNavigate={handleNavigate} />
-      <div className="main-content">
-        <Header username={user.username} onLogout={handleLogout} />
-        <div className="page-content">{renderPage()}</div>
-      </div>
+    <div className="flex h-screen">
+      <SidebarProvider>
+        <AppSidebar onNavigate={handleNavigate} username={user.username} onLogout={handleLogout} />
+        <div className="flex flex-1 flex-col">
+          <Header username={user.username} onLogout={handleLogout} />
+          <div className="flex-1 overflow-auto p-2">{renderPage()}</div>
+        </div>
+      </SidebarProvider>
     </div>
   );
 }
