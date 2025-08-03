@@ -9,6 +9,7 @@ import Customers from "../pages/AddCustomers";
 import Companies from "../pages/Companies";
 import Products from "../pages/Products";
 import Signup from "../pages/Signup";
+import CommandMenu from "./Command";
 import { SidebarProvider } from "./ui/sidebar";
 import "../index.css"
 
@@ -16,8 +17,20 @@ export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
   const [user, setUser] = useState(null);
   const [signup, setSignup] = useState(false);
+  const [open, setOpen] = React.useState(false)
 
-  // 🔄 Load logged-in user from localStorage on first render
+  useEffect(() => {
+    const down = (e) => {
+      if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setOpen((open) => !open)
+      }
+    }
+
+    document.addEventListener("keydown", down)
+    return () => document.removeEventListener("keydown", down)
+  }, [])
+
   useEffect(() => {
     const savedUser = localStorage.getItem("loggedInUser");
     if (savedUser) {
@@ -74,6 +87,7 @@ export default function App() {
     <div className="flex h-screen">
       <SidebarProvider>
         <AppSidebar onNavigate={handleNavigate} username={user.username} onLogout={handleLogout} />
+        <CommandMenu open={open} setOpen={setOpen} onNavigate={handleNavigate} />
         <div className="flex flex-1 flex-col">
           <Header username={user.username} onLogout={handleLogout} />
           <div className="flex-1 overflow-auto p-2">{renderPage()}</div>
