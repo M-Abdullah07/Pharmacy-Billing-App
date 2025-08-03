@@ -3,7 +3,8 @@
 * Sidebar navigation is also functioning
 * Sidebar signout and user info moved from header to sidebar
 * `ctrl+j` to open up the command
-* searching added to the command
+* Searching added to the command
+* Implemented Dark mode
 
 # Up Next...
 * quick naviagation through the command
