@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import '../styles/AddCustomer.css';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DeleteIcon, Edit } from 'lucide-react';
 
 export default function AddCustomer() {
   const [areas, setAreas] = useState([]);
@@ -84,69 +88,88 @@ export default function AddCustomer() {
   };
 
   return (
-    <div className="add-customer-page">
+    <div className="space-y-4">
+
       <h2>{editId ? 'Edit Customer' : 'Add New Customer'}</h2>
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+        <Input name="name" value={form.name} onChange={handleChange} placeholder="Name" required />
+        <Input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone" />
+        <Input name="whatsapp" value={form.whatsapp} onChange={handleChange} placeholder="WhatsApp" />
 
-      <form onSubmit={handleSubmit} className="customer-form">
-        <input name="name" value={form.name} onChange={handleChange} placeholder="Name" required />
-        <input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone" />
-        <input name="whatsapp" value={form.whatsapp} onChange={handleChange} placeholder="WhatsApp" />
+        <Select>
+          <SelectTrigger className="w-[240px]">
+            <SelectValue placeholder="Select an Area" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>City</SelectLabel>
+              {areas.map(area => (
+                <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
 
-        <select name="area_id" value={form.area_id} onChange={handleChange} required>
-          <option value="">Select Area</option>
-          {areas.map(area => (
-            <option key={area.id} value={area.id}>{area.name}</option>
-          ))}
-        </select>
-
-        <button type="submit">{editId ? 'Update' : 'Add Customer'}</button>
-        {editId && <button type="button" onClick={() => { setEditId(null); setForm({ name: '', phone: '', whatsapp: '', area_id: '' }); }}>Cancel</button>}
+        <Button className="w-[140px]">{editId ? 'Update' : 'Add Customer'}</Button>
+        {editId && <Button type="button" onClick={() => { setEditId(null); setForm({ name: '', phone: '', whatsapp: '', area_id: '' }); }}>Cancel</Button>}
       </form>
 
       {message && <p className="message">{message}</p>}
 
-      <hr />
-
       <h3>All Customers</h3>
-      <div className="filters">
-        <input
+      <div className="flex flex-row gap-4">
+        <Input
           placeholder="Search by name/phone"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)}>
-          <option value="">All Areas</option>
-          {areas.map(area => (
-            <option key={area.id} value={area.id}>{area.name}</option>
-          ))}
-        </select>
+        <Select value={filterArea} onValueChange={setFilterArea}>
+          <SelectTrigger className="w-[240px]">
+            <SelectValue placeholder="All Areas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>City</SelectLabel>
+              {areas.map(area => (
+                <SelectItem key={area.id} value={String(area.id)}>
+                  {area.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
-      <table className="customers-table">
-        <thead>
-          <tr>
-            <th>Name</th><th>Phone</th><th>WhatsApp</th><th>Area</th><th>Created</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table >
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>WhatsApp</TableHead>
+            <TableHead>Area</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {filteredCustomers.map(c => (
-            <tr key={c.id}>
-              <td>{c.name}</td>
-              <td>{c.phone}</td>
-              <td>{c.whatsapp}</td>
-              <td>{c.area_name || '—'}</td>
-              <td>{new Date(c.created_at).toLocaleString()}</td>
-              <td>
-                <button onClick={() => handleEdit(c)}>✏️</button>
-                <button onClick={() => handleDelete(c.id)}>🗑️</button>
-              </td>
-            </tr>
+            <TableRow key={c.id}>
+              <TableCell>{c.name}</TableCell>
+              <TableCell>{c.phone}</TableCell>
+              <TableCell>{c.whatsapp}</TableCell>
+              <TableCell>{c.area_name || '—'}</TableCell>
+              <TableCell>{new Date(c.created_at).toLocaleString()}</TableCell>
+              <TableCell>
+                <Button variant="ghost" size="icon" onClick={() => handleEdit(c)}><Edit /></Button>
+                <Button variant="ghost" onClick={() => handleDelete(c.id)}><DeleteIcon className='text-red-500' /></Button>
+              </TableCell>
+            </TableRow>
           ))}
           {filteredCustomers.length === 0 && (
-            <tr><td colSpan="6" style={{ textAlign: 'center' }}>No customers found.</td></tr>
+            <TableRow><TableCell colSpan="6" style={{ textAlign: 'center' }}>No customers found.</TableCell></TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
