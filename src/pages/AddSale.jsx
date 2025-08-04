@@ -578,16 +578,13 @@ export default function AddSale() {
       </Table>
 
       {/* Credit sale */}
-      <div className="flex flex-row gap-2 py-4">
-        <Checkbox id="terms" />
-        <Label htmlFor="terms">Credit Sale</Label>
+      <div className="flex items-center justify-between mt-8 border-t pt-4">
+        <div className="flex items-center gap-2">
+          <Checkbox id="credit" />
+          <Label htmlFor="credit">Credit Sale</Label>
+        </div>
+        <Button onClick={handleSubmitSale} disabled={saleItems.length === 0 || !selectedCustomer}> Submit Sale </Button>
       </div>
-
-      {/* Submit */}
-      <Button onClick={handleSubmitSale} disabled={saleItems.length === 0 || !selectedCustomer}>
-        Submit Sale
-      </Button>
-
     </div>
   );
 }
