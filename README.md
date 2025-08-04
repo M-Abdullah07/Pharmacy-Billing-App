@@ -1,4 +1,6 @@
 # New!
+* Completed the Migration from css styles to simply tailwindcss
+* Added shadcn ui components
 * Sidebar is now responsive and also closes and opens (use `ctrl+b` or icon on the header)
 * Sidebar navigation is also functioning
 * Sidebar signout and user info moved from header to sidebar
@@ -7,7 +9,9 @@
 * Implemented Dark mode
 
 # Up Next...
-* quick naviagation through the command
+* User settings
+* Themer for the app 
+* Navigation bug fix for the command
 
 # TO-DO
 * Have to think about logins and user access and controls
