@@ -1,17 +1,15 @@
 import React from "react";
-import StatsPanel from "../components/StatsPanel";
-import ActivityList from "../components/ActivityList";
-// import AnalyticsChart from "./AnalyticsChart";
+import StatsPanel from "@/components/StatsPanel";
+import ActivityList from "@/components/ActivityList";
+import AnalyticsChart from "@/components/AnalyticsChart";
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col h-fit w-full max-w-[calc(100vw-100px)] overflow-auto">
+    <div className="flex flex-col h-full w-full max-w-[calc(100vw-50px)] overflow-auto">
       <StatsPanel />
-      <div className="flex flex-col gap-4 mt-8">
+      <div className="flex flex-col gap-15 mt-8">
         <ActivityList />
-        {/* Commenting this out for now
-          <AnalyticsChart />
-        */}
+        <AnalyticsChart />
       </div>
     </div>
   );
