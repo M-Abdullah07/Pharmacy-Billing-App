@@ -1,32 +1,128 @@
-// src/components/Sidebar.jsx
 import React from "react";
-import "../styles/SideBar.css";
+import { MdOutlineBackup } from "react-icons/md";
+import { RxDashboard } from "react-icons/rx"
+import { TfiPackage } from "react-icons/tfi";
+import { HiOutlineBuildingOffice, HiOutlineCreditCard, HiOutlineUser } from "react-icons/hi2"
+import { HiOutlineDocumentReport } from "react-icons/hi"
+import { IoLayersOutline, IoLocationOutline, IoLogOutOutline, IoPricetagOutline, IoSettingsOutline } from "react-icons/io5"
+import {
+  Sidebar,
+  SidebarHeader,
+  SidebarGroup,
+  SidebarContent,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarSeparator,
+} from "./ui/sidebar";
+import { Avatar, AvatarImage } from "./ui/avatar";
 
 const menuItems = [
-  "Dashboard",
-  "Add Sale",
-  "Companies",
-  "Products",
-  "Areas",
-  "Add Batch",
-  "Credit Dues",
-  "Sales Reports",
-  "Customers",
-  "Settings",
-  "Backup & Export",
+  {
+    title: "Dashboard",
+    icon: RxDashboard,
+  },
+  {
+    title: "Add Sale",
+    icon: IoPricetagOutline,
+  },
+  {
+    title: "Companies",
+    icon: HiOutlineBuildingOffice,
+  },
+  {
+    title: "Products",
+    icon: TfiPackage,
+  },
+  {
+    title: "Areas",
+    icon: IoLocationOutline,
+  },
+  {
+    title: "Add Batch",
+    icon: IoLayersOutline,
+  },
+  {
+    title: "Credit Dues",
+    icon: HiOutlineCreditCard,
+  },
+  {
+    title: "Sales Reports",
+    icon: HiOutlineDocumentReport,
+  },
+  {
+    title: "Customers",
+    icon: HiOutlineUser,
+  },
 ];
 
-export default function Sidebar({ onNavigate }) {
+export default function AppSidebar({ onNavigate, onLogout, username }) {
   return (
-    <div className="p-6 bg-gray-200/80 shadow-xl">
-      <div className="text-black text-xl font-bold mb-8">Pharmax.</div>
-      <ul className="flex flex-col gap-2">
-        {menuItems.map((item, index) => (
-          <div key={index} onClick={() => onNavigate(item)} className="hover:bg-white py-2 px-3 rounded-2xl hover:cursor-pointer">
-            {item}
-          </div>
-        ))}
-      </ul>
-    </div>
+    <Sidebar>
+      <SidebarHeader>
+        <div className="text-2xl font-bold px-2 py-3">
+          Pharmax.
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel> Vendor </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild className="cursor-pointer">
+                    <a onClick={() => onNavigate(item.title)}>
+                      {item.icon && <item.icon />}
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton className="cursor-pointer" onClick={() => onNavigate("Backup & Export")}>
+              <MdOutlineBackup />
+              <span>Backup & Export</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton className="cursor-pointer" onClick={() => onNavigate("Settings")}>
+              <IoSettingsOutline />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton className="cursor-pointer" onClick={onLogout}>
+              <IoLogOutOutline />
+              <span>SignOut</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarSeparator className="mb-2 mt-2" />
+            <SidebarMenuButton>
+              <Avatar>
+                <AvatarImage src="https://i.pravatar.cc/20" />
+              </Avatar>
+              <span>{username}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   );
 }

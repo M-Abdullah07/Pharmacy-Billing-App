@@ -1,6 +1,6 @@
-// src/components/ActivityList.jsx
 import React from "react";
-import "../styles/ActivityList.css";
+import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow, } from "@/components/ui/table"
+import { Badge } from "./ui/badge";
 
 const activities = [
   { name: "Ralph Edwards", id: 6527, time: "10:32 am", status: "Delivered" },
@@ -14,18 +14,31 @@ const activities = [
 
 export default function ActivityList() {
   return (
-    <div className="activity-list">
-      <h3>Recent Activity</h3>
-      <ul>
-        {activities.map((act, index) => (
-          <li key={index}>
-            <span className="name">{act.name}</span>
-            <span className="id">#{act.id}</span>
-            <span className="time">{act.time}</span>
-            <span className={`status ${act.status.toLowerCase()}`}>{act.status}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="flex-1 p-4">
+      <h3 className="text-xl font-bold p-6">Recent Activity</h3>
+      <Table>
+        <TableCaption>A List of Recent Activity</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="px-6 py-3 rounded-tl-xl">Name</TableHead>
+            <TableHead className="px-9 py-3">ID</TableHead>
+            <TableHead className="px-9 py-3">Time</TableHead>
+            <TableHead className="px-6 py-3 rounded-tr-xl">Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {activities.map((act, index) => (
+            <TableRow key={index} >
+              <TableCell className="px-6 py-4">{act.name}</TableCell>
+              <TableCell className="px-6 py-4">#{act.id}</TableCell>
+              <TableCell className="px-6 py-4">{act.time}</TableCell>
+              <TableCell className="px-6 py-4">
+                <Badge variant={act.status.toLowerCase()}>{act.status}</Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
