@@ -64,17 +64,6 @@ export default function Companies() {
   return (
     <div className="space-y-24">
 
-      <form onSubmit={handleSubmit}>
-        <Label className="mb-4">Add a new Company Record:</Label>
-        <div className="grid grid-cols-2 gap-6 mb-4">
-          <Input name="name" value={form.name} onChange={handleChange} placeholder="Company Name" required />
-          <Input name="address" value={form.address} onChange={handleChange} placeholder="Address" />
-          <Input name="contact" value={form.contact} onChange={handleChange} placeholder="Contact" />
-          <Input name="ntn" value={form.ntn} onChange={handleChange} placeholder="NTN No." />
-          <Input name="contact_person" value={form.contact_person} onChange={handleChange} placeholder="Contact Person" />
-        </div>
-        <Button type="submit">Add Company</Button>
-      </form>
 
       {message && <p className="message">{message}</p>}
 
@@ -106,6 +95,18 @@ export default function Companies() {
           )}
         </TableBody>
       </Table>
+
+      <form onSubmit={handleSubmit}>
+        <Label className="mb-4">Add a new Company Record:</Label>
+        <div className="grid grid-cols-2 gap-6 mb-4">
+          <Input name="name" value={form.name} onChange={handleChange} placeholder="Company Name" required />
+          <Input name="address" value={form.address} onChange={handleChange} placeholder="Address" />
+          <Input name="contact" value={form.contact} onChange={handleChange} placeholder="Contact" />
+          <Input name="ntn" value={form.ntn} onChange={handleChange} placeholder="NTN No." />
+          <Input name="contact_person" value={form.contact_person} onChange={handleChange} placeholder="Contact Person" />
+        </div>
+        <Button type="submit">Add Company</Button>
+      </form>
     </div>
   );
 }
