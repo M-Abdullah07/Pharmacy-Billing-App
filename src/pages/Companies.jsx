@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import '../styles/Companies.css';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Label } from '@/components/ui/label';
 
 export default function Companies() {
   const [companies, setCompanies] = useState([]);
@@ -16,20 +19,18 @@ export default function Companies() {
     loadCompanies();
   }, []);
 
-const loadCompanies = async () => {
-  //console.log("📞 Calling getCompanies...");
-  const data = await window.electronAPI.getCompanies();
-  //console.log("📦 Fetched companies:", data);
+  const loadCompanies = async () => {
+    //console.log("📞 Calling getCompanies...");
+    const data = await window.electronAPI.getCompanies();
+    //console.log("📦 Fetched companies:", data);
 
-  if (Array.isArray(data)) {
-    setCompanies(data);
-  } else {
-    console.warn("❗ Expected array but got:", data);
-    setCompanies([]);
-  }
-};
-
-
+    if (Array.isArray(data)) {
+      setCompanies(data);
+    } else {
+      console.warn("❗ Expected array but got:", data);
+      setCompanies([]);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,9 +47,9 @@ const loadCompanies = async () => {
     }
 
     const res = await window.electronAPI.addCompany(
-  `INSERT INTO companies (name, address, contact, ntn, contact_person) VALUES (?, ?, ?, ?, ?)`,
-  [name.trim(), address, contact, ntn, contact_person]
-);
+      `INSERT INTO companies (name, address, contact, ntn, contact_person) VALUES (?, ?, ?, ?, ?)`,
+      [name.trim(), address, contact, ntn, contact_person]
+    );
 
 
     if (res.success) {
@@ -61,58 +62,51 @@ const loadCompanies = async () => {
   };
 
   return (
-    
-    <div className="companies-page">
-  <div className="page-header">
-    <h2>Company Management</h2>
-    <p className="page-subtitle">Manage your business partners and clients</p>
-  </div>
+    <div className="space-y-24">
 
-  <form className="company-form" onSubmit={handleSubmit}>
-    <div className="form-grid">
-      <input name="name" value={form.name} onChange={handleChange} placeholder="Company Name" required />
-      <input name="address" value={form.address} onChange={handleChange} placeholder="Address" />
-      <input name="contact" value={form.contact} onChange={handleChange} placeholder="Contact" />
-      <input name="ntn" value={form.ntn} onChange={handleChange} placeholder="NTN No." />
-      <input name="contact_person" value={form.contact_person} onChange={handleChange} placeholder="Contact Person" />
+
+      {message && <p className="message">{message}</p>}
+
+      <Table>
+        <TableCaption>All Companies</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Contact</TableHead>
+            <TableHead>Contact Person</TableHead>
+            <TableHead>NTN</TableHead>
+            <TableHead>Address</TableHead>
+            <TableHead>Created At</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {companies.map(c => (
+            <TableRow key={c.id}>
+              <TableCell>{c.name}</TableCell>
+              <TableCell>{c.contact}</TableCell>
+              <TableCell>{c.contact_person}</TableCell>
+              <TableCell>{c.ntn}</TableCell>
+              <TableCell>{c.address}</TableCell>
+              <TableCell>{new Date(c.created_at).toLocaleString()}</TableCell>
+            </TableRow>
+          ))}
+          {companies.length === 0 && (
+            <tr><td colSpan="6" style={{ textAlign: 'center' }}>No companies found.</td></tr>
+          )}
+        </TableBody>
+      </Table>
+
+      <form onSubmit={handleSubmit}>
+        <Label className="mb-4">Add a new Company Record:</Label>
+        <div className="grid grid-cols-2 gap-6 mb-4">
+          <Input name="name" value={form.name} onChange={handleChange} placeholder="Company Name" required />
+          <Input name="address" value={form.address} onChange={handleChange} placeholder="Address" />
+          <Input name="contact" value={form.contact} onChange={handleChange} placeholder="Contact" />
+          <Input name="ntn" value={form.ntn} onChange={handleChange} placeholder="NTN No." />
+          <Input name="contact_person" value={form.contact_person} onChange={handleChange} placeholder="Contact Person" />
+        </div>
+        <Button type="submit">Add Company</Button>
+      </form>
     </div>
-    <button className="submit-btn" type="submit">Add Company</button>
-  </form>
-
-  {message && <p className="message">{message}</p>}
-
-  <hr />
-
-  <h3>All Companies</h3>
-  <div className="table-container">
-    <table className="companies-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Contact</th>
-          <th>Contact Person</th>
-          <th>NTN</th>
-          <th>Address</th>
-          <th>Created At</th>
-        </tr>
-      </thead>
-      <tbody>
-        {companies.map(c => (
-          <tr key={c.id}>
-            <td>{c.name}</td>
-            <td>{c.contact}</td>
-            <td>{c.contact_person}</td>
-            <td>{c.ntn}</td>
-            <td>{c.address}</td>
-            <td>{new Date(c.created_at).toLocaleString()}</td>
-          </tr>
-        ))}
-        {companies.length === 0 && (
-          <tr><td colSpan="6" style={{ textAlign: 'center' }}>No companies found.</td></tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-</div>
   );
 }
