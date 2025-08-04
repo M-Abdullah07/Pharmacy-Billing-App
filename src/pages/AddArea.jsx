@@ -1,5 +1,7 @@
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import React, { useState } from 'react';
-import '../styles/AddArea.css';
 
 export default function AddArea() {
   const [areaName, setAreaName] = useState('');
@@ -37,74 +39,43 @@ export default function AddArea() {
     }
   };
 
-  const handleReset = () => {
-    setAreaName('');
-    setMessage('');
-    setMessageType('');
-  };
-
   return (
-    <div className="add-area-page">
-      <div className="add-area-container">
-        {/* Professional Header */}
-        <div className="page-header">
-          <h2>Add New Area</h2>
-          <p className="page-subtitle">Create and organize new business areas for better management</p>
-        </div>
+    <div className="grid grid-col">
 
-        {/* Professional Form Container */}
-        <div className="form-container">
-          <h3 className="form-title">Area Information</h3>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="areaName">Area Name</label>
-              <input
-                id="areaName"
-                type="text"
-                value={areaName}
-                onChange={(e) => setAreaName(e.target.value)}
-                placeholder="Enter area name (e.g., Lahore, Karachi, Islamabad)"
-                disabled={loading}
-                required
-              />
-            </div>
+      {/* Professional Form Container */}
+      <div className="">
+        <Label className="text-xl mb-4">Area Information</Label>
 
-            <button 
-              type="submit" 
-              className={loading ? 'loading' : ''}
-              disabled={loading || !areaName.trim()}
-            >
-              {loading ? 'Adding Area...' : 'Add Area'}
-            </button>
+        <form onSubmit={handleSubmit} className="flex flex-row gap-4">
+          <Input
+            type="text"
+            className="w-[500px]"
+            value={areaName}
+            onChange={(e) => setAreaName(e.target.value)}
+            placeholder="Enter area name (e.g., Lahore, Karachi, Islamabad)"
+            disabled={loading}
+            required
+          />
+          <Button
+            className={loading ? 'loading' : ''}
+            disabled={loading || !areaName.trim()}
+          >
+            {loading ? 'Adding Area...' : 'Add Area'}
+          </Button>
+        </form>
 
-            {areaName && (
-              <div className="action-group">
-                <button 
-                  type="button" 
-                  className="secondary-btn"
-                  onClick={handleReset}
-                  disabled={loading}
-                >
-                  Clear Form
-                </button>
-              </div>
-            )}
-          </form>
-
-          {/* Professional Helper Text */}
-          <p className="helper-text">
-            Areas help organize your business operations. Choose descriptive names that clearly identify the purpose or function.
-          </p>
-        </div>
-
-        {/* Professional Message Display */}
-        {message && (
-          <div className={`message ${messageType}`}>
-            {message}
-          </div>
-        )}
+        {/* Professional Helper Text */}
+        <p className="leading-7 [&:not(:first-child)]:mt-6 w-[600px] text-muted-foreground">
+          Areas help organize your business operations. Choose descriptive names that clearly identify the purpose or function.
+        </p>
       </div>
+
+      {/* Professional Message Display */}
+      {message && (
+        <div className="mt-4">
+          {message}
+        </div>
+      )}
     </div>
   );
 }
