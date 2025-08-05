@@ -1,17 +1,42 @@
 import React, { useState } from "react";
-import { Eye, EyeOff, Mail, RectangleEllipsis, SquarePen } from "lucide-react";
-import "../index.css"
+import { Mail, Lock, Eye, EyeOff, AlertCircle, RectangleEllipsis } from "lucide-react";
+import "@/index.css"
 
-const Signup = ({ onSignup, setSignup }) => {
+const Login = ({ onLogin, setSignup }) => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+
     setIsLoading(true);
-  }
+
+    try {
+      const result = await window.electronAPI.queryDb(
+        `SELECT * FROM users WHERE username = ? AND password = ?`,
+        [email, password]
+      );
+
+      if (result && result.length > 0) {
+        onLogin(result[0]);
+      } else {
+        setError("Invalid credentials. Please check your email and password.");
+      }
+    } catch (err) {
+      setError("Login error: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex fixed w-screen h-screen items-center justify-center p-[16px] bg-gradient-to-br from-[#eff6ff] to-[#e0e7ff]">
@@ -21,10 +46,10 @@ const Signup = ({ onSignup, setSignup }) => {
           {/* Header */}
           <div class="text-center mb-8">
             <div class="w-16 h-16 bg-gradient-to-br from-[#3b82f6] to-[#4f46e5] rounded-full flex items-center justify-center mb-4 mx-auto">
-              <SquarePen size={32} color="white" />
+              <Lock size={32} color="white" />
             </div>
-            <h1 className="text-2xl font-bold text-[#111827]">Sign Up</h1>
-            <p className="text-[#6b7280] text-sm mt-[8px]">Register a new account with Pharmax.</p>
+            <h1 className="text-2xl font-bold text-[#111827]">Welcome Back</h1>
+            <p className="text-[#6b7280] text-sm mt-[8px]">Sign in to your account</p>
           </div>
 
           {/* Form */}
@@ -41,7 +66,7 @@ const Signup = ({ onSignup, setSignup }) => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md text-sm bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:border-blue-500 transition-all"
                   placeholder="Enter your email"
                   required
                 />
@@ -57,7 +82,7 @@ const Signup = ({ onSignup, setSignup }) => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md text-sm bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:border-blue-500 transition-all"
                   placeholder="Enter your password"
                   required
                 />
@@ -87,11 +112,11 @@ const Signup = ({ onSignup, setSignup }) => {
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 mt-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
-                  <span>Signing Up...</span>
+                  <div className="w-5 h-5 mt-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Signing in...</span>
                 </div>
               ) : (
-                "Sign Up"
+                "Sign In"
               )}
             </button>
           </form>
@@ -99,9 +124,9 @@ const Signup = ({ onSignup, setSignup }) => {
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              Already have an account?{" "}
-              <button onClick={() => setSignup(false)} className="text-blue-500 font-medium hover:text-blue-600 hover:underline transition-colors cursor-pointer" >
-                Login
+              Don't have an account?{" "}
+              <button onClick={() => setSignup(true)} className="text-blue-500 font-medium hover:text-blue-600 hover:underline transition-colors cursor-pointer" >
+                Sign up
               </button>
             </p>
           </div>
@@ -115,7 +140,7 @@ const Signup = ({ onSignup, setSignup }) => {
         </div>
       </div>
     </div>
-  )
+  );
 };
 
-export default Signup;
+export default Login;
