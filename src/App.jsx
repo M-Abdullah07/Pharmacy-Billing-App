@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import CommandMenu from "@/components/Command";
@@ -55,10 +56,6 @@ export default function App() {
     }
   }, []);
 
-  const handleNavigate = (page) => {
-    setActivePage(page);
-  };
-
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem("loggedInUser", userData.username);
@@ -70,65 +67,43 @@ export default function App() {
     localStorage.removeItem("loggedInUser");
   };
 
-  const renderPage = () => {
-    switch (activePage) {
-      case "Add Sale":
-        return <AddSale />;
-      case "Dashboard":
-        return <Dashboard />;
-      case "Areas":
-        return <Areas />;
-      case "Customers":
-        return <Customers />;
-      case "Companies":
-        return <Companies />;
-      case "Products":
-        return <Products />;
-      case "Add Batch":
-        return <AddBatch />
-      case "Sales Reports":
-        return <SalesReport />
-      case "Credit Dues":
-        return <CreditDues />
-      case "Backup":
-        return <Backup />
-      case "Settings":
-        return <Settings />
-      case "Stock Adjustment":
-        return <StockAdjustment />
-      case "Expiry Management":
-        return <ExpiryManagement />
-      case "Salesmen":
-        return <Salesmen />
-      case "Customer Ledger":
-        return <CustomerLedger />
-      case "Expense Tracker":
-        return <ExpenseTracker />
-      case "Supplier Payments":
-        return <SupplierPayment />
-      case "Preferences":
-        return <Preferences />
-      case "Return Handling":
-        return <ReturnHandling />
-      default:
-        return <Dashboard />;
-    }
-  };
-
-  if (!user) {
-    return <Login onLogin={handleLogin} />
-  }
+  if (!user) return <Login onLogin={handleLogin} />
 
   return (
-    <div className="flex h-screen">
-      <SidebarProvider>
-        <AppSidebar onNavigate={handleNavigate} username={user.username} onLogout={handleLogout} />
-        <CommandMenu open={open} setOpen={setOpen} onNavigate={handleNavigate} />
-        <div className="flex flex-1 flex-col justify-center">
-          <Header currentPage={activePage} />
-          <div className="flex flex-1 items-center justify-center overflow-auto p-2">{renderPage()}</div>
-        </div>
-      </SidebarProvider>
-    </div>
+    <HashRouter>
+      <div className="flex h-screen">
+        <SidebarProvider>
+          <AppSidebar username={user.username} onLogout={handleLogout} />
+          <CommandMenu open={open} setOpen={setOpen} />
+          <div className="flex flex-1 flex-col justify-center">
+            <Header />
+            <div className="flex flex-1 items-center justify-center overflow-auto p-2">
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/add-sale" element={<AddSale />} />
+                <Route path="/add-batch" element={<AddBatch />} />
+                <Route path="/areas" element={<Areas />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/companies" element={<Companies />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/sales-reports" element={<SalesReport />} />
+                <Route path="/credit-dues" element={<CreditDues />} />
+                <Route path="/backup" element={<Backup />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/stock-adjustment" element={<StockAdjustment />} />
+                <Route path="/expiry-management" element={<ExpiryManagement />} />
+                <Route path="/salesmen" element={<Salesmen />} />
+                <Route path="/customer-ledger" element={<CustomerLedger />} />
+                <Route path="/expense-tracker" element={<ExpenseTracker />} />
+                <Route path="/supplier-payments" element={<SupplierPayment />} />
+                <Route path="/preferences" element={<Preferences />} />
+                <Route path="/return-handling" element={<ReturnHandling />} />
+              </Routes>
+            </div>
+          </div>
+        </SidebarProvider>
+      </div>
+    </HashRouter>
   );
 }

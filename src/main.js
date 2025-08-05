@@ -33,7 +33,7 @@ function initializeDatabase() {
       FOREIGN KEY (medicine_id) REFERENCES medicines(id)
     )`);
 
-    
+
 
   // Recreate customers table with foreign key to Area(id)
   db.run(`
@@ -107,7 +107,7 @@ function initializeDatabase() {
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL
     )`);
-    
+
     db.run(`CREATE TABLE IF NOT EXISTS Area (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
@@ -187,7 +187,7 @@ ipcMain.handle("add-batch", async (event, batch) => {
   try {
     const { medicineId, batch_no, purchase_rate, quantity, expiry_date } = batch;
     const result = await runSql(
-      `INSERT INTO batches (medicine_id, batch_number, purchase_rate, quantity_available, expiry_date) 
+      `INSERT INTO batches (medicine_id, batch_number, purchase_rate, quantity_available, expiry_date)
        VALUES (?, ?, ?, ?, ?)`,
       [medicineId, batch_no, purchase_rate, quantity, expiry_date]
     );
@@ -366,8 +366,6 @@ ipcMain.handle('getProducts', () => {
     return { error: err.message };
   }
 });
-
-
 
 // Create the Electron window
 function createWindow() {
