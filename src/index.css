@@ -136,3 +136,6 @@
          hover:from-blue-600 hover:to-indigo-800 hover:cursor-pointer
          transition-colors duration-300;
 }
+.anchor-width {
+  width: var(--radix-popper-anchor-width);
+}
