@@ -1,26 +1,39 @@
 import React, { useState, useEffect } from "react";
+
+import { SidebarProvider } from "@/components/ui/sidebar";
+import CommandMenu from "@/components/Command";
 import AppSidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import Dashboard from "@/pages/Dashboard";
-import AddSale from "@/pages/AddSale";
-import Login from "@/pages/Login";
-import Areas from "@/pages/AddArea";
-import Customers from "@/pages/AddCustomers";
-import Companies from "@/pages/Companies";
-import Products from "@/pages/Products";
-import Signup from "@/pages/Signup";
-import CommandMenu from "@/components/Command";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import AddBatch from "@/pages/AddBatch";
-import SalesReport from "@/pages/SalesReport";
-import CreditDues from "@/pages/CreditDues";
-import Backup from "@/pages/Backup";
-import Settings from "@/pages/Settings";
+
+import ReturnHandling from "@/pages/core/ReturnHandling";
+import Dashboard from "@/pages/core/Dashboard";
+import AddBatch from "@/pages/core/AddBatch";
+import AddSale from "@/pages/core/AddSale";
+
+import Login from "@/pages/auth/Login";
+
+import CustomerLedger from "@/pages/finance/CustomerLedger";
+import SalesReport from "@/pages/finance/SalesReport";
+import CreditDues from "@/pages/finance/CreditDues";
+import SupplierPayment from "@/pages/finance/SupplierPayment";
+import ExpenseTracker from "@/pages/finance/ExpenseTracker";
+
+import ExpiryManagement from "@/pages/inventory/ExpiryManagement";
+import StockAdjustment from "@/pages/inventory/StockAdjustment";
+import Products from "@/pages/inventory/Products";
+
+import Areas from "@/pages/stakeholders/Area";
+import Customers from "@/pages/stakeholders/Customers";
+import Companies from "@/pages/stakeholders/Companies";
+import Salesmen from "@/pages/stakeholders/Salesmen"
+
+import Preferences from "@/pages/settings/Preferences";
+import Settings from "@/pages/settings/Settings";
+import Backup from "@/pages/settings/Backup";
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
   const [user, setUser] = useState(null);
-  const [signup, setSignup] = useState(false);
   const [open, setOpen] = React.useState(false)
 
   useEffect(() => {
@@ -51,10 +64,6 @@ export default function App() {
     localStorage.setItem("loggedInUser", userData.username);
   };
 
-  const handleSignup = () => {
-
-  }
-
   const handleLogout = () => {
     setUser(null);
     document.documentElement.classList.toggle("dark");
@@ -81,21 +90,33 @@ export default function App() {
         return <SalesReport />
       case "Credit Dues":
         return <CreditDues />
-      case "Backup & Export":
+      case "Backup":
         return <Backup />
       case "Settings":
         return <Settings />
+      case "Stock Adjustment":
+        return <StockAdjustment />
+      case "Expiry Management":
+        return <ExpiryManagement />
+      case "Salesmen":
+        return <Salesmen />
+      case "Customer Ledger":
+        return <CustomerLedger />
+      case "Expense Tracker":
+        return <ExpenseTracker />
+      case "Supplier Payments":
+        return <SupplierPayment />
+      case "Preferences":
+        return <Preferences />
+      case "Return Handling":
+        return <ReturnHandling />
       default:
         return <Dashboard />;
     }
   };
 
   if (!user) {
-    return signup ? (
-      <Signup onSignup={handleSignup} setSignup={setSignup} />
-    ) : (
-      <Login onLogin={handleLogin} setSignup={setSignup} />
-    )
+    return <Login onLogin={handleLogin} />
   }
 
   return (
