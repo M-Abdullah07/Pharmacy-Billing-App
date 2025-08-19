@@ -109,7 +109,7 @@ export default function AppSidebar({ onLogout, username }) {
         </SidebarHeader>
 
         <SidebarContent>
-          <SidebarGroup className="-mt-2">
+          <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
                 {core.map((item) => (

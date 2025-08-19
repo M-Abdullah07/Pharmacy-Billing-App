@@ -42,10 +42,10 @@ const Login = ({ onLogin, setSignup }) => {
     <div className="flex fixed w-screen h-screen items-center justify-center p-[16px] bg-gradient-to-br from-[#eff6ff] to-[#e0e7ff]">
       <div className="w-full max-w-[400px]">
         {/* Login Card */}
-        <div class="bg-white rounded-[16px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-8 border border-[#f3f4f6]">
+        <div className="bg-white rounded-[16px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-8 border border-[#f3f4f6]">
           {/* Header */}
-          <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-gradient-to-br from-[#3b82f6] to-[#4f46e5] rounded-full flex items-center justify-center mb-4 mx-auto">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#3b82f6] to-[#4f46e5] rounded-full flex items-center justify-center mb-4 mx-auto">
               <Lock size={32} color="white" />
             </div>
             <h1 className="text-2xl font-bold text-[#111827]">Welcome Back</h1>
