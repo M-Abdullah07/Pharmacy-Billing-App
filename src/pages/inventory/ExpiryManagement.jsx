@@ -22,9 +22,16 @@ const expiry_data = [
   },
 ]
 
+// TODO(demon_slayer): make a button for the user
+// to be able to delete the expired stock
+//
+// TODO(demon_slayer): red-colored dates that are
+// <10 days to and past exp?
+
 export default function ExpiryManagement() {
   const [loading, _] = useState(false)
   const [search, setSearch] = useState("")
+  // TODO(demon_slayer): Add sort by date?
   const filterData = expiry_data.filter(ed => ed.product.toLowerCase().includes(search.toLowerCase()))
 
   return (
