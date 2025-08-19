@@ -13,7 +13,7 @@ const expiry_data = [
     expiry: "12-Mar-25",
   },
   {
-    product: "Dashboard",
+    product: "Brufen",
     form: "Tablet",
     quantity: "120",
     retail: "64",
@@ -24,6 +24,8 @@ const expiry_data = [
 
 export default function ExpiryManagement() {
   const [loading, _] = useState(false)
+  const [search, setSearch] = useState("")
+  const filterData = expiry_data.filter(ed => ed.product.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <>
@@ -33,6 +35,8 @@ export default function ExpiryManagement() {
           <Input
             type="text"
             placeholder="Search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-1/2"
           >
           </Input>
@@ -53,7 +57,7 @@ export default function ExpiryManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {expiry_data.map((ed, idx) => (
+                {filterData.map((ed, idx) => (
                   <TableRow key={idx}>
                     <TableCell>{ed.product}</TableCell>
                     <TableCell>{ed.form}</TableCell>
