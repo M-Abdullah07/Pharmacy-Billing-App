@@ -1,11 +1,29 @@
 import { useState } from "react"
 import { Table, TableRow, TableHead, TableBody, TableCell, TableHeader } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Search } from "lucide-react"
 
+const expiry_data = [
+  {
+    product: "Panadol",
+    form: "Tablet",
+    quantity: "40",
+    retail: "30",
+    shelf: "4C",
+    expiry: "12-Mar-25",
+  },
+  {
+    product: "Dashboard",
+    form: "Tablet",
+    quantity: "120",
+    retail: "64",
+    shelf: "13B",
+    expiry: "12-Mar-25",
+  },
+]
+
 export default function ExpiryManagement() {
-  const [loading, setLoading] = useState(false)
+  const [loading, _] = useState(false)
 
   return (
     <>
@@ -35,14 +53,16 @@ export default function ExpiryManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell>xx</TableCell>
-                  <TableCell>xx</TableCell>
-                  <TableCell>xx</TableCell>
-                  <TableCell>xx</TableCell>
-                  <TableCell>xx</TableCell>
-                  <TableCell>xx</TableCell>
-                </TableRow>
+                {expiry_data.map((ed, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>{ed.product}</TableCell>
+                    <TableCell>{ed.form}</TableCell>
+                    <TableCell>{ed.quantity}</TableCell>
+                    <TableCell>{ed.retail}</TableCell>
+                    <TableCell>{ed.shelf}</TableCell>
+                    <TableCell>{ed.expiry}</TableCell>
+                  </TableRow>
+                ))}
                 <TableRow>
                   <TableCell colSpan="11">
                   </TableCell>
