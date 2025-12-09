@@ -31,7 +31,7 @@ module.exports = function registerIPCHandlers(db) {
                         // Insert batches for this purchase
                         if (purchaseData.batches && purchaseData.batches.length > 0) {
                             const batchStmt = db.prepare(`
-                INSERT INTO batches (medicine_id, batch_number, expiry_date, purchase_rate, sale_rate, quantity_available)
+                INSERT INTO batches (product_id, batch_number, expiry_date, purchase_rate, sale_rate, quantity_available)
                 VALUES (?, ?, ?, ?, ?, ?)
               `);
 
@@ -85,7 +85,7 @@ module.exports = function registerIPCHandlers(db) {
         return new Promise((resolve) => {
             db.all(`
         SELECT * FROM batches 
-        WHERE medicine_id = ? AND quantity_available > 0
+        WHERE product_id = ? AND quantity_available > 0
         ORDER BY expiry_date ASC
       `, [productId], (err, rows) => {
                 if (err) {
@@ -211,7 +211,7 @@ module.exports = function registerIPCHandlers(db) {
         SELECT si.*, p.name as product_name, b.batch_number
         FROM sale_items si
         LEFT JOIN batches b ON si.batch_id = b.id
-        LEFT JOIN products p ON b.medicine_id = p.id
+        LEFT JOIN products p ON b.product_id = p.id
         WHERE si.sale_id = ?
       `, [saleId], (err, rows) => {
                 if (err) {

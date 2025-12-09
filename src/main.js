@@ -13,87 +13,27 @@ function initializeDatabase() {
   });
 
   db.serialize(() => {
-    // Medicines
-    db.run(`CREATE TABLE IF NOT EXISTS medicines (
+    // Enable foreign keys
+    db.run("PRAGMA foreign_keys = ON");
+
+    // 1. USERS TABLE - Authentication
+    db.run(`CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      company TEXT,
-      category TEXT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // Batches
-    db.run(`CREATE TABLE IF NOT EXISTS batches (
+    // 2. AREAS TABLE - Geographic areas (lowercase for consistency)
+    db.run(`CREATE TABLE IF NOT EXISTS areas (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      medicine_id INTEGER NOT NULL,
-      batch_number TEXT NOT NULL,
-      expiry_date DATE NOT NULL,
-      purchase_rate REAL NOT NULL,
-      sale_rate REAL NOT NULL,
-      quantity_available INTEGER NOT NULL,
-      FOREIGN KEY (medicine_id) REFERENCES medicines(id)
+      name TEXT UNIQUE NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-
-
-    // Recreate customers table with foreign key to Area(id)
-    db.run(`
-    CREATE TABLE IF NOT EXISTS customers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      phone TEXT,
-      whatsapp TEXT,
-      last_sale_rate_per_medicine TEXT,
-      credit_amount REAL DEFAULT 0,
-      area_id INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (area_id) REFERENCES Area(id) ON DELETE SET NULL ON UPDATE CASCADE
-    )
-  `);
-
-    // Sales
-    db.run(`CREATE TABLE IF NOT EXISTS sales (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_id INTEGER,
-      total_amount REAL NOT NULL,
-      is_credit BOOLEAN DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME,
-      FOREIGN KEY (customer_id) REFERENCES customers(id)
-    )`);
-
-    // Sale Items
-    db.run(`CREATE TABLE IF NOT EXISTS sale_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sale_id INTEGER NOT NULL,
-      batch_id INTEGER NOT NULL,
-      quantity INTEGER NOT NULL,
-      rate REAL NOT NULL,
-      amount REAL NOT NULL,
-      FOREIGN KEY (sale_id) REFERENCES sales(id),
-      FOREIGN KEY (batch_id) REFERENCES batches(id)
-    )`);
-
-    // Credit Reminders
-    db.run(`CREATE TABLE IF NOT EXISTS credit_reminders (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_id INTEGER NOT NULL,
-      scheduled_date DATE NOT NULL,
-      status TEXT DEFAULT 'pending',
-      message TEXT,
-      FOREIGN KEY (customer_id) REFERENCES customers(id)
-    )`);
-
-    // Settings
-    db.run(`CREATE TABLE IF NOT EXISTS settings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      key TEXT UNIQUE,
-      value TEXT
-    )`);
-
-    // Create the new companies table
-    db.run(`
-    CREATE TABLE IF NOT EXISTS companies (
+    // 3. COMPANIES TABLE - Suppliers/Manufacturers
+    db.run(`CREATE TABLE IF NOT EXISTS companies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
       address TEXT,
@@ -101,92 +41,135 @@ function initializeDatabase() {
       ntn TEXT,
       contact_person TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL
     )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS Area (
+    // 4. CUSTOMERS TABLE - Customer database
+    db.run(`CREATE TABLE IF NOT EXISTS customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      phone TEXT,
+      whatsapp TEXT,
+      credit_amount REAL DEFAULT 0,
+      area_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL
+    )`);
+
+    // 5. PRODUCTS TABLE - Product catalog (no medicines table!)
+    db.run(`CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      form TEXT,
+      uom TEXT,
+      quantity_in_uom INTEGER DEFAULT 1,
+      is_addictive INTEGER DEFAULT 0 CHECK (is_addictive IN (0, 1)),
+      is_imported INTEGER DEFAULT 0 CHECK (is_imported IN (0, 1)),
+      retail_price REAL DEFAULT 0.0,
+      shelf_no TEXT,
+      hold_sale INTEGER DEFAULT 0 CHECK (hold_sale IN (0, 1)),
+      withheld_price REAL DEFAULT 0.0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    db.run(`Drop TABLE IF EXISTS medicines`);
+    // 6. BATCHES TABLE - Inventory batches (uses product_id, not medicine_id!)
+    db.run(`CREATE TABLE IF NOT EXISTS batches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      batch_number TEXT NOT NULL,
+      expiry_date DATE NOT NULL,
+      purchase_rate REAL NOT NULL,
+      sale_rate REAL NOT NULL,
+      quantity_available INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      UNIQUE(product_id, batch_number)
+    )`);
 
-    // PRODUCTS TABLE
-    db.run(`
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    form TEXT,
-    uom TEXT,
-    quantity_in_uom INTEGER DEFAULT 1,
-    is_addictive INTEGER DEFAULT 0 CHECK (is_addictive IN (0, 1)),
-    is_imported INTEGER DEFAULT 0 CHECK (is_imported IN (0, 1)),
-    retail_price REAL DEFAULT 0.0,
-    shelf_no TEXT,
-    hold_sale INTEGER DEFAULT 0 CHECK (hold_sale IN (0, 1)),
-    withheld_price REAL DEFAULT 0.0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+    // 7. PURCHASES TABLE - Purchase orders
+    db.run(`CREATE TABLE IF NOT EXISTS purchases (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      invoice_no TEXT NOT NULL,
+      po_date DATE,
+      status TEXT DEFAULT 'received',
+      total_amount REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE RESTRICT
+    )`);
 
-    // PURCHASES TABLE - Track batch purchases from companies
-    db.run(`
-      CREATE TABLE IF NOT EXISTS purchases (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        company_id INTEGER NOT NULL,
-        invoice_no TEXT NOT NULL,
-        po_date DATE,
-        status TEXT DEFAULT 'received',
-        total_amount REAL DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (company_id) REFERENCES companies(id)
-      )
-    `);
+    // 8. SALES TABLE - Sales transactions
+    db.run(`CREATE TABLE IF NOT EXISTS sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER,
+      total_amount REAL NOT NULL,
+      is_credit INTEGER DEFAULT 0 CHECK (is_credit IN (0, 1)),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
+    )`);
 
-    // SALESMEN TABLE
-    db.run(`
-      CREATE TABLE IF NOT EXISTS salesmen (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT,
-        cnic TEXT,
-        address TEXT,
-        commission_rate REAL DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // 9. SALE_ITEMS TABLE - Sale line items
+    db.run(`CREATE TABLE IF NOT EXISTS sale_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id INTEGER NOT NULL,
+      batch_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL,
+      rate REAL NOT NULL,
+      amount REAL NOT NULL,
+      FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
+      FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE RESTRICT
+    )`);
 
-    // EXPENSES TABLE
-    db.run(`
-      CREATE TABLE IF NOT EXISTS expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT NOT NULL,
-        amount REAL NOT NULL,
-        description TEXT,
-        expense_date DATE NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // 10. CREDIT_PAYMENTS TABLE - Credit payment records
+    db.run(`CREATE TABLE IF NOT EXISTS credit_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      payment_date DATE NOT NULL,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    )`);
 
-    // CREDIT PAYMENTS TABLE
-    db.run(`
-      CREATE TABLE IF NOT EXISTS credit_payments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        customer_id INTEGER NOT NULL,
-        amount REAL NOT NULL,
-        payment_date DATE NOT NULL,
-        notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
-      )
-    `);
+    // 11. EXPENSES TABLE - Business expenses
+    db.run(`CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      amount REAL NOT NULL,
+      description TEXT,
+      expense_date DATE NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
 
+    // 12. SALESMEN TABLE - Salesman records
+    db.run(`CREATE TABLE IF NOT EXISTS salesmen (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT,
+      cnic TEXT,
+      address TEXT,
+      commission_rate REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
 
+    // 13. SETTINGS TABLE - Application settings
+    db.run(`CREATE TABLE IF NOT EXISTS settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT UNIQUE NOT NULL,
+      value TEXT
+    )`);
+
+    // 14. CREDIT_REMINDERS TABLE - Payment reminders
+    db.run(`CREATE TABLE IF NOT EXISTS credit_reminders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER NOT NULL,
+      scheduled_date DATE NOT NULL,
+      status TEXT DEFAULT 'pending',
+      message TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    )`);
+
+    console.log("✅ All database tables created successfully.");
   });
 }
 
@@ -197,7 +180,7 @@ ipcMain.handle('add-purchase', async (event, purchaseData) => {
   return new Promise((resolve) => {
     db.serialize(() => {
       db.run('BEGIN TRANSACTION');
-      
+
       try {
         db.run(`
           INSERT INTO purchases (company_id, invoice_no, po_date, status, total_amount)
@@ -208,17 +191,17 @@ ipcMain.handle('add-purchase', async (event, purchaseData) => {
           purchaseData.po_date || null,
           purchaseData.status || 'received',
           purchaseData.total_amount || 0
-        ], function(err) {
+        ], function (err) {
           if (err) throw err;
-          
+
           const purchaseId = this.lastID;
-          
+
           if (purchaseData.batches && purchaseData.batches.length > 0) {
             const batchStmt = db.prepare(`
-              INSERT INTO batches (medicine_id, batch_number, expiry_date, purchase_rate, sale_rate, quantity_available)
+              INSERT INTO batches (product_id, batch_number, expiry_date, purchase_rate, sale_rate, quantity_available)
               VALUES (?, ?, ?, ?, ?, ?)
             `);
-            
+
             purchaseData.batches.forEach(batch => {
               batchStmt.run(
                 batch.product_id,
@@ -229,10 +212,10 @@ ipcMain.handle('add-purchase', async (event, purchaseData) => {
                 batch.quantity
               );
             });
-            
+
             batchStmt.finalize();
           }
-          
+
           db.run('COMMIT');
           resolve({ success: true, purchaseId });
         });
@@ -269,7 +252,7 @@ ipcMain.handle('get-batches-by-product', async (event, productId) => {
   return new Promise((resolve) => {
     db.all(`
       SELECT * FROM batches 
-      WHERE medicine_id = ? AND quantity_available > 0
+      WHERE product_id = ? AND quantity_available > 0
       ORDER BY expiry_date ASC
     `, [productId], (err, rows) => {
       if (err) {
@@ -289,7 +272,7 @@ ipcMain.handle('add-sale-transaction', async (event, saleData) => {
   return new Promise((resolve) => {
     db.serialize(() => {
       db.run('BEGIN TRANSACTION');
-      
+
       try {
         db.run(`
           INSERT INTO sales (customer_id, total_amount, is_credit, created_at)
@@ -298,27 +281,27 @@ ipcMain.handle('add-sale-transaction', async (event, saleData) => {
           saleData.customer_id,
           saleData.total_amount,
           saleData.is_credit ? 1 : 0
-        ], function(err) {
+        ], function (err) {
           if (err) throw err;
-          
+
           const saleId = this.lastID;
-          
+
           const saleItemStmt = db.prepare(`
             INSERT INTO sale_items (sale_id, batch_id, quantity, rate, amount)
             VALUES (?, ?, ?, ?, ?)
           `);
-          
+
           saleData.items.forEach(item => {
             saleItemStmt.run(saleId, item.batch_id, item.quantity, item.rate, item.amount);
-            
+
             db.run(`
               UPDATE batches SET quantity_available = quantity_available - ?
               WHERE id = ?
             `, [item.quantity, item.batch_id]);
           });
-          
+
           saleItemStmt.finalize();
-          
+
           if (saleData.is_credit) {
             db.run(`
               UPDATE customers 
@@ -326,7 +309,7 @@ ipcMain.handle('add-sale-transaction', async (event, saleData) => {
               WHERE id = ?
             `, [saleData.total_amount, saleData.customer_id]);
           }
-          
+
           db.run('COMMIT');
           resolve({ success: true, saleId });
         });
@@ -348,31 +331,31 @@ ipcMain.handle('get-sales', async (event, filters = {}) => {
       LEFT JOIN customers c ON s.customer_id = c.id
       WHERE 1=1
     `;
-    
+
     const params = [];
-    
+
     if (filters.start_date) {
       query += ` AND DATE(s.created_at) >= ?`;
       params.push(filters.start_date);
     }
-    
+
     if (filters.end_date) {
       query += ` AND DATE(s.created_at) <= ?`;
       params.push(filters.end_date);
     }
-    
+
     if (filters.customer_id) {
       query += ` AND s.customer_id = ?`;
       params.push(filters.customer_id);
     }
-    
+
     if (filters.is_credit !== undefined) {
       query += ` AND s.is_credit = ?`;
       params.push(filters.is_credit ? 1 : 0);
     }
-    
+
     query += ` ORDER BY s.created_at DESC`;
-    
+
     db.all(query, params, (err, rows) => {
       if (err) {
         console.error('Error fetching sales:', err);
@@ -391,7 +374,7 @@ ipcMain.handle('get-sale-details', async (event, saleId) => {
       SELECT si.*, p.name as product_name, b.batch_number
       FROM sale_items si
       LEFT JOIN batches b ON si.batch_id = b.id
-      LEFT JOIN products p ON b.medicine_id = p.id
+      LEFT JOIN products p ON b.product_id = p.id
       WHERE si.sale_id = ?
     `, [saleId], (err, rows) => {
       if (err) {
@@ -411,7 +394,7 @@ ipcMain.handle('add-credit-payment', async (event, paymentData) => {
   return new Promise((resolve) => {
     db.serialize(() => {
       db.run('BEGIN TRANSACTION');
-      
+
       try {
         db.run(`
           INSERT INTO credit_payments (customer_id, amount, payment_date, notes)
@@ -421,15 +404,15 @@ ipcMain.handle('add-credit-payment', async (event, paymentData) => {
           paymentData.amount,
           paymentData.payment_date,
           paymentData.notes || ''
-        ], function(err) {
+        ], function (err) {
           if (err) throw err;
-          
+
           db.run(`
             UPDATE customers 
             SET credit_amount = credit_amount - ?
             WHERE id = ?
           `, [paymentData.amount, paymentData.customer_id]);
-          
+
           db.run('COMMIT');
           resolve({ success: true });
         });
@@ -451,9 +434,9 @@ ipcMain.handle('get-credit-payments', async (event, customerId) => {
          FROM credit_payments cp
          LEFT JOIN customers c ON cp.customer_id = c.id
          ORDER BY cp.payment_date DESC`;
-    
+
     const params = customerId ? [customerId] : [];
-    
+
     db.all(query, params, (err, rows) => {
       if (err) {
         console.error('Error fetching payments:', err);
@@ -498,7 +481,7 @@ ipcMain.handle('add-expense', async (event, expenseData) => {
       expenseData.amount,
       expenseData.description || '',
       expenseData.expense_date
-    ], function(err) {
+    ], function (err) {
       if (err) {
         console.error('Error adding expense:', err);
         resolve({ success: false, error: err.message });
@@ -514,24 +497,24 @@ ipcMain.handle('get-expenses', async (event, filters = {}) => {
   return new Promise((resolve) => {
     let query = `SELECT * FROM expenses WHERE 1=1`;
     const params = [];
-    
+
     if (filters.start_date) {
       query += ` AND expense_date >= ?`;
       params.push(filters.start_date);
     }
-    
+
     if (filters.end_date) {
       query += ` AND expense_date <= ?`;
       params.push(filters.end_date);
     }
-    
+
     if (filters.category) {
       query += ` AND category = ?`;
       params.push(filters.category);
     }
-    
+
     query += ` ORDER BY expense_date DESC`;
-    
+
     db.all(query, params, (err, rows) => {
       if (err) {
         console.error('Error fetching expenses:', err);
@@ -571,7 +554,7 @@ ipcMain.handle('add-salesman', async (event, salesmanData) => {
       salesmanData.cnic || '',
       salesmanData.address || '',
       salesmanData.commission_rate || 0
-    ], function(err) {
+    ], function (err) {
       if (err) {
         console.error('Error adding salesman:', err);
         resolve({ success: false, error: err.message });
@@ -581,6 +564,86 @@ ipcMain.handle('add-salesman', async (event, salesmanData) => {
     });
   });
 });
+
+// Update salesman
+ipcMain.handle('update-salesman', async (event, id, salesmanData) => {
+  return new Promise((resolve) => {
+    db.run(`
+      UPDATE salesmen 
+      SET name = ?, phone = ?, cnic = ?, address = ?, commission_rate = ?
+      WHERE id = ?
+    `, [
+      salesmanData.name,
+      salesmanData.phone || '',
+      salesmanData.cnic || '',
+      salesmanData.address || '',
+      salesmanData.commission_rate || 0,
+      id
+    ], function (err) {
+      if (err) {
+        console.error('Error updating salesman:', err);
+        resolve({ success: false, error: err.message });
+      } else {
+        resolve({ success: true, changes: this.changes });
+      }
+    });
+  });
+});
+
+// Delete salesman
+ipcMain.handle('delete-salesman', async (event, id) => {
+  return new Promise((resolve) => {
+    db.run('DELETE FROM salesmen WHERE id = ?', [id], function (err) {
+      if (err) {
+        console.error('Error deleting salesman:', err);
+        resolve({ success: false, error: err.message });
+      } else {
+        resolve({ success: true, changes: this.changes });
+      }
+    });
+  });
+});
+
+// ==================== EXPENSE HANDLERS ====================
+
+// Update expense
+ipcMain.handle('update-expense', async (event, id, expenseData) => {
+  return new Promise((resolve) => {
+    db.run(`
+      UPDATE expenses 
+      SET category = ?, amount = ?, description = ?, expense_date = ?
+      WHERE id = ?
+    `, [
+      expenseData.category,
+      expenseData.amount,
+      expenseData.description || '',
+      expenseData.expense_date,
+      id
+    ], function (err) {
+      if (err) {
+        console.error('Error updating expense:', err);
+        resolve({ success: false, error: err.message });
+      } else {
+        resolve({ success: true, changes: this.changes });
+      }
+    });
+  });
+});
+
+// Delete expense
+ipcMain.handle('delete-expense', async (event, id) => {
+  return new Promise((resolve) => {
+    db.run('DELETE FROM expenses WHERE id = ?', [id], function (err) {
+      if (err) {
+        console.error('Error deleting expense:', err);
+        resolve({ success: false, error: err.message });
+      } else {
+        resolve({ success: true, changes: this.changes });
+      }
+    });
+  });
+});
+
 
 // ==================== REPORTS & ANALYTICS ====================
 
@@ -596,19 +659,19 @@ ipcMain.handle('get-sales-summary', async (event, filters = {}) => {
       FROM sales
       WHERE 1=1
     `;
-    
+
     const params = [];
-    
+
     if (filters.start_date) {
       query += ` AND DATE(created_at) >= ?`;
       params.push(filters.start_date);
     }
-    
+
     if (filters.end_date) {
       query += ` AND DATE(created_at) <= ?`;
       params.push(filters.end_date);
     }
-    
+
     db.get(query, params, (err, row) => {
       if (err) {
         console.error('Error fetching sales summary:', err);
@@ -631,21 +694,21 @@ ipcMain.handle('get-daily-sales', async (event, filters = {}) => {
       FROM sales
       WHERE 1=1
     `;
-    
+
     const params = [];
-    
+
     if (filters.start_date) {
       query += ` AND DATE(created_at) >= ?`;
       params.push(filters.start_date);
     }
-    
+
     if (filters.end_date) {
       query += ` AND DATE(created_at) <= ?`;
       params.push(filters.end_date);
     }
-    
+
     query += ` GROUP BY DATE(created_at) ORDER BY date ASC`;
-    
+
     db.all(query, params, (err, rows) => {
       if (err) {
         console.error('Error fetching daily sales:', err);
@@ -668,7 +731,7 @@ ipcMain.handle('backup-database', async () => {
         defaultPath: `pharmacy-backup-${new Date().toISOString().split('T')[0]}.db`,
         filters: [{ name: 'Database', extensions: ['db'] }]
       });
-      
+
       if (!result.canceled && result.filePath) {
         fs.copyFileSync('pharmacy.db', result.filePath);
         resolve({ success: true, path: result.filePath });
@@ -692,24 +755,24 @@ ipcMain.handle('export-to-csv', async (event, { table, filename }) => {
           else res(rows);
         });
       });
-      
+
       if (rows.length === 0) {
         resolve({ success: false, error: 'No data to export' });
         return;
       }
-      
+
       const headers = Object.keys(rows[0]).join(',');
-      const csvRows = rows.map(row => 
+      const csvRows = rows.map(row =>
         Object.values(row).map(val => `"${val}"`).join(',')
       );
       const csv = [headers, ...csvRows].join('\n');
-      
+
       const result = await dialog.showSaveDialog({
         title: 'Export to CSV',
         defaultPath: filename || `${table}-export.csv`,
         filters: [{ name: 'CSV', extensions: ['csv'] }]
       });
-      
+
       if (!result.canceled && result.filePath) {
         fs.writeFileSync(result.filePath, csv);
         resolve({ success: true, path: result.filePath });
@@ -774,7 +837,7 @@ ipcMain.handle("add-batch", async (event, batch) => {
   try {
     const { medicineId, batch_no, purchase_rate, quantity, expiry_date } = batch;
     const result = await runSql(
-      `INSERT INTO batches (medicine_id, batch_number, purchase_rate, quantity_available, expiry_date)
+      `INSERT INTO batches (product_id, batch_number, purchase_rate, quantity_available, expiry_date)
        VALUES (?, ?, ?, ?, ?)`,
       [medicineId, batch_no, purchase_rate, quantity, expiry_date]
     );
@@ -803,7 +866,7 @@ ipcMain.handle('login-user', (event, username, password) => {
 // IPC handler to insert new area
 ipcMain.handle('add-area', async (event, areaName) => {
   return new Promise((resolve) => {
-    db.run('INSERT INTO Area (name) VALUES (?)', [areaName], function (err) {
+    db.run('INSERT INTO areas (name) VALUES (?)', [areaName], function (err) {
       if (err) {
         resolve({ success: false, error: err.message });
       } else {
@@ -816,7 +879,7 @@ ipcMain.handle('add-area', async (event, areaName) => {
 // Get all areas (for the dropdown)
 ipcMain.handle('get-areas', async () => {
   return new Promise((resolve) => {
-    db.all(`SELECT id, name FROM Area ORDER BY name`, (err, rows) => {
+    db.all(`SELECT id, name FROM areas ORDER BY name`, (err, rows) => {
       if (err) resolve([]);
       else resolve(rows);
     });
@@ -827,9 +890,9 @@ ipcMain.handle('get-areas', async () => {
 ipcMain.handle('get-customers', async () => {
   return new Promise((resolve) => {
     db.all(`
-      SELECT customers.*, Area.name as area_name
+      SELECT customers.*, areas.name as area_name
       FROM customers
-      LEFT JOIN Area ON customers.area_id = Area.id
+      LEFT JOIN areas ON customers.area_id = areas.id
       ORDER BY customers.created_at DESC
     `, (err, rows) => {
       if (err) resolve([]);

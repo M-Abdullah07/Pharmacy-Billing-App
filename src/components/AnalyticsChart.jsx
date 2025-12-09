@@ -1,57 +1,108 @@
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
-import { ChartContainer, ChartTooltipContent, ChartTooltip, ChartLegendContent, ChartLegend } from "@/components/ui/chart"
-
-const chartData = [
-  { month: "January", antibiotics: 120, painkillers: 90 },
-  { month: "February", antibiotics: 160, painkillers: 130 },
-  { month: "March", antibiotics: 140, painkillers: 100 },
-  { month: "April", antibiotics: 110, painkillers: 150 },
-  { month: "May", antibiotics: 180, painkillers: 120 },
-  { month: "June", antibiotics: 170, painkillers: 140 },
-];
+import React, { useState, useEffect } from "react";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltipContent, ChartTooltip, ChartLegendContent, ChartLegend } from "@/components/ui/chart";
 
 const chartConfig = {
-  antibiotics: {
-    label: "Antibiotics",
+  sales: {
+    label: "Sales",
     color: "#2563eb",
   },
-  painkillers: {
-    label: "Painkillers",
-    color: "#60a5fa",
+  expenses: {
+    label: "Expenses",
+    color: "#dc2626",
   },
 };
 
-
 export default function AnalyticsChart() {
+  const [chartData, setChartData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadChartData();
+  }, []);
+
+  const loadChartData = async () => {
+    try {
+      setIsLoading(true);
+      const api = window.electronAPI;
+
+      // Get last 7 days of sales and expenses
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Get sales for this day
+        const salesResult = await api.queryDb(
+          'SELECT SUM(total_amount) as total FROM sales WHERE DATE(created_at) = ?',
+          [dateStr]
+        );
+        const sales = salesResult?.[0]?.total || 0;
+
+        // Get expenses for this day
+        const expensesResult = await api.queryDb(
+          'SELECT SUM(amount) as total FROM expenses WHERE DATE(expense_date) = ?',
+          [dateStr]
+        );
+        const expenses = expensesResult?.[0]?.total || 0;
+
+        last7Days.push({
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          sales: parseFloat(sales),
+          expenses: parseFloat(expenses)
+        });
+      }
+
+      setChartData(last7Days);
+    } catch (error) {
+      console.error('Error loading chart data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center pb-24">
+        <div className="w-full max-w-4xl p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-sm">
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground">Loading chart data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center pb-24">
       <div className="w-full max-w-4xl p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-sm">
-        <ChartContainer config={chartConfig} className="min-h-[150px] w-full">
-          <LineChart data={chartData} width={500} height={200}>
+        <h3 className="text-xl font-bold mb-4">Sales vs Expenses (Last 7 Days)</h3>
+        <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+          <LineChart data={chartData} width={500} height={300}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis
-              dataKey="month"
+              dataKey="date"
               tickLine={false}
               tickMargin={10}
               axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
             />
             <YAxis />
             <ChartTooltip content={<ChartTooltipContent />} />
             <ChartLegend content={<ChartLegendContent />} />
             <Line
-              type="linear"
-              dataKey="antibiotics"
-              stroke="var(--color-antibiotics)"
+              type="monotone"
+              dataKey="sales"
+              stroke="var(--color-sales)"
               strokeWidth={2}
-              dot={{ r: 3 }}
+              dot={{ r: 4 }}
             />
             <Line
-              type="linear"
-              dataKey="painkillers"
-              stroke="var(--color-painkillers)"
+              type="monotone"
+              dataKey="expenses"
+              stroke="var(--color-expenses)"
               strokeWidth={2}
-              dot={{ r: 3 }}
+              dot={{ r: 4 }}
             />
           </LineChart>
         </ChartContainer>

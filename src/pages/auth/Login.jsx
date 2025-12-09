@@ -1,8 +1,21 @@
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, RectangleEllipsis } from "lucide-react";
-import "@/index.css"
+import "@/index.css";
+import Signup from "./Signup";
 
-const Login = ({ onLogin, setSignup }) => {
+const Login = ({ onLogin }) => {
+  const [isSignupMode, setIsSignupMode] = useState(false);
+
+  // If in signup mode, render Signup component
+  if (isSignupMode) {
+    return <Signup setSignup={setIsSignupMode} />;
+  }
+
+  // Otherwise render Login component
+  return <LoginForm onLogin={onLogin} setSignup={setIsSignupMode} />;
+};
+
+const LoginForm = ({ onLogin, setSignup }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");

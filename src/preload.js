@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   queryDb: (query, params) => ipcRenderer.invoke('query-db', query, params),
+  runDb: (query, params) => ipcRenderer.invoke('run-db', query, params),
   insertSale: (saleData) => ipcRenderer.invoke('insert-sale', saleData),
   loginUser: (username, password) => ipcRenderer.invoke('login-user', username, password),
   addArea: (areaName) => ipcRenderer.invoke('add-area', areaName),
@@ -19,3 +20,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 });
 
+// Expose window.electron for ipcRenderer.invoke() pattern used in many pages
+contextBridge.exposeInMainWorld('electron', {
+  ipcRenderer: {
+    invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args)
+  }
+});

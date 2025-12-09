@@ -13,12 +13,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 export default function AddSale() {
   // Core data states
   const [customers, setCustomers] = useState([]);
-  const [medicines, setMedicines] = useState([]);
+  const [products, setProducts] = useState([]);
   const [batches, setBatches] = useState([]);
 
   // Selected values
   const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedMedicine, setSelectedMedicine] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedBatch, setSelectedBatch] = useState("");
 
   // Sale item inputs
@@ -40,8 +40,8 @@ export default function AddSale() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
 
-  const [showAddMedicine, setShowAddMedicine] = useState(false);
-  const [newMedicine, setNewMedicine] = useState({ name: "", type: "" });
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: "", type: "" });
 
   const [showAddBatch, setShowAddBatch] = useState(false);
   const [newBatch, setNewBatch] = useState({
@@ -67,14 +67,14 @@ export default function AddSale() {
     }
   };
 
-  // Fetch medicines from DB
-  const refreshMedicines = async () => {
+  // Fetch products from DB
+  const refreshProducts = async () => {
     try {
-      const result = await api.queryDb("SELECT id, name FROM medicines");
-      setMedicines(result || []);
+      const result = await api.queryDb("SELECT id, name FROM products");
+      setProducts(result || []);
     } catch (error) {
-      console.error('Error fetching medicines:', error);
-      setErrors(prev => ({ ...prev, medicines: 'Failed to load medicines' }));
+      console.error('Error fetching products:', error);
+      setErrors(prev => ({ ...prev, products: 'Failed to load products' }));
     }
   };
 
@@ -82,7 +82,7 @@ export default function AddSale() {
   const refreshBatches = async (medicineId) => {
     try {
       const result = await api.queryDb(
-        "SELECT * FROM batches WHERE medicine_id = ? AND quantity_available > 0", [medicineId]
+        "SELECT * FROM batches WHERE product_id = ? AND quantity_available > 0", [medicineId]
       );
       setBatches(result || []);
     } catch (error) {
@@ -91,22 +91,22 @@ export default function AddSale() {
     }
   };
 
-  // Initial load of customers and medicines
+  // Initial load of customers and products
   useEffect(() => {
     refreshCustomers();
-    refreshMedicines();
+    refreshProducts();
   }, []);
 
-  // Load batches when medicine changes
+  // Load batches when product changes
   useEffect(() => {
-    if (selectedMedicine) {
-      refreshBatches(selectedMedicine);
+    if (selectedProduct) {
+      refreshBatches(selectedProduct);
       setSelectedBatch("");
     } else {
       setBatches([]);
       setSelectedBatch("");
     }
-  }, [selectedMedicine]);
+  }, [selectedProduct]);
 
   // Auto fill sale rate on batch change
   useEffect(() => {
@@ -146,25 +146,25 @@ export default function AddSale() {
     }
   };
 
-  // Handlers for adding new Medicine
-  const handleAddMedicine = async () => {
-    if (!newMedicine.name.trim()) {
-      alert("Medicine name is required");
+  // Handlers for adding new Product
+  const handleAddProduct = async () => {
+    if (!newProduct.name.trim()) {
+      alert("Product name is required");
       return;
     }
     try {
       setIsLoading(true);
       const result = await window.electron.ipcRenderer.invoke("add-medicine", {
-        name: newMedicine.name.trim(),
-        type: newMedicine.type.trim()
+        name: newProduct.name.trim(),
+        type: newProduct.type.trim()
       });
       if (result.success) {
-        await refreshMedicines();
-        setSelectedMedicine(result.medicineId.toString());
-        setShowAddMedicine(false);
-        setNewMedicine({ name: "", type: "" });
+        await refreshProducts();
+        setSelectedProduct(result.medicineId.toString());
+        setShowAddProduct(false);
+        setNewProduct({ name: "", type: "" });
       } else {
-        alert("Failed to add medicine: " + (result.error || "Unknown Error"));
+        alert("Failed to add product: " + (result.error || "Unknown Error"));
       }
     } catch (err) {
       alert("Error: " + err.message);
@@ -180,21 +180,21 @@ export default function AddSale() {
       alert("Please fill all batch fields");
       return;
     }
-    if (!selectedMedicine) {
-      alert("Please select a medicine first");
+    if (!selectedProduct) {
+      alert("Please select a product first");
       return;
     }
     try {
       setIsLoading(true);
       const result = await window.electron.ipcRenderer.invoke("add-batch", {
-        medicineId: selectedMedicine,
+        medicineId: selectedProduct,
         batch_no: batch_no.trim(),
         purchase_rate: parseFloat(purchase_rate),
         quantity: parseInt(quantity, 10),
         expiry_date: expiry
       });
       if (result.success) {
-        await refreshBatches(selectedMedicine);
+        await refreshBatches(selectedProduct);
         setSelectedBatch(result.batchId.toString());
         setShowAddBatch(false);
         setNewBatch({ batch_no: "", purchase_rate: "", quantity: "", expiry: "" });
@@ -215,9 +215,9 @@ export default function AddSale() {
       return;
     }
     const batch = batches.find(b => b.id === parseInt(selectedBatch));
-    const medicine = medicines.find(m => m.id === parseInt(selectedMedicine));
+    const product = products.find(m => m.id === parseInt(selectedProduct));
 
-    if (!batch || !medicine) {
+    if (!batch || !product) {
       alert("Invalid selection");
       return;
     }
@@ -239,7 +239,7 @@ export default function AddSale() {
       ...prev,
       {
         batchId: batch.id,
-        medicineName: medicine.name,
+        productName: product.name,
         batchNumber: batch.batch_number,
         quantity: parseInt(quantity),
         saleRate: parseFloat(saleRate),
@@ -252,7 +252,7 @@ export default function AddSale() {
     setQuantity(1);
     setSaleRate("");
     setSelectedBatch("");
-    setSelectedMedicine("");
+    setSelectedProduct("");
   };
 
   const handleRemoveItem = (index) => {
@@ -284,7 +284,7 @@ export default function AddSale() {
         setSaleItems([]);
         setSelectedCustomer("");
         setIsCredit(false);
-        setSelectedMedicine("");
+        setSelectedProduct("");
         setSelectedBatch("");
         setQuantity(1);
         setSaleRate("");
@@ -301,15 +301,15 @@ export default function AddSale() {
   const grandTotal = saleItems.reduce((sum, item) => sum + item.totalAmount, 0);
 
   return (
-    <div className="grid grid-cols-1">
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Add Sale</h1>
 
       {isLoading && <p>Loading...</p>}
 
       {/* Customer select */}
-      {/* Customer select */}
       <Label className="mb-2">Customers:</Label>
       <div className="flex flex-row items-center gap-2 mb-4">
-        <Select>
+        <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
           <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="Select Customer" />
           </SelectTrigger>
@@ -317,7 +317,7 @@ export default function AddSale() {
             <SelectGroup>
               <SelectLabel>Customers</SelectLabel>
               {customers.map(c => (
-                <SelectItem key={c.id} value={c.id}>
+                <SelectItem key={c.id} value={c.id.toString()}>
                   {c.name}
                 </SelectItem>
               ))}
@@ -367,54 +367,53 @@ export default function AddSale() {
         </DialogContent>
       </Dialog>
 
-      {/* Medicine select */}
-      <Label className="mb-2">Medicine:</Label>
+      <Label className="mb-2">Product:</Label>
       <div className="flex flex-row items-center gap-2 mb-4">
-        <Select>
+        <Select value={selectedProduct} onValueChange={setSelectedProduct}>
           <SelectTrigger className="w-[240px]">
-            <SelectValue placeholder="Select Medicine" />
+            <SelectValue placeholder="Select Product" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Medicines</SelectLabel>
-              {medicines.map(m => (
-                <SelectItem key={m.id} value={m.id}>
+              <SelectLabel>Products</SelectLabel>
+              {products.map(m => (
+                <SelectItem key={m.id} value={m.id.toString()}>
                   {m.name}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Button variant="link" size="sm" onClick={() => setShowAddMedicine(true)}>+ Add Medicine</Button>
+        <Button variant="link" size="sm" onClick={() => setShowAddProduct(true)}>+ Add Product</Button>
       </div>
-      <Dialog open={showAddMedicine} onOpenChange={setShowAddMedicine}>
+      <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Medicine</DialogTitle>
+            <DialogTitle>Add New Product</DialogTitle>
             <DialogDescription>
-              Fill in the details and click save to add a new Medicine.
+              Fill in the details and click save to add a new Product.
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 mt-4">
-            <Label>Medicine Info:</Label>
+            <Label>Product Info:</Label>
             <Input
               type="text"
               placeholder="Name"
-              value={newMedicine.name}
-              onChange={(e) => setNewMedicine({ ...newMedicine, name: e.target.value })}
+              value={newProduct.name}
+              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
             />
             <Input
               type="text"
               placeholder="Type"
-              value={newMedicine.type}
-              onChange={(e) => setNewMedicine({ ...newMedicine, type: e.target.value })}
+              value={newProduct.type}
+              onChange={(e) => setNewProduct({ ...newProduct, type: e.target.value })}
             />
           </div>
 
           <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={handleAddCustomer}>Save</Button>
-            <Button variant="outline" onClick={() => setShowAddMedicine(false)}>
+            <Button onClick={handleAddProduct}>Save</Button>
+            <Button variant="outline" onClick={() => setShowAddProduct(false)}>
               Cancel
             </Button>
           </div>
@@ -424,7 +423,7 @@ export default function AddSale() {
       {/* Batch select */}
       <Label className="mb-2">Batch:</Label>
       <div className="flex flex-row items-center gap-2 mb-4">
-        <Select>
+        <Select value={selectedBatch} onValueChange={setSelectedBatch}>
           <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="Select Batch" />
           </SelectTrigger>
@@ -432,8 +431,8 @@ export default function AddSale() {
             <SelectGroup>
               <SelectLabel>Batches</SelectLabel>
               {batches.map(b => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
+                <SelectItem key={b.id} value={b.id.toString()}>
+                  Batch #{b.batch_number} - Exp: {b.expiry_date}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -542,7 +541,7 @@ export default function AddSale() {
       <Table className="mt-4">
         <TableHeader>
           <TableRow>
-            <TableHead>Medicine</TableHead>
+            <TableHead>Product</TableHead>
             <TableHead>Batch</TableHead>
             <TableHead>Qty</TableHead>
             <TableHead>Rate</TableHead>
@@ -557,7 +556,7 @@ export default function AddSale() {
           )}
           {saleItems.map((item, index) => (
             <TableRow key={index}>
-              <TableCell>{item.medicineName}</TableCell>
+              <TableCell>{item.productName}</TableCell>
               <TableCell>{item.batchNumber}</TableCell>
               <TableCell>{item.quantity}</TableCell>
               <TableCell>₹{item.saleRate.toFixed(2)}</TableCell>
@@ -580,7 +579,7 @@ export default function AddSale() {
       {/* Credit sale */}
       <div className="flex items-center justify-between mt-8 border-t pt-4">
         <div className="flex items-center gap-2">
-          <Checkbox id="credit" />
+          <Checkbox id="credit" checked={isCredit} onCheckedChange={setIsCredit} />
           <Label htmlFor="credit">Credit Sale</Label>
         </div>
         <Button onClick={handleSubmitSale} disabled={saleItems.length === 0 || !selectedCustomer}> Submit Sale </Button>
