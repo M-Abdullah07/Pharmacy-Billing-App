@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -19,16 +19,18 @@ import {
   SelectItem,
   SelectValue
 } from '@/components/ui/select';
-import { Trash2, Plus } from 'lucide-react';
-
-const cn = (...classes) => classes.filter(Boolean).join(' ');
+import { Trash2, Plus, Package } from 'lucide-react';
+import { PageContainer, PageSection, MessageAlert, LoadingState } from '@/components/PageLayout';
 
 export default function AddBatch() {
+  const [companies, setCompanies] = useState([]);
+  const [productsList, setProductsList] = useState([]);
+
   const [purchaseInfo, setPurchaseInfo] = useState({
     company: '',
     invoiceNo: '',
     poDate: '',
-    status: '',
+    status: 'received',
   });
 
   const [products, setProducts] = useState([
@@ -36,6 +38,32 @@ export default function AddBatch() {
   ]);
 
   const [message, setMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadCompanies();
+    loadProducts();
+  }, []);
+
+  const loadCompanies = async () => {
+    try {
+      const result = await window.electronAPI.queryDb('SELECT * FROM companies ORDER BY name');
+      setCompanies(result || []);
+    } catch (error) {
+      console.error('Error loading companies:', error);
+      setMessage({ type: 'error', text: 'Failed to load companies' });
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      const result = await window.electronAPI.queryDb('SELECT * FROM products ORDER BY name');
+      setProductsList(result || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      setMessage({ type: 'error', text: 'Failed to load products' });
+    }
+  };
 
   const handlePurchaseChange = (e) => {
     const { name, value } = e.target;
@@ -62,64 +90,108 @@ export default function AddBatch() {
     setProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setMessage(null);
-    const { company, invoiceNo } = purchaseInfo;
+    const { company, invoiceNo, poDate, status } = purchaseInfo;
+
     if (!company || !invoiceNo) {
       return setMessage({ type: 'error', text: 'Company and Invoice Number are required.' });
     }
 
-    const validProducts = products.filter((p) => p.product);
+    const validProducts = products.filter((p) => p.product && p.batchNo && p.quantity && p.invoiceRate && p.saleRate && p.expDate);
     if (validProducts.length === 0) {
-      return setMessage({ type: 'error', text: 'Add at least one product.' });
+      return setMessage({ type: 'error', text: 'Add at least one complete product with all fields filled.' });
     }
 
-    console.log('Purchase Info:', purchaseInfo);
-    console.log('Products:', validProducts);
-    setMessage({ type: 'success', text: 'Batch saved successfully!' });
+    const totalAmount = validProducts.reduce((sum, p) => sum + (parseFloat(p.invoiceRate) * parseInt(p.quantity)), 0);
+
+    const batches = validProducts.map(p => ({
+      product_id: parseInt(p.product),
+      batch_no: p.batchNo,
+      purchase_rate: parseFloat(p.invoiceRate),
+      sale_rate: parseFloat(p.saleRate),
+      quantity: parseInt(p.quantity),
+      expiry_date: p.expDate
+    }));
+
+    try {
+      setIsLoading(true);
+      const result = await window.electron.ipcRenderer.invoke('add-purchase', {
+        company_id: parseInt(company),
+        invoice_no: invoiceNo,
+        po_date: poDate || null,
+        status: status || 'received',
+        total_amount: totalAmount,
+        batches
+      });
+
+      if (result.success) {
+        setMessage({ type: 'success', text: `Batch saved successfully! Purchase ID: ${result.purchaseId}` });
+        setPurchaseInfo({ company: '', invoiceNo: '', poDate: '', status: 'received' });
+        setProducts([{ product: '', batchNo: '', invoiceRate: '', saleRate: '', quantity: '', expDate: '' }]);
+      } else {
+        setMessage({ type: 'error', text: 'Failed to save batch: ' + (result.error || 'Unknown error') });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error: ' + error.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen rounded-lg shadow-lg space-y-6">
-      <h2 className="text-3xl font-bold border-b pb-4 text-gray-800">Add New Batch</h2>
+  if (isLoading && !companies.length && !productsList.length) {
+    return (
+      <PageContainer title="Add New Batch">
+        <LoadingState message="Loading companies and products..." />
+      </PageContainer>
+    );
+  }
 
+  return (
+    <PageContainer
+      title="Add New Batch"
+      description="Create a new purchase order with product batches"
+      actions={
+        <Button onClick={handleSubmit} disabled={isLoading}>
+          {isLoading ? 'Saving...' : 'Save Batch'}
+        </Button>
+      }
+    >
       {message && (
-        <div className={cn(
-          "p-3 rounded-md text-sm font-medium",
-          message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-        )}>
-          {message.text}
-        </div>
+        <MessageAlert
+          type={message.type}
+          message={message.text}
+          onDismiss={() => setMessage(null)}
+        />
       )}
 
-      {/* Purchase Info */}
-      <div className="bg-white p-6 rounded-lg shadow space-y-4">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">Purchase Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Company */}
-          <div>
-            <Label htmlFor="company">Company</Label>
+      {/* Purchase Details */}
+      <PageSection title="Purchase Details" description="Enter supplier and invoice information">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="company">Company *</Label>
             <Select
               value={purchaseInfo.company}
               onValueChange={(value) => handlePurchaseSelectChange('company', value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger>
                 <SelectValue placeholder="Select Company" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Companies</SelectLabel>
-                  <SelectItem value="pharma-a">Pharma A</SelectItem>
-                  <SelectItem value="pharma-b">Pharma B</SelectItem>
-                  <SelectItem value="pharma-c">Pharma C</SelectItem>
+                  {companies.map(company => (
+                    <SelectItem key={company.id} value={company.id.toString()}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Invoice No */}
-          <div>
-            <Label htmlFor="invoiceNo">Invoice Number</Label>
+          <div className="space-y-2">
+            <Label htmlFor="invoiceNo">Invoice Number *</Label>
             <Input
               id="invoiceNo"
               name="invoiceNo"
@@ -129,8 +201,7 @@ export default function AddBatch() {
             />
           </div>
 
-          {/* PO Date */}
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="poDate">PO Date</Label>
             <Input
               id="poDate"
@@ -141,14 +212,13 @@ export default function AddBatch() {
             />
           </div>
 
-          {/* Status */}
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select
               value={purchaseInfo.status}
               onValueChange={(value) => handlePurchaseSelectChange('status', value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger>
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
@@ -161,17 +231,20 @@ export default function AddBatch() {
             </Select>
           </div>
         </div>
-      </div>
+      </PageSection>
 
       {/* Products Table */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <div className="flex justify-between items-center mb-4 border-b pb-3">
-          <h3 className="text-xl font-semibold text-gray-700">Products in Batch</h3>
-          <Button onClick={addProductRow} variant="outline" className="gap-2">
-            <Plus size={16} /> Add Product
+      <PageSection
+        title="Products in Batch"
+        description="Add products and their batch information"
+        actions={
+          <Button onClick={addProductRow} variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
           </Button>
-        </div>
-
+        }
+        noPadding
+      >
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -182,7 +255,7 @@ export default function AddBatch() {
                 <TableHead>Sale Rate</TableHead>
                 <TableHead>Qty</TableHead>
                 <TableHead>Exp Date</TableHead>
-                <TableHead>Action</TableHead>
+                <TableHead className="w-[100px]">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -199,9 +272,11 @@ export default function AddBatch() {
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>Products</SelectLabel>
-                          <SelectItem value="Paracetamol">Paracetamol</SelectItem>
-                          <SelectItem value="Aspirin">Aspirin</SelectItem>
-                          <SelectItem value="Amoxicillin">Amoxicillin</SelectItem>
+                          {productsList.map(product => (
+                            <SelectItem key={product.id} value={product.id.toString()}>
+                              {product.name}
+                            </SelectItem>
+                          ))}
                         </SelectGroup>
                       </SelectContent>
                     </Select>
@@ -210,6 +285,7 @@ export default function AddBatch() {
                     <Input
                       value={p.batchNo}
                       onChange={(e) => handleProductChange(idx, 'batchNo', e.target.value)}
+                      placeholder="Batch #"
                     />
                   </TableCell>
                   <TableCell>
@@ -217,6 +293,7 @@ export default function AddBatch() {
                       type="number"
                       value={p.invoiceRate}
                       onChange={(e) => handleProductChange(idx, 'invoiceRate', e.target.value)}
+                      placeholder="0.00"
                     />
                   </TableCell>
                   <TableCell>
@@ -224,6 +301,7 @@ export default function AddBatch() {
                       type="number"
                       value={p.saleRate}
                       onChange={(e) => handleProductChange(idx, 'saleRate', e.target.value)}
+                      placeholder="0.00"
                     />
                   </TableCell>
                   <TableCell>
@@ -231,6 +309,7 @@ export default function AddBatch() {
                       type="number"
                       value={p.quantity}
                       onChange={(e) => handleProductChange(idx, 'quantity', e.target.value)}
+                      placeholder="0"
                     />
                   </TableCell>
                   <TableCell>
@@ -240,13 +319,14 @@ export default function AddBatch() {
                       onChange={(e) => handleProductChange(idx, 'expDate', e.target.value)}
                     />
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell>
                     <Button
                       variant="ghost"
+                      size="sm"
                       onClick={() => removeProductRow(idx)}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -254,12 +334,7 @@ export default function AddBatch() {
             </TableBody>
           </Table>
         </div>
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSubmit}>Save Batch</Button>
-      </div>
-    </div>
+      </PageSection>
+    </PageContainer>
   );
 }
