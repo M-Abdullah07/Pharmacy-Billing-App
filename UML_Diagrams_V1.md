@@ -97,17 +97,20 @@ graph LR
 ### DFD Level 0 — Context Diagram
 
 ```mermaid
-flowchart LR
-    PH[Pharmacist / Admin]
-    SYS((Pharmacy Billing System))
-    SUP[Supplier]
-    CUST[Customer]
+graph LR
+    U["Pharmacist / Admin"]
+    SYS(["PharmaX\nPharmacy Billing System"])
+    EXT1["Manufacturer\nExternal Info"]
+    EXT2["Supplier\nExternal Entity"]
+    EXT3["Customer\nExternal Entity"]
 
-    PH -- "Login, Manage Inventory,\nCreate Invoices, Record Payments" --> SYS
-    SYS -- "Receipts, Reports,\nBalance Info" --> PH
-    SUP -- "Purchase Invoice Data,\nBatch / Lot Info" --> SYS
-    CUST -- "Order / Prescription" --> SYS
-    SYS -- "Sale Invoice / Receipt" --> CUST
+    U -->|"Login Credentials\nSale Data\nInventory Data\nMaster Data Forms"| SYS
+    SYS -->|"Invoices - Reports\nStock Alerts - Receipts"| U
+    EXT1 -->|"Product Info\nDRAP Licence"| SYS
+    EXT2 -->|"Purchase Invoices\nBatch and Expiry Info"| SYS
+    SYS -->|"Purchase Orders\nPayment Records"| EXT2
+    EXT3 -->|"Sale Orders\nPayments"| SYS
+    SYS -->|"Sale Invoices\nCredit Statements"| EXT3
 ```
 
 ---
@@ -289,49 +292,70 @@ flowchart TD
 
 ```mermaid
 graph LR
-    subgraph Actors
-        PH((Pharmacist))
-        ADM((Admin))
-        SYS((System))
-    end
+    ADM(["Pharmacist / Admin"])
+    SYS_DB(["PostgreSQL Database\nSystem Actor"])
 
-    subgraph "Pharmacy Billing App"
-        UC1(Login / Logout)
-        UC2(Manage Products\n& Categories)
-        UC3(Manage Suppliers\n& Customers)
-        UC4(Create Purchase Invoice)
-        UC5(Create Sale Invoice)
-        UC6(Track Inventory\n& Batches)
-        UC7(Process Purchase Return)
-        UC8(Process Sale Return)
-        UC9(Record Payment)
-        UC10(Manage Expenses)
-        UC11(View Reports\n& Analytics)
-        UC12(Manage Users)
-        UC13(Auto-deduct Stock\non Sale Confirm)
-        UC14(Lock Balances\nPessimistic Lock)
-    end
+    subgraph PharmaX["PharmaX System"]
+        subgraph Auth["Authentication"]
+            UC1["Login to System"]
+            UC2["Register New Account"]
+            UC3["Account Lockout - 5 failed attempts"]
+        end
 
-    PH --> UC1
-    PH --> UC4
-    PH --> UC5
-    PH --> UC6
-    PH --> UC7
-    PH --> UC8
-    PH --> UC9
-    PH --> UC11
+        subgraph MasterData["Master Data Management"]
+            UC4["Manage Manufacturers\nAdd / Edit / Deactivate / Reactivate"]
+            UC5["Manage Products\nAdd / Edit / Deactivate / Reactivate"]
+            UC6["Manage Suppliers\nAdd / Edit / Deactivate / Reactivate"]
+            UC7["Manage Customers\nAdd / Edit / Delete / Reactivate"]
+            UC8["Manage Contact Persons\nAdd / Delete"]
+            UC9["View Categories\nRead-only / pre-seeded"]
+        end
+
+        subgraph Inventory["Inventory Management"]
+            UC10["Add Batch - Receive Stock"]
+            UC11["View Stock Summary"]
+            UC12["View Stock by Product"]
+            UC13["View Near-Expiry Alerts"]
+        end
+
+        subgraph Sales["Sales Processing"]
+            UC14["Create Sale Invoice"]
+            UC15["View Sales Reports"]
+            UC16["View Credit Dues"]
+        end
+
+        subgraph System["System Utilities"]
+            UC17["View Dashboard"]
+            UC18["Backup and Export Data"]
+            UC19["App Settings"]
+            UC20["Command Menu Search - Ctrl+J"]
+        end
+    end
 
     ADM --> UC1
     ADM --> UC2
-    ADM --> UC3
+    UC1 -.->|"includes"| UC3
+    ADM --> UC4
+    ADM --> UC5
+    ADM --> UC6
+    ADM --> UC7
+    ADM --> UC8
+    ADM --> UC9
     ADM --> UC10
-    ADM --> UC12
     ADM --> UC11
+    ADM --> UC12
+    ADM --> UC13
+    ADM --> UC14
+    ADM --> UC15
+    ADM --> UC16
+    ADM --> UC17
+    ADM --> UC18
+    ADM --> UC19
+    ADM --> UC20
 
-    UC5 --> UC13
-    UC13 -.->|include| SYS
-    UC9 --> UC14
-    UC14 -.->|include| SYS
+    UC10 -.->|"triggers auto stock movement"| SYS_DB
+    UC14 -.->|"writes invoices"| SYS_DB
+    UC1 -.->|"reads users"| SYS_DB
 ```
 
 ---
