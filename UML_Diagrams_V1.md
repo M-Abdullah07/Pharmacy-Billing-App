@@ -165,16 +165,14 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    USER([Pharmacist])
-
-    P41[4.1\nSelect Customer]
-    P42[4.2\nSearch & Add\nMedicine Items]
-    P43[4.3\nApply Discount\n& GST]
-    P44[4.4\nGenerate Invoice\nNumber]
-    P45[4.5\nDeduct Stock\n via Batch]
-    P46[4.6\nRecord Sale\n Invoice]
-    P47[4.7\nProcess Payment\nor Credit]
-
+    USER[Pharmacist]
+    P41((4.1\nSelect Customer))
+    P42((4.2\nSearch & Add\nMedicine Items))
+    P43((4.3\nApply Discount\n& GST))
+    P44((4.4\nGenerate Invoice\nNumber))
+    P45((4.5\nDeduct Stock\nvia Batch))
+    P46((4.6\nRecord Sale\nInvoice))
+    P47((4.7\nProcess Payment\nor Credit))
     DS_CUST[(customers)]
     DS_PROD[(products / batches)]
     DS_INV[(sale_invoices\nsale_invoice_items)]
@@ -184,12 +182,10 @@ flowchart TD
     USER -- "Customer Name / ID" --> P41
     P41 --> DS_CUST
     DS_CUST -- "Customer Credit Limit" --> P41
-
     P41 -- "Customer Confirmed" --> P42
     USER -- "Medicine Name / Batch" --> P42
     P42 --> DS_PROD
     DS_PROD -- "Available Stock, MRP" --> P42
-
     P42 -- "Line Items" --> P43
     P43 -- "Net Payable" --> P44
     P44 -- "Invoice Number (Sequence)" --> P45
