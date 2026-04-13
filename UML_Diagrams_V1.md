@@ -116,23 +116,23 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    USER([User / Pharmacist])
+    USER[User / Pharmacist]
 
-    P1[1.0\nAuthentication]
-    P2[2.0\nInventory Management]
-    P3[3.0\nPurchase Management]
-    P4[4.0\nSales Management]
-    P5[5.0\nPayment Processing]
-    P6[6.0\nReturns Management]
-    P7[7.0\nReporting]
+    P1(("1.0\nAuthentication"))
+    P2(("2.0\nInventory Management"))
+    P3(("3.0\nPurchase Management"))
+    P4(("4.0\nSales Management"))
+    P5(("5.0\nPayment Processing"))
+    P6(("6.0\nReturns Management"))
+    P7(("7.0\nReporting"))
 
-    DS1[(users)]
-    DS2[(products\nbatches\ncategories)]
-    DS3[(purchase_invoices\npurchase_invoice_items\nbatches)]
-    DS4[(sale_invoices\nsale_invoice_items\nstock_movements)]
-    DS5[(payments\nexpenses)]
-    DS6[(purchase_returns\nsale_returns)]
-    DS7[(All Tables)]
+    DS1[("users")]
+    DS2[("products\nbatches\ncategories")]
+    DS3[("purchase_invoices\npurchase_invoice_items\nbatches")]
+    DS4[("sale_invoices\nsale_invoice_items\nstock_movements")]
+    DS5[("payments\nexpenses")]
+    DS6[("purchase_returns\nsale_returns")]
+    DS7[("All Tables")]
 
     USER -- "Credentials" --> P1
     P1 -- "Session Token" --> USER
