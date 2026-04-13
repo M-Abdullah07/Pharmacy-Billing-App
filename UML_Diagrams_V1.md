@@ -98,10 +98,10 @@ graph LR
 
 ```mermaid
 flowchart LR
-    PH((Pharmacist\n/ Admin))
-    SYS[Pharmacy Billing System]
-    SUP((Supplier))
-    CUST((Customer))
+    PH[Pharmacist / Admin]
+    SYS((Pharmacy Billing System))
+    SUP[Supplier]
+    CUST[Customer]
 
     PH -- "Login, Manage Inventory,\nCreate Invoices, Record Payments" --> SYS
     SYS -- "Receipts, Reports,\nBalance Info" --> PH
