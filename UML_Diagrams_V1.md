@@ -50,46 +50,7 @@ graph TD
 
 ## 2. Component Diagram
 
-```mermaid
-graph LR
-    subgraph Frontend["Frontend Components (React)"]
-        AUTH_UI[AuthComponent]
-        DASH[Dashboard]
-        PROD_UI[ProductManagement]
-        PURCH_UI[PurchaseManagement]
-        SALE_UI[SaleManagement]
-        INV_UI[InventoryBatchView]
-        PAY_UI[PaymentComponent]
-        RETURN_UI[ReturnsComponent]
-        RPT_UI[ReportsComponent]
-    end
-
-    subgraph IPC_Layer["IPC Bridge"]
-        IPC_BUS[ipcRenderer / ipcMain]
-    end
-
-    subgraph Backend["Backend Services (Main Process)"]
-        AUTH_SVC[AuthService]
-        PROD_SVC[ProductService]
-        PURCH_SVC[PurchaseInvoiceService]
-        SALE_SVC[SaleInvoiceService]
-        INV_SVC[InventoryService]
-        PAY_SVC[PaymentService]
-        RETURN_SVC[ReturnService]
-        RPT_SVC[ReportService]
-        DB_SVC[DatabaseService\n pg pool]
-    end
-
-    subgraph DB["Database (PostgreSQL)"]
-        DB_SCHEMA[(pharmax_schema\nAll Tables)]
-    end
-
-    AUTH_UI & DASH & PROD_UI & PURCH_UI & SALE_UI & INV_UI & PAY_UI & RETURN_UI & RPT_UI --> IPC_BUS
-    IPC_BUS --> AUTH_SVC & PROD_SVC & PURCH_SVC & SALE_SVC & INV_SVC & PAY_SVC & RETURN_SVC & RPT_SVC
-    AUTH_SVC & PROD_SVC & PURCH_SVC & SALE_SVC & INV_SVC & PAY_SVC & RETURN_SVC & RPT_SVC --> DB_SVC
-    DB_SVC --> DB_SCHEMA
-```
-
+![Component Diagram](component_diagram.jpeg)
 ---
 
 ## 3. Data Flow Diagrams
