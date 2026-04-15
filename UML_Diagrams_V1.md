@@ -100,17 +100,24 @@ graph LR
 graph LR
     U["Pharmacist / Admin"]
     SYS(["PharmaX\nPharmacy Billing System"])
-    EXT1["Manufacturer\nExternal Info"]
-    EXT2["Supplier\nExternal Entity"]
-    EXT3["Customer\nExternal Entity"]
 
-    U -->|"Login Credentials\nSale Data\nInventory Data\nMaster Data Forms"| SYS
-    SYS -->|"Invoices - Reports\nStock Alerts - Receipts"| U
-    EXT1 -->|"Product Info\nDRAP Licence"| SYS
-    EXT2 -->|"Purchase Invoices\nBatch and Expiry Info"| SYS
-    SYS -->|"Purchase Orders\nPayment Records"| EXT2
-    EXT3 -->|"Sale Orders\nPayments"| SYS
-    SYS -->|"Sale Invoices\nCredit Statements"| EXT3
+    %% Input flows from Admin to System
+    U -->|"Login Credentials
+    Sale Data
+    Inventory Data 
+    Purchase Data
+    Customer Info
+    Supplier Info
+    Manufacturer Info
+    Master Data Forms"| SYS
+
+    %% Output flows from System to Admin
+    SYS -->|"Invoices
+    Reports
+    Stock Alerts
+    Receipts
+    Payment Records
+    Credit Statements"| U
 ```
 
 ---
