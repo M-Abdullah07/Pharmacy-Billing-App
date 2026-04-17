@@ -17,24 +17,26 @@ import CreditDues from "@/pages/CreditDues";
 import Backup from "@/pages/Backup";
 import Settings from "@/pages/Settings";
 import Manufacturers from "@/pages/Manufacturer";
+import { cn } from "@/lib/utils";
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
   const [user, setUser] = useState(null);
   const [signup, setSignup] = useState(false);
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
+  // Cmd/Ctrl + K (industry standard for command palettes)
   useEffect(() => {
     const down = (e) => {
-      if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setOpen((open) => !open)
+      if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((open) => !open);
       }
-    }
+    };
 
-    document.addEventListener("keydown", down)
-    return () => document.removeEventListener("keydown", down)
-  }, [])
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("pharmax_user");
@@ -49,22 +51,19 @@ export default function App() {
 
   const handleLogin = (userData) => {
     setUser(userData);
+    localStorage.setItem("pharmax_user", JSON.stringify(userData));
   };
 
-  const handleSignup = () => {
-
-  }
-
-  
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem("pharmax_user");
+    setActivePage("Dashboard");
   };
 
   const renderPage = () => {
     switch (activePage) {
       case "Add Sale":
-        return <AddSale />;
+        return <AddSale onNavigate={handleNavigate} />;
       case "Dashboard":
         return <Dashboard />;
       case "Areas":
@@ -76,15 +75,15 @@ export default function App() {
       case "Products":
         return <Products />;
       case "Add Batch":
-        return <AddBatch />
+        return <AddBatch />;
       case "Sales Reports":
-        return <SalesReport />
+        return <SalesReport />;
       case "Credit Dues":
-        return <CreditDues />
+        return <CreditDues />;
       case "Backup & Export":
-        return <Backup />
+        return <Backup />;
       case "Settings":
-        return <Settings />
+        return <Settings />;
       case "Manufacturers":
         return <Manufacturers />;
       default:
@@ -97,17 +96,33 @@ export default function App() {
       <Signup onSignup={handleSignup} setSignup={setSignup} />
     ) : (
       <Login onLogin={handleLogin} setSignup={setSignup} />
-    )
+    );
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <SidebarProvider>
-        <AppSidebar onNavigate={handleNavigate} username={user.username} onLogout={handleLogout} />
-        <CommandMenu open={open} setOpen={setOpen} onNavigate={handleNavigate} />
-        <div className="flex flex-1 flex-col justify-center">
+        <AppSidebar
+          onNavigate={handleNavigate}
+          username={user?.username}
+          onLogout={handleLogout}
+          activePage={activePage}           // Used for active nav highlighting
+        />
+
+        <div className="flex flex-1 flex-col min-w-0 overflow-hidden border-l border-border">
+          <CommandMenu open={open} setOpen={setOpen} onNavigate={handleNavigate} />
+          
           <Header currentPage={activePage} />
-          <div className="flex flex-1 items-center justify-center overflow-auto p-2">{renderPage()}</div>
+
+          {/* Modern Main Content Area */}
+          <main className={cn(
+            "flex-1 overflow-auto bg-background p-6 lg:p-8",
+            "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+          )}>
+            <div className="mx-auto max-w-[1480px] space-y-8">
+              {renderPage()}
+            </div>
+          </main>
         </div>
       </SidebarProvider>
     </div>

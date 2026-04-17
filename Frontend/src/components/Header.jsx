@@ -1,31 +1,29 @@
-import React, { useEffect, useState } from "react";
-import { SidebarTrigger } from "./ui/sidebar";
-import { Button } from "./ui/button";
-import { Moon, Sun } from "lucide-react";
+import { Bell, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export default function Header({currentPage}) {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
-
-  const toggleDark = () => {
-    document.documentElement.classList.toggle("dark");
-    setIsDark((prev) => !prev);
-  };
-
+export default function Header({ currentPage }) {
   return (
-    <header className="flex justify-between items-center py-2 pr-2 border-b">
-      <SidebarTrigger />
-      <span>{currentPage}</span>
-      <Button variant="ghost" size="icon" onClick={toggleDark}>
-        {isDark ? (
-          <Sun className="w-6 h-6 text-yellow-400 transition-colors" />
-        ) : (
-          <Moon className="w-6 h-6 text-gray-800 transition-colors dark:text-white" />
-        )}
-      </Button>
+    <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between flex-shrink-0">
+      <div className="flex items-center gap-4">
+        <h1 className="font-semibold text-xl text-foreground">{currentPage}</h1>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search medicines, customers... (⌘K)"
+            className="w-full bg-muted pl-10 pr-4 py-2 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+
+        <Button variant="ghost" size="icon" className="rounded-xl">
+          <Bell className="w-5 h-5" />
+        </Button>
+
+        <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl" />
+      </div>
     </header>
   );
 }

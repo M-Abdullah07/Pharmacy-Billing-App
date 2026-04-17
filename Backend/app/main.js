@@ -906,6 +906,14 @@ ipcMain.handle("add-sale", async (event, data) => {
 // Update those pages to use the new handlers listed above.
 // ════════════════════════════════════════════════════════════════════════════
 
+ipcMain.handle("query-db", async (event, sql, params) => {
+  try {
+    return await queryDb(sql, params);
+  } catch (err) {
+    console.error("❌ query-db error:", err.message);
+    throw err;
+  }
+});
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {

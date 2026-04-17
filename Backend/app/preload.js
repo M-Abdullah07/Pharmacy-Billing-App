@@ -59,4 +59,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Sales ─────────────────────────────────────────────────────────────────
   addSale: (data) => ipcRenderer.invoke('add-sale', data),
 
+  // ── General Database Query ───────────────────────────────────────────────
+  queryDb: (sql, params) => ipcRenderer.invoke('query-db', sql, params),
+
 });
