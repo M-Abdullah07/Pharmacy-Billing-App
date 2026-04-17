@@ -76,6 +76,15 @@ export default function Invoices() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Electron API shortcut
+  const api = window.electronAPI;
+
+  // Mock data for undefined variables (to prevent crashes)
+  const paymentMethods = [];
+  const bills = [];
+  const selectedPatientId = { patientId: 'N/A' };
+  const [paymentMethod, setPaymentMethod] = useState({});
+
   // States to show add forms
   const [showAddBatch, setShowAddBatch] = useState(false);
   const [newBatch, setNewBatch] = useState({
