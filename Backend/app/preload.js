@@ -2,9 +2,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
 
-  // ── Generic (direct SQL — use $1,$2 placeholders, NOT ?) ──────────────────
-  queryDb: (query, params) => ipcRenderer.invoke('query-db', query, params),
-
   // ── Auth ──────────────────────────────────────────────────────────────────
   loginUser:  (username, password)       => ipcRenderer.invoke('login-user',  username, password),
   signupUser: (username, password) => ipcRenderer.invoke('signup-user', username, password),
@@ -59,9 +56,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCompanies: ()     => ipcRenderer.invoke('get-companies'),
   addCompany:   (data) => ipcRenderer.invoke('add-company', data),
 
-  // ── REMOVED (no longer in schema — update any .jsx still calling these) ───
-  // ❌ addArea    → area_id is gone; send territory (string) on customer instead
-  // ❌ getAreas   → same as above
-  // ❌ insertSale → will be added in Iteration 2 (sale_invoices table)
+  // ── Sales ─────────────────────────────────────────────────────────────────
+  addSale: (data) => ipcRenderer.invoke('add-sale', data),
 
 });

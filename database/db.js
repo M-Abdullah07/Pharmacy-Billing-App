@@ -5,7 +5,7 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'Pharmax',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'Qaswzx@123',
+  password: process.env.DB_PASSWORD,
 });
 
 pool.on('error', (err) => {

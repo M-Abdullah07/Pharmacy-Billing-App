@@ -15,7 +15,7 @@ export default defineConfig({
     outDir: '.vite/build',        // ✅ matches what package.json "main" expects
     emptyOutDir: false,           // ✅ prevents wiping preload build
     rollupOptions: {
-      external: ['electron'],     // ✅ don't bundle electron itself
+      external: ['electron', 'argon2', 'pg'],     // ✅ don't bundle native modules
     }
   }
 });
