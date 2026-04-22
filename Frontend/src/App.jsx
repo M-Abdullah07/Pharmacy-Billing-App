@@ -17,6 +17,8 @@ import CreditDues from "@/pages/CreditDues";
 import Backup from "@/pages/Backup";
 import Settings from "@/pages/Settings";
 import Manufacturers from "@/pages/Manufacturer";
+import PurchaseInvoice from "@/pages/PurchaseInvoice";
+
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
@@ -87,6 +89,8 @@ export default function App() {
         return <Settings />
       case "Manufacturers":
         return <Manufacturers />;
+      case "Purchase Invoice":
+        return <PurchaseInvoice />;
       default:
         return <Dashboard />;
     }

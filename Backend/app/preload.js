@@ -59,6 +59,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCompanies: ()     => ipcRenderer.invoke('get-companies'),
   addCompany:   (data) => ipcRenderer.invoke('add-company', data),
 
+  // ── Purchase Invoices (GRN) ───────────────────────────────────────────────────
+  getPurchaseInvoices:    ()     => ipcRenderer.invoke('get-purchase-invoices'),
+  getPurchaseInvoice:     (id)   => ipcRenderer.invoke('get-purchase-invoice',      id),
+  addPurchaseInvoice:     (data) => ipcRenderer.invoke('add-purchase-invoice',      data),
+  addPurchaseInvoiceItem: (data) => ipcRenderer.invoke('add-purchase-invoice-item', data),
+  confirmPurchaseInvoice: (id, userId) => ipcRenderer.invoke('confirm-purchase-invoice', id, userId),
+  cancelPurchaseInvoice:  (id)   => ipcRenderer.invoke('cancel-purchase-invoice',   id),
+  getBatchesByProduct:    (productId) => ipcRenderer.invoke('get-batches-by-product', productId),
   // ── REMOVED (no longer in schema — update any .jsx still calling these) ───
   // ❌ addArea    → area_id is gone; send territory (string) on customer instead
   // ❌ getAreas   → same as above

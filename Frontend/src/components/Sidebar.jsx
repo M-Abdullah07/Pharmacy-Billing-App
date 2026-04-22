@@ -5,7 +5,7 @@ import { TfiPackage } from "react-icons/tfi";
 import { HiOutlineBuildingOffice, HiOutlineCreditCard, HiOutlineUser } from "react-icons/hi2";
 import { HiOutlineDocumentReport } from "react-icons/hi";
 import { IoLayersOutline, IoLogOutOutline, IoPricetagOutline, IoSettingsOutline } from "react-icons/io5";
-import { Factory } from "lucide-react";
+import { Factory, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -36,6 +36,7 @@ const inventoryItems = [
   { title: "Manufacturers", icon: Factory },
   { title: "Companies",     icon: HiOutlineBuildingOffice },
   { title: "Add Batch",     icon: IoLayersOutline },
+  { title: "Purchase Invoice", icon: FileText }, // import FileText from lucide-react
 ];
 
 export default function AppSidebar({ onNavigate, onLogout, username }) {
