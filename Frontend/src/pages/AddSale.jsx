@@ -13,12 +13,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 export default function AddSale() {
   // Core data states
   const [customers, setCustomers] = useState([]);
-  const [medicines, setMedicines] = useState([]);
+  const [products, setProducts] = useState([]);
   const [batches, setBatches] = useState([]);
 
   // Selected values
   const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedMedicine, setSelectedMedicine] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedBatch, setSelectedBatch] = useState("");
 
   // Sale item inputs
@@ -40,9 +40,6 @@ export default function AddSale() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
 
-  const [showAddMedicine, setShowAddMedicine] = useState(false);
-  const [newMedicine, setNewMedicine] = useState({ name: "", type: "" });
-
   const [showAddBatch, setShowAddBatch] = useState(false);
   const [newBatch, setNewBatch] = useState({
     batch_no: "",
@@ -59,7 +56,7 @@ export default function AddSale() {
   // Fetch customers from DB
   const refreshCustomers = async () => {
     try {
-      const result = await api.queryDb("SELECT id, name FROM customers");
+      const result = await api.getCustomers();
       setCustomers(result || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -67,23 +64,21 @@ export default function AddSale() {
     }
   };
 
-  // Fetch medicines from DB
-  const refreshMedicines = async () => {
+  // Fetch products from DB
+  const refreshProducts = async () => {
     try {
-      const result = await api.queryDb("SELECT id, name FROM medicines");
-      setMedicines(result || []);
+      const result = await api.getProducts();
+      setProducts(result || []);
     } catch (error) {
-      console.error('Error fetching medicines:', error);
-      setErrors(prev => ({ ...prev, medicines: 'Failed to load medicines' }));
+      console.error('Error fetching products:', error);
+      setErrors(prev => ({ ...prev, products: 'Failed to load products' }));
     }
   };
 
-  // Fetch batches for selected medicine and with stock > 0
-  const refreshBatches = async (medicineId) => {
+  // Fetch batches for selected product and with stock > 0
+  const refreshBatches = async (productId) => {
     try {
-      const result = await api.queryDb(
-        "SELECT * FROM batches WHERE medicine_id = ? AND quantity_available > 0", [medicineId]
-      );
+      const result = await api.getStockByProduct(productId);
       setBatches(result || []);
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -91,29 +86,29 @@ export default function AddSale() {
     }
   };
 
-  // Initial load of customers and medicines
+  // Initial load of customers and products
   useEffect(() => {
     refreshCustomers();
-    refreshMedicines();
+    refreshProducts();
   }, []);
 
-  // Load batches when medicine changes
+  // Load batches when product changes
   useEffect(() => {
-    if (selectedMedicine) {
-      refreshBatches(selectedMedicine);
+    if (selectedProduct) {
+      refreshBatches(selectedProduct);
       setSelectedBatch("");
     } else {
       setBatches([]);
       setSelectedBatch("");
     }
-  }, [selectedMedicine]);
+  }, [selectedProduct]);
 
   // Auto fill sale rate on batch change
   useEffect(() => {
     if (selectedBatch) {
-      const batch = batches.find(b => b.id === parseInt(selectedBatch));
-      if (batch && batch.sale_rate) {
-        setSaleRate(batch.sale_rate.toString());
+      const batch = batches.find(b => b.batch_id === selectedBatch);
+      if (batch && batch.mrp) {
+        setSaleRate(batch.mrp.toString());
       }
     }
   }, [selectedBatch, batches]);
@@ -126,7 +121,7 @@ export default function AddSale() {
     }
     try {
       setIsLoading(true);
-      const result = await window.electron.ipcRenderer.invoke("add-customer", {
+      const result = await api.addCustomer({
         name: newCustomerName.trim(),
         phone: newCustomerPhone.trim()
       });
@@ -146,33 +141,6 @@ export default function AddSale() {
     }
   };
 
-  // Handlers for adding new Medicine
-  const handleAddMedicine = async () => {
-    if (!newMedicine.name.trim()) {
-      alert("Medicine name is required");
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const result = await window.electron.ipcRenderer.invoke("add-medicine", {
-        name: newMedicine.name.trim(),
-        type: newMedicine.type.trim()
-      });
-      if (result.success) {
-        await refreshMedicines();
-        setSelectedMedicine(result.medicineId.toString());
-        setShowAddMedicine(false);
-        setNewMedicine({ name: "", type: "" });
-      } else {
-        alert("Failed to add medicine: " + (result.error || "Unknown Error"));
-      }
-    } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Handlers for adding new Batch
   const handleAddBatch = async () => {
     const { batch_no, purchase_rate, quantity, expiry } = newBatch;
@@ -180,21 +148,24 @@ export default function AddSale() {
       alert("Please fill all batch fields");
       return;
     }
-    if (!selectedMedicine) {
-      alert("Please select a medicine first");
+    if (!selectedProduct) {
+      alert("Please select a product first");
       return;
     }
     try {
       setIsLoading(true);
-      const result = await window.electron.ipcRenderer.invoke("add-batch", {
-        medicineId: selectedMedicine,
-        batch_no: batch_no.trim(),
-        purchase_rate: parseFloat(purchase_rate),
-        quantity: parseInt(quantity, 10),
-        expiry_date: expiry
+      const result = await api.addBatch({
+        product_id: selectedProduct,
+        batch_number: batch_no.trim(),
+        purchase_cost_per_unit: parseFloat(purchase_rate),
+        quantity_received: parseInt(quantity, 10),
+        expiry_date: expiry,
+        supplier_id: null,
+        manufacturing_date: null,
+        mrp: parseFloat(purchase_rate) * 1.2 // Default markup
       });
       if (result.success) {
-        await refreshBatches(selectedMedicine);
+        await refreshBatches(selectedProduct);
         setSelectedBatch(result.batchId.toString());
         setShowAddBatch(false);
         setNewBatch({ batch_no: "", purchase_rate: "", quantity: "", expiry: "" });
@@ -214,10 +185,10 @@ export default function AddSale() {
       alert("Please fill all fields");
       return;
     }
-    const batch = batches.find(b => b.id === parseInt(selectedBatch));
-    const medicine = medicines.find(m => m.id === parseInt(selectedMedicine));
+    const batch = batches.find(b => b.batch_id === selectedBatch);
+    const product = products.find(p => p.product_id === selectedProduct);
 
-    if (!batch || !medicine) {
+    if (!batch || !product) {
       alert("Invalid selection");
       return;
     }
@@ -227,7 +198,7 @@ export default function AddSale() {
       return;
     }
 
-    const existingItem = saleItems.find(item => item.batchId === batch.id);
+    const existingItem = saleItems.find(item => item.batchId === batch.batch_id);
     if (existingItem) {
       alert("This batch is already added. Remove it first to change quantity.");
       return;
@@ -238,8 +209,8 @@ export default function AddSale() {
     setSaleItems(prev => [
       ...prev,
       {
-        batchId: batch.id,
-        medicineName: medicine.name,
+        batchId: batch.batch_id,
+        productName: product.name,
         batchNumber: batch.batch_number,
         quantity: parseInt(quantity),
         saleRate: parseFloat(saleRate),
@@ -252,7 +223,7 @@ export default function AddSale() {
     setQuantity(1);
     setSaleRate("");
     setSelectedBatch("");
-    setSelectedMedicine("");
+    setSelectedProduct("");
   };
 
   const handleRemoveItem = (index) => {
@@ -269,14 +240,11 @@ export default function AddSale() {
     try {
       setIsLoading(true);
       const totalAmount = saleItems.reduce((sum, item) => sum + item.totalAmount, 0);
-      const result = await window.electron.ipcRenderer.invoke("execute-transaction", {
-        type: "add-sale",
-        data: {
-          customerId: selectedCustomer,
-          isCredit,
-          items: saleItems,
-          totalAmount
-        }
+      const result = await api.addSale({
+        customerId: selectedCustomer,
+        isCredit,
+        items: saleItems,
+        totalAmount
       });
       if (result.success) {
         alert(`Sale recorded successfully! Sale ID: ${result.saleId}`);
@@ -284,7 +252,7 @@ export default function AddSale() {
         setSaleItems([]);
         setSelectedCustomer("");
         setIsCredit(false);
-        setSelectedMedicine("");
+        setSelectedProduct("");
         setSelectedBatch("");
         setQuantity(1);
         setSaleRate("");
@@ -306,10 +274,9 @@ export default function AddSale() {
       {isLoading && <p>Loading...</p>}
 
       {/* Customer select */}
-      {/* Customer select */}
       <Label className="mb-2">Customers:</Label>
       <div className="flex flex-row items-center gap-2 mb-4">
-        <Select>
+        <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
           <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="Select Customer" />
           </SelectTrigger>
@@ -317,7 +284,7 @@ export default function AddSale() {
             <SelectGroup>
               <SelectLabel>Customers</SelectLabel>
               {customers.map(c => (
-                <SelectItem key={c.id} value={c.id}>
+                <SelectItem key={c.customer_id} value={c.customer_id}>
                   {c.name}
                 </SelectItem>
               ))}
@@ -367,64 +334,30 @@ export default function AddSale() {
         </DialogContent>
       </Dialog>
 
-      {/* Medicine select */}
-      <Label className="mb-2">Medicine:</Label>
+      {/* Product select */}
+      <Label className="mb-2">Product:</Label>
       <div className="flex flex-row items-center gap-2 mb-4">
-        <Select>
+        <Select value={selectedProduct} onValueChange={setSelectedProduct}>
           <SelectTrigger className="w-[240px]">
-            <SelectValue placeholder="Select Medicine" />
+            <SelectValue placeholder="Select Product" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Medicines</SelectLabel>
-              {medicines.map(m => (
-                <SelectItem key={m.id} value={m.id}>
-                  {m.name}
+              <SelectLabel>Products</SelectLabel>
+              {products.map(p => (
+                <SelectItem key={p.product_id} value={p.product_id}>
+                  {p.name}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Button variant="link" size="sm" onClick={() => setShowAddMedicine(true)}>+ Add Medicine</Button>
       </div>
-      <Dialog open={showAddMedicine} onOpenChange={setShowAddMedicine}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Medicine</DialogTitle>
-            <DialogDescription>
-              Fill in the details and click save to add a new Medicine.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-4 mt-4">
-            <Label>Medicine Info:</Label>
-            <Input
-              type="text"
-              placeholder="Name"
-              value={newMedicine.name}
-              onChange={(e) => setNewMedicine({ ...newMedicine, name: e.target.value })}
-            />
-            <Input
-              type="text"
-              placeholder="Type"
-              value={newMedicine.type}
-              onChange={(e) => setNewMedicine({ ...newMedicine, type: e.target.value })}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={handleAddCustomer}>Save</Button>
-            <Button variant="outline" onClick={() => setShowAddMedicine(false)}>
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Batch select */}
       <Label className="mb-2">Batch:</Label>
       <div className="flex flex-row items-center gap-2 mb-4">
-        <Select>
+        <Select value={selectedBatch} onValueChange={setSelectedBatch}>
           <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="Select Batch" />
           </SelectTrigger>
@@ -432,8 +365,8 @@ export default function AddSale() {
             <SelectGroup>
               <SelectLabel>Batches</SelectLabel>
               {batches.map(b => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
+                <SelectItem key={b.batch_id} value={b.batch_id}>
+                  {b.batch_number} (Stock: {b.quantity_available})
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -441,6 +374,7 @@ export default function AddSale() {
         </Select>
         <Button variant="link" size="sm" onClick={() => setShowAddBatch(true)}>+ Add Batch</Button>
       </div>
+
       <Dialog open={showAddBatch} onOpenChange={setShowAddBatch}>
         <DialogContent>
           <DialogHeader>
@@ -475,7 +409,7 @@ export default function AddSale() {
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" id="date" className="justify-center font-normal">
-                  {date ? date.toLocaleDateString() : "Select Expirty date"}
+                  {date ? date.toLocaleDateString() : "Select Expiry date"}
                   <CalendarIcon />
                 </Button>
               </PopoverTrigger>
@@ -495,8 +429,8 @@ export default function AddSale() {
           </div>
 
           <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={handleAddCustomer}>Save</Button>
-            <Button variant="outline" onClick={() => setShowAddMedicine(false)}>
+            <Button onClick={handleAddBatch}>Save</Button>
+            <Button variant="outline" onClick={() => setShowAddBatch(false)}>
               Cancel
             </Button>
           </div>
@@ -542,7 +476,7 @@ export default function AddSale() {
       <Table className="mt-4">
         <TableHeader>
           <TableRow>
-            <TableHead>Medicine</TableHead>
+            <TableHead>Product</TableHead>
             <TableHead>Batch</TableHead>
             <TableHead>Qty</TableHead>
             <TableHead>Rate</TableHead>
@@ -557,7 +491,7 @@ export default function AddSale() {
           )}
           {saleItems.map((item, index) => (
             <TableRow key={index}>
-              <TableCell>{item.medicineName}</TableCell>
+              <TableCell>{item.productName}</TableCell>
               <TableCell>{item.batchNumber}</TableCell>
               <TableCell>{item.quantity}</TableCell>
               <TableCell>₹{item.saleRate.toFixed(2)}</TableCell>
@@ -580,7 +514,11 @@ export default function AddSale() {
       {/* Credit sale */}
       <div className="flex items-center justify-between mt-8 border-t pt-4">
         <div className="flex items-center gap-2">
-          <Checkbox id="credit" />
+          <Checkbox
+            id="credit"
+            checked={isCredit}
+            onCheckedChange={setIsCredit}
+          />
           <Label htmlFor="credit">Credit Sale</Label>
         </div>
         <Button onClick={handleSubmitSale} disabled={saleItems.length === 0 || !selectedCustomer}> Submit Sale </Button>

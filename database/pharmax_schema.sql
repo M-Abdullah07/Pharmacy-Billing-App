@@ -49,7 +49,7 @@
 -- 10. JSONB for flexible/sparse attributes (avoids future ALTER)
 -- ============================================================
 
-
+\c "Pharmax"
 -- ============================================================
 -- EXTENSIONS
 -- ============================================================
@@ -69,71 +69,35 @@ CREATE EXTENSION IF NOT EXISTS "btree_gist";    -- GiST indexes for exclusion co
 -- (non-breaking, no table rewrite required in PostgreSQL 9.1+)
 
 
-CREATE TYPE drug_schedule AS ENUM (
-    'OTC',   -- Over-the-counter; no prescription required
-    'G',     -- Schedule G: caution / restricted conditions (DRAP)
-    'H',     -- Schedule H: prescription-only
-    'H1',    -- Schedule H1: psychotropic / stricter prescription
-    'X'      -- Schedule X: controlled / addictive substances
-);
-
-CREATE TYPE customer_type AS ENUM (
-    'retailer',     -- Retail pharmacy (most common)
-    'wholesaler',   -- Sub-distributor
-    'hospital',     -- Hospital pharmacy / institution
-    'clinic',       -- Small clinic / dispensary
-    'government'    -- Government health facility (DHQ, THQ, etc.)
-);
-
-CREATE TYPE contact_entity AS ENUM ('supplier', 'customer');
-
-CREATE TYPE movement_type AS ENUM (
-    'purchase',          -- Goods received into stock
-    'sale',              -- Goods dispatched on sale invoice
-    'sale_return',       -- Customer returned goods
-    'purchase_return',   -- Goods returned to supplier
-    'adjustment_in',     -- Manual positive correction
-    'adjustment_out',    -- Write-off: damage, theft, breakage
-    'expiry_writeoff'    -- Expired stock written off
-);
-
-CREATE TYPE invoice_status AS ENUM (
-    'draft',       -- Saved but not confirmed
-    'confirmed',   -- Confirmed; stock/ledger updated
-    'cancelled'    -- Voided; all effects reversed
-);
-
-CREATE TYPE payment_mode AS ENUM (
-    'cash',
-    'bank_transfer',  -- IBFT / RTGS / online banking
-    'cheque',
-    'mobile_wallet'   -- JazzCash, EasyPaisa
-);
-
-CREATE TYPE payment_direction AS ENUM (
-    'received',   -- Money received from customer
-    'paid'        -- Money paid to supplier
-);
-
-CREATE TYPE expense_category AS ENUM (
-    'transport',
-    'rent',
-    'utilities',
-    'salaries',
-    'marketing',
-    'maintenance',
-    'miscellaneous'
-);
-
-CREATE TYPE return_reason AS ENUM (
-    'near_expiry',
-    'damaged',
-    'excess_stock',
-    'wrong_product',
-    'quality_issue',
-    'customer_request',
-    'other'
-);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'drug_schedule') THEN
+        CREATE TYPE drug_schedule AS ENUM ('OTC', 'G', 'H', 'H1', 'X');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'customer_type') THEN
+        CREATE TYPE customer_type AS ENUM ('retailer', 'wholesaler', 'hospital', 'clinic', 'government');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'contact_entity') THEN
+        CREATE TYPE contact_entity AS ENUM ('supplier', 'customer');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'movement_type') THEN
+        CREATE TYPE movement_type AS ENUM ('purchase', 'sale', 'sale_return', 'purchase_return', 'adjustment_in', 'adjustment_out', 'expiry_writeoff');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'invoice_status') THEN
+        CREATE TYPE invoice_status AS ENUM ('draft', 'confirmed', 'cancelled');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_mode') THEN
+        CREATE TYPE payment_mode AS ENUM ('cash', 'bank_transfer', 'cheque', 'mobile_wallet');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_direction') THEN
+        CREATE TYPE payment_direction AS ENUM ('received', 'paid');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'expense_category') THEN
+        CREATE TYPE expense_category AS ENUM ('transport', 'rent', 'utilities', 'salaries', 'marketing', 'maintenance', 'miscellaneous');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'return_reason') THEN
+        CREATE TYPE return_reason AS ENUM ('near_expiry', 'damaged', 'excess_stock', 'wrong_product', 'quality_issue', 'customer_request', 'other');
+    END IF;
+END $$;
 
 
 -- ============================================================
@@ -141,7 +105,7 @@ CREATE TYPE return_reason AS ENUM (
 -- ============================================================
 -- 3NF / BCNF: All non-key attributes depend solely on user_id.
 -- No partial or transitive dependencies.
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id         UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     username        TEXT            NOT NULL,
     password_hash   TEXT            NOT NULL,   -- bcrypt hash; never store plaintext
@@ -170,7 +134,7 @@ COMMENT ON COLUMN users.password_hash    IS 'bcrypt hash via bcryptjs. Plain-tex
 -- 3NF / BCNF: All attributes depend only on manufacturer_id.
 -- country determines is_imported — not a separate column
 -- (derived at query time: country != 'Pakistan' ⟹ imported).
-CREATE TABLE manufacturers (
+CREATE TABLE IF NOT EXISTS manufacturers (
     manufacturer_id     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     name                TEXT        NOT NULL,
     drap_mfg_licence    TEXT,                  -- DRAP manufacturing licence number
@@ -206,7 +170,7 @@ COMMENT ON COLUMN manufacturers.search_vector IS 'Auto-maintained FTS vector. Ne
 -- 3NF / BCNF: Simple lookup table; no non-trivial functional
 -- dependencies. description → name is not a FD (one-to-one
 -- is fine here; no transitive dependency exists).
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     category_id     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     name            TEXT        NOT NULL,
     description     TEXT,
@@ -251,7 +215,7 @@ ON CONFLICT (name) DO NOTHING;
 -- No non-trivial FDs where the determinant is not a superkey.
 -- manufacturer_id, category_id are FKs (not transitive deps).
 -- → Table is in BCNF. ✓
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     product_id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     name                    TEXT            NOT NULL,
     manufacturer_id         UUID            NOT NULL REFERENCES manufacturers(manufacturer_id)
@@ -340,7 +304,7 @@ COMMENT ON COLUMN products.search_vector         IS 'Trigger-maintained FTS vect
 -- ============================================================
 -- 3NF: product_id, changed_at → all attributes. No transitive deps.
 -- This table is INSERT-ONLY. No UPDATE or DELETE ever.
-CREATE TABLE product_price_history (
+CREATE TABLE IF NOT EXISTS product_price_history (
     history_id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id              UUID            NOT NULL REFERENCES products(product_id)
                                             ON DELETE CASCADE,
@@ -368,7 +332,7 @@ COMMENT ON COLUMN product_price_history.effective_from IS 'Timestamp from which 
 --
 -- NOTE: Pakistan uses STRN (Sales Tax Registration Number),
 -- not Indian GSTIN. Column named strn accordingly.
-CREATE TABLE suppliers (
+CREATE TABLE IF NOT EXISTS suppliers (
     supplier_id         UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     name                TEXT            NOT NULL,
     strn                TEXT            UNIQUE,        -- Sales Tax Registration Number (FBR)
@@ -414,7 +378,7 @@ COMMENT ON COLUMN suppliers.opening_balance IS 'Payable balance at the time of o
 -- customer_type is a lookup value but only to the enum type, not
 -- a separate table — enum provides all normalization benefits
 -- without a join. ✓
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
     customer_id         UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     name                TEXT            NOT NULL,
     strn                TEXT            UNIQUE,        -- Sales Tax Reg. No. (optional for small retailers)
@@ -469,7 +433,7 @@ COMMENT ON COLUMN customers.opening_balance IS 'Receivable balance at onboarding
 -- (supplier_contacts, customer_contacts) would be purer, but
 -- identical structure + polymorphic queries justify consolidation.
 -- Application layer enforces referential integrity.
-CREATE TABLE contact_persons (
+CREATE TABLE IF NOT EXISTS contact_persons (
     contact_id      UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     entity_type     contact_entity  NOT NULL,
     entity_id       UUID            NOT NULL,       -- supplier_id or customer_id
@@ -493,7 +457,7 @@ COMMENT ON COLUMN contact_persons.entity_id IS 'References suppliers.supplier_id
 -- INTENTIONAL DENORMALIZATION: snapshot semantics (invoice total
 -- must be immutable after confirmation even if product rates
 -- change later). Justified and documented. ✓
-CREATE TABLE purchase_invoices (
+CREATE TABLE IF NOT EXISTS purchase_invoices (
     purchase_invoice_id UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     supplier_id         UUID            NOT NULL REFERENCES suppliers(supplier_id)
                                         ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -531,7 +495,7 @@ COMMENT ON COLUMN purchase_invoices.subtotal    IS 'Intentionally denormalised. 
 -- 3NF / BCNF: (purchase_invoice_id, batch_id) → {all attributes}.
 -- Prices here are snapshots of actual purchase prices at the time
 -- of the GRN — NOT current product rates. ✓
-CREATE TABLE purchase_invoice_items (
+CREATE TABLE IF NOT EXISTS purchase_invoice_items (
     item_id             UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     purchase_invoice_id UUID            NOT NULL REFERENCES purchase_invoices(purchase_invoice_id)
                                         ON DELETE RESTRICT,
@@ -570,7 +534,7 @@ COMMENT ON COLUMN purchase_invoice_items.line_total IS 'Snapshot total: (purchas
 --   Justification: stock_summary view is the most-queried report;
 --   aggregating stock_movements on every load is expensive at scale.
 -- All other columns depend only on batch_id. ✓
-CREATE TABLE batches (
+CREATE TABLE IF NOT EXISTS batches (
     batch_id                UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id              UUID            NOT NULL REFERENCES products(product_id)
                                             ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -609,7 +573,7 @@ COMMENT ON COLUMN batches.mrp                  IS 'Maximum Retail Price per DRAP
 -- This is an append-only table — no UPDATE or DELETE ever.
 -- reference_type + reference_id is a polymorphic audit pointer.
 -- quantity is always positive; direction is encoded in movement_type.
-CREATE TABLE stock_movements (
+CREATE TABLE IF NOT EXISTS stock_movements (
     movement_id     UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     batch_id        UUID            NOT NULL REFERENCES batches(batch_id)
                                     ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -635,7 +599,7 @@ COMMENT ON COLUMN stock_movements.reference_id IS 'UUID of the source document (
 -- invoice_number is a candidate key. Sequence ensures collision-free, gapless-ready numbering.
 CREATE SEQUENCE IF NOT EXISTS sale_invoice_num_seq;
 
-CREATE TABLE sale_invoices (
+CREATE TABLE IF NOT EXISTS sale_invoices (
     sale_invoice_id     UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number      TEXT            NOT NULL
                                         DEFAULT concat('INV-', to_char(CURRENT_DATE, 'YYYY'), '-', lpad(nextval('sale_invoice_num_seq')::text, 6, '0')),
@@ -677,7 +641,7 @@ COMMENT ON COLUMN sale_invoices.due_date       IS 'Pre-computed from invoice_dat
 -- ============================================================
 -- 3NF / BCNF: item_id → {all attributes}.
 -- (sale_invoice_id, batch_id) is a candidate key. ✓
-CREATE TABLE sale_invoice_items (
+CREATE TABLE IF NOT EXISTS sale_invoice_items (
     item_id             UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     sale_invoice_id     UUID            NOT NULL REFERENCES sale_invoices(sale_invoice_id)
                                         ON DELETE RESTRICT,
@@ -704,7 +668,7 @@ COMMENT ON TABLE  sale_invoice_items IS 'Line items for sales invoices. Batch se
 -- 15. PURCHASE RETURNS
 -- ============================================================
 -- 3NF / BCNF: return_id → {all attributes}. ✓
-CREATE TABLE purchase_returns (
+CREATE TABLE IF NOT EXISTS purchase_returns (
     return_id           UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     purchase_invoice_id UUID            NOT NULL REFERENCES purchase_invoices(purchase_invoice_id)
                                         ON DELETE RESTRICT,
@@ -720,7 +684,7 @@ CREATE TABLE purchase_returns (
     updated_at          TIMESTAMPTZ     NOT NULL DEFAULT now()
 );
 
-CREATE TABLE purchase_return_items (
+CREATE TABLE IF NOT EXISTS purchase_return_items (
     item_id         UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     return_id       UUID            NOT NULL REFERENCES purchase_returns(return_id) ON DELETE CASCADE,
     batch_id        UUID            NOT NULL REFERENCES batches(batch_id) ON DELETE RESTRICT,
@@ -736,7 +700,7 @@ COMMENT ON TABLE purchase_returns IS 'Returns of purchased goods back to supplie
 -- 16. SALE RETURNS
 -- ============================================================
 -- 3NF / BCNF: return_id → {all attributes}. ✓
-CREATE TABLE sale_returns (
+CREATE TABLE IF NOT EXISTS sale_returns (
     return_id           UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     sale_invoice_id     UUID            NOT NULL REFERENCES sale_invoices(sale_invoice_id)
                                         ON DELETE RESTRICT,
@@ -752,7 +716,7 @@ CREATE TABLE sale_returns (
     updated_at          TIMESTAMPTZ     NOT NULL DEFAULT now()
 );
 
-CREATE TABLE sale_return_items (
+CREATE TABLE IF NOT EXISTS sale_return_items (
     item_id         UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     return_id       UUID            NOT NULL REFERENCES sale_returns(return_id) ON DELETE CASCADE,
     batch_id        UUID            NOT NULL REFERENCES batches(batch_id) ON DELETE RESTRICT,
@@ -770,7 +734,7 @@ COMMENT ON TABLE sale_returns IS 'Returns of sold goods from customers. Restores
 -- 3NF / BCNF: payment_id → {all attributes}.
 -- direction (received/paid) distinguishes customer vs supplier.
 -- party_id is polymorphic on direction. ✓
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
     payment_id      UUID                PRIMARY KEY DEFAULT gen_random_uuid(),
     direction       payment_direction   NOT NULL,
     -- Polymorphic: direction='received' → customer_id; direction='paid' → supplier_id
@@ -795,7 +759,7 @@ COMMENT ON COLUMN payments.reference_no IS 'Cheque number, IBFT transaction ID, 
 -- 18. EXPENSES
 -- ============================================================
 -- 3NF / BCNF: expense_id → {all attributes}. ✓
-CREATE TABLE expenses (
+CREATE TABLE IF NOT EXISTS expenses (
     expense_id      UUID                PRIMARY KEY DEFAULT gen_random_uuid(),
     expense_date    DATE                NOT NULL DEFAULT CURRENT_DATE,
     category        expense_category    NOT NULL DEFAULT 'miscellaneous',
@@ -826,6 +790,7 @@ END;
 $$;
 
 -- Apply to all tables with updated_at
+-- Apply to all tables with updated_at
 DO $$ DECLARE t TEXT;
 BEGIN
     FOREACH t IN ARRAY ARRAY[
@@ -833,6 +798,7 @@ BEGIN
         'purchase_invoices','batches','sale_invoices',
         'purchase_returns','sale_returns'
     ] LOOP
+        EXECUTE format('DROP TRIGGER IF EXISTS trg_%I_updated_at ON %I;', t, t);
         EXECUTE format('
             CREATE TRIGGER trg_%I_updated_at
             BEFORE UPDATE ON %I
@@ -858,6 +824,7 @@ BEGIN
     FOREACH t IN ARRAY ARRAY[
         'users','manufacturers','products','suppliers','customers'
     ] LOOP
+        EXECUTE format('DROP TRIGGER IF EXISTS trg_%I_deactivated ON %I;', t, t);
         EXECUTE format('
             CREATE TRIGGER trg_%I_deactivated
             BEFORE UPDATE OF is_active ON %I
@@ -874,6 +841,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_products_prescription ON products;
 CREATE TRIGGER trg_products_prescription
 BEFORE INSERT OR UPDATE OF drug_schedule ON products
 FOR EACH ROW EXECUTE FUNCTION fn_sync_prescription_flag();
@@ -982,6 +950,7 @@ END;
 $$;
 
 -- Trigger 1: fires on products INSERT or UPDATE of any searchable column
+DROP TRIGGER IF EXISTS trg_products_search_vector ON products;
 CREATE TRIGGER trg_products_search_vector
 BEFORE INSERT OR UPDATE OF
     name, generic_formula, form, hsn_code, drap_registration_no,
@@ -991,6 +960,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_rebuild_product_search_vector();
 
 -- Trigger 2: fires when a manufacturer's name is edited
 -- Propagates the change to all products of that manufacturer
+DROP TRIGGER IF EXISTS trg_manufacturer_name_propagate ON manufacturers;
 CREATE TRIGGER trg_manufacturer_name_propagate
 AFTER UPDATE OF name ON manufacturers
 FOR EACH ROW
@@ -999,6 +969,7 @@ EXECUTE FUNCTION fn_rebuild_product_search_vector();
 
 -- Trigger 3: fires when a category's name is edited
 -- Propagates the change to all products in that category
+DROP TRIGGER IF EXISTS trg_category_name_propagate ON categories;
 CREATE TRIGGER trg_category_name_propagate
 AFTER UPDATE OF name ON categories
 FOR EACH ROW
@@ -1032,6 +1003,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_stock_movement_sync ON stock_movements;
 CREATE TRIGGER trg_stock_movement_sync
 AFTER INSERT ON stock_movements
 FOR EACH ROW EXECUTE FUNCTION fn_sync_batch_quantity();
@@ -1056,6 +1028,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_batch_insert_opening_movement ON batches;
 CREATE TRIGGER trg_batch_insert_opening_movement
 AFTER INSERT ON batches
 FOR EACH ROW EXECUTE FUNCTION fn_batch_opening_movement();
@@ -1101,6 +1074,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_sale_invoice_credit_check ON sale_invoices;
 CREATE TRIGGER trg_sale_invoice_credit_check
 BEFORE UPDATE OF status ON sale_invoices
 FOR EACH ROW EXECUTE FUNCTION fn_check_credit_limit();
@@ -1111,90 +1085,90 @@ FOR EACH ROW EXECUTE FUNCTION fn_check_credit_limit();
 -- ============================================================
 
 -- ── Full-text search (GIN on generated tsvector columns) ─────
-CREATE INDEX idx_manufacturers_fts   ON manufacturers   USING GIN (search_vector);
-CREATE INDEX idx_products_fts        ON products        USING GIN (search_vector);
-CREATE INDEX idx_suppliers_fts       ON suppliers       USING GIN (search_vector);
-CREATE INDEX idx_customers_fts       ON customers       USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS idx_manufacturers_fts   ON manufacturers   USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS idx_products_fts        ON products        USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS idx_suppliers_fts       ON suppliers       USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS idx_customers_fts       ON customers       USING GIN (search_vector);
 
 -- Trigram indexes for partial-match ILIKE search (e.g. autocomplete)
-CREATE INDEX idx_products_name_trgm        ON products     USING GIN (name gin_trgm_ops);
-CREATE INDEX idx_products_formula_trgm     ON products     USING GIN (generic_formula gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_products_name_trgm        ON products     USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_products_formula_trgm     ON products     USING GIN (generic_formula gin_trgm_ops);
 -- ^ Critical for Pakistan: "parace" autocomplete returns all Paracetamol brands/strengths
-CREATE INDEX idx_manufacturers_name_trgm   ON manufacturers USING GIN (name gin_trgm_ops);
-CREATE INDEX idx_suppliers_name_trgm       ON suppliers    USING GIN (name gin_trgm_ops);
-CREATE INDEX idx_customers_name_trgm       ON customers    USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_manufacturers_name_trgm   ON manufacturers USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_suppliers_name_trgm       ON suppliers    USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_customers_name_trgm       ON customers    USING GIN (name gin_trgm_ops);
 
 -- ── Master data filters ───────────────────────────────────────
-CREATE INDEX idx_products_manufacturer   ON products  (manufacturer_id);
-CREATE INDEX idx_products_category       ON products  (category_id);
-CREATE INDEX idx_products_active         ON products  (is_active) WHERE is_active = TRUE;
-CREATE INDEX idx_products_schedule       ON products  (drug_schedule);
+CREATE INDEX IF NOT EXISTS idx_products_manufacturer   ON products  (manufacturer_id);
+CREATE INDEX IF NOT EXISTS idx_products_category       ON products  (category_id);
+CREATE INDEX IF NOT EXISTS idx_products_active         ON products  (is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_products_schedule       ON products  (drug_schedule);
 
-CREATE INDEX idx_manufacturers_country   ON manufacturers (country);
-CREATE INDEX idx_manufacturers_active    ON manufacturers (is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_manufacturers_country   ON manufacturers (country);
+CREATE INDEX IF NOT EXISTS idx_manufacturers_active    ON manufacturers (is_active) WHERE is_active = TRUE;
 
-CREATE INDEX idx_suppliers_strn          ON suppliers (strn);
-CREATE INDEX idx_suppliers_city          ON suppliers (city);
-CREATE INDEX idx_suppliers_active        ON suppliers (is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_suppliers_strn          ON suppliers (strn);
+CREATE INDEX IF NOT EXISTS idx_suppliers_city          ON suppliers (city);
+CREATE INDEX IF NOT EXISTS idx_suppliers_active        ON suppliers (is_active) WHERE is_active = TRUE;
 
-CREATE INDEX idx_customers_strn          ON customers (strn);
-CREATE INDEX idx_customers_territory     ON customers (territory);
-CREATE INDEX idx_customers_city          ON customers (city);
-CREATE INDEX idx_customers_type          ON customers (customer_type);
-CREATE INDEX idx_customers_active        ON customers (is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_customers_strn          ON customers (strn);
+CREATE INDEX IF NOT EXISTS idx_customers_territory     ON customers (territory);
+CREATE INDEX IF NOT EXISTS idx_customers_city          ON customers (city);
+CREATE INDEX IF NOT EXISTS idx_customers_type          ON customers (customer_type);
+CREATE INDEX IF NOT EXISTS idx_customers_active        ON customers (is_active) WHERE is_active = TRUE;
 
 -- ── Batch / stock indexes ─────────────────────────────────────
-CREATE INDEX idx_batches_product         ON batches (product_id);
-CREATE INDEX idx_batches_supplier        ON batches (supplier_id);
-CREATE INDEX idx_batches_expiry          ON batches (expiry_date);
-CREATE INDEX idx_batches_active          ON batches (is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_batches_product         ON batches (product_id);
+CREATE INDEX IF NOT EXISTS idx_batches_supplier        ON batches (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_batches_expiry          ON batches (expiry_date);
+CREATE INDEX IF NOT EXISTS idx_batches_active          ON batches (is_active) WHERE is_active = TRUE;
 -- Composite: fastest path for stock dashboard query
-CREATE INDEX idx_batches_stock_check     ON batches (product_id, is_active, quantity_available)
+CREATE INDEX IF NOT EXISTS idx_batches_stock_check     ON batches (product_id, is_active, quantity_available)
     WHERE is_active = TRUE AND quantity_available > 0;
 -- Near-expiry alert query (covers expiry management screen)
-CREATE INDEX idx_batches_near_expiry     ON batches (expiry_date, quantity_available)
+CREATE INDEX IF NOT EXISTS idx_batches_near_expiry     ON batches (expiry_date, quantity_available)
     WHERE is_active = TRUE AND quantity_available > 0;
 
 -- ── Stock movements ───────────────────────────────────────────
-CREATE INDEX idx_movements_batch         ON stock_movements (batch_id);
-CREATE INDEX idx_movements_type          ON stock_movements (movement_type);
-CREATE INDEX idx_movements_reference     ON stock_movements (reference_type, reference_id);
-CREATE INDEX idx_movements_created       ON stock_movements (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_movements_batch         ON stock_movements (batch_id);
+CREATE INDEX IF NOT EXISTS idx_movements_type          ON stock_movements (movement_type);
+CREATE INDEX IF NOT EXISTS idx_movements_reference     ON stock_movements (reference_type, reference_id);
+CREATE INDEX IF NOT EXISTS idx_movements_created       ON stock_movements (created_at DESC);
 
 -- ── Invoice indexes ───────────────────────────────────────────
-CREATE INDEX idx_purchase_invoices_supplier ON purchase_invoices (supplier_id);
-CREATE INDEX idx_purchase_invoices_date     ON purchase_invoices (invoice_date DESC);
-CREATE INDEX idx_purchase_invoices_status   ON purchase_invoices (status);
-CREATE INDEX idx_purchase_items_invoice     ON purchase_invoice_items (purchase_invoice_id);
-CREATE INDEX idx_purchase_items_product     ON purchase_invoice_items (product_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoices_supplier ON purchase_invoices (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoices_date     ON purchase_invoices (invoice_date DESC);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoices_status   ON purchase_invoices (status);
+CREATE INDEX IF NOT EXISTS idx_purchase_items_invoice     ON purchase_invoice_items (purchase_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_items_product     ON purchase_invoice_items (product_id);
 
-CREATE INDEX idx_sale_invoices_customer     ON sale_invoices (customer_id);
-CREATE INDEX idx_sale_invoices_date         ON sale_invoices (invoice_date DESC);
-CREATE INDEX idx_sale_invoices_status       ON sale_invoices (status);
-CREATE INDEX idx_sale_invoices_balance      ON sale_invoices (balance_due) WHERE balance_due > 0;
+CREATE INDEX IF NOT EXISTS idx_sale_invoices_customer     ON sale_invoices (customer_id);
+CREATE INDEX IF NOT EXISTS idx_sale_invoices_date         ON sale_invoices (invoice_date DESC);
+CREATE INDEX IF NOT EXISTS idx_sale_invoices_status       ON sale_invoices (status);
+CREATE INDEX IF NOT EXISTS idx_sale_invoices_balance      ON sale_invoices (balance_due) WHERE balance_due > 0;
 -- AR ageing: most critical financial query
-CREATE INDEX idx_sale_invoices_ageing       ON sale_invoices (customer_id, due_date, balance_due)
+CREATE INDEX IF NOT EXISTS idx_sale_invoices_ageing       ON sale_invoices (customer_id, due_date, balance_due)
     WHERE status = 'confirmed' AND balance_due > 0;
 
-CREATE INDEX idx_sale_items_invoice         ON sale_invoice_items (sale_invoice_id);
-CREATE INDEX idx_sale_items_batch           ON sale_invoice_items (batch_id);
+CREATE INDEX IF NOT EXISTS idx_sale_items_invoice         ON sale_invoice_items (sale_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_sale_items_batch           ON sale_invoice_items (batch_id);
 
 -- ── Payments ──────────────────────────────────────────────────
-CREATE INDEX idx_payments_party        ON payments (party_id, direction);
-CREATE INDEX idx_payments_date         ON payments (payment_date DESC);
+CREATE INDEX IF NOT EXISTS idx_payments_party        ON payments (party_id, direction);
+CREATE INDEX IF NOT EXISTS idx_payments_date         ON payments (payment_date DESC);
 
 -- ── Expenses ──────────────────────────────────────────────────
-CREATE INDEX idx_expenses_date         ON expenses (expense_date DESC);
-CREATE INDEX idx_expenses_category     ON expenses (category);
+CREATE INDEX IF NOT EXISTS idx_expenses_date         ON expenses (expense_date DESC);
+CREATE INDEX IF NOT EXISTS idx_expenses_category     ON expenses (category);
 
 -- ── Contact persons ───────────────────────────────────────────
-CREATE INDEX idx_contacts_entity       ON contact_persons (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_entity       ON contact_persons (entity_type, entity_id);
 -- Partial unique: only one primary contact per entity
-CREATE UNIQUE INDEX uidx_contacts_primary
+CREATE UNIQUE INDEX IF NOT EXISTS uidx_contacts_primary
     ON contact_persons (entity_type, entity_id) WHERE is_primary = TRUE;
 
 -- ── Price history ─────────────────────────────────────────────
-CREATE INDEX idx_price_history_product  ON product_price_history (product_id, effective_from DESC);
+CREATE INDEX IF NOT EXISTS idx_price_history_product  ON product_price_history (product_id, effective_from DESC);
 
 
 -- ============================================================
@@ -1202,7 +1176,7 @@ CREATE INDEX idx_price_history_product  ON product_price_history (product_id, ef
 -- ============================================================
 
 -- Stock summary (the primary inventory dashboard query)
-CREATE VIEW v_stock_summary AS
+CREATE OR REPLACE VIEW v_stock_summary AS
 SELECT
     p.product_id,
     p.name                                          AS product_name,
@@ -1245,7 +1219,7 @@ GROUP BY p.product_id, p.name, p.generic_formula, m.name, m.country, c.name,
          p.shelf_no, p.default_sale_rate;
 
 -- Near-expiry batches (dashboard alert + expiry management screen)
-CREATE VIEW v_near_expiry_batches AS
+CREATE OR REPLACE VIEW v_near_expiry_batches AS
 SELECT
     b.batch_id,
     b.batch_number,
@@ -1276,7 +1250,7 @@ WHERE b.is_active = TRUE
 ORDER BY days_to_expiry ASC;
 
 -- Customer AR ledger (accounts receivable ageing)
-CREATE VIEW v_customer_ar AS
+CREATE OR REPLACE VIEW v_customer_ar AS
 SELECT
     c.customer_id,
     c.name                                          AS customer_name,
@@ -1309,7 +1283,7 @@ WHERE c.is_active = TRUE
 GROUP BY c.customer_id, c.name, c.credit_limit, c.territory, c.customer_type, c.opening_balance;
 
 -- Supplier AP ledger (accounts payable)
-CREATE VIEW v_supplier_ap AS
+CREATE OR REPLACE VIEW v_supplier_ap AS
 SELECT
     s.supplier_id,
     s.name                                          AS supplier_name,
@@ -1325,7 +1299,7 @@ WHERE s.is_active = TRUE
 GROUP BY s.supplier_id, s.name, s.credit_period_days, s.opening_balance;
 
 -- Controlled substances stock (DRAP compliance view)
-CREATE VIEW v_controlled_stock AS
+CREATE OR REPLACE VIEW v_controlled_stock AS
 SELECT
     p.product_id,
     p.name                  AS product_name,
@@ -1345,7 +1319,7 @@ WHERE p.drug_schedule IN ('H1', 'X')
   AND b.quantity_available > 0;
 
 -- Dashboard KPI snapshot
-CREATE VIEW v_dashboard_kpis AS
+CREATE OR REPLACE VIEW v_dashboard_kpis AS
 SELECT
     (SELECT COALESCE(SUM(net_receivable), 0) FROM sale_invoices
      WHERE status = 'confirmed' AND invoice_date = CURRENT_DATE)    AS todays_sales,

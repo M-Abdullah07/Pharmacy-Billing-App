@@ -11,7 +11,7 @@ const pool = new Pool({
   port:     process.env.DB_PORT     || 5432,
   database: process.env.DB_NAME     || "Pharmax",
   user:     process.env.DB_USER     || "postgres",
-  password: process.env.DB_PASSWORD || "password",
+  password: process.env.DB_PASSWORD,
 });
 console.log(process.env.DB_NAME);
 pool.on("error", (err) => {
@@ -58,25 +58,6 @@ async function runDb(sql, params = []) {
   };
 }
 
-// ─── Generic IPC (for any direct SQL calls from renderer) ────────────────────
-// NOTE: PostgreSQL uses $1, $2 … placeholders — NOT ? like SQLite
-ipcMain.handle("query-db", async (event, sql, params = []) => {
-  try {
-    return await queryDb(sql, params);
-  } catch (err) {
-    console.error("❌ query-db error:", err.message);
-    throw err;
-  }
-});
-
-ipcMain.handle("run-db", async (event, sql, params = []) => {
-  try {
-    return await runDb(sql, params);
-  } catch (err) {
-    console.error("❌ run-db error:", err.message);
-    throw err;
-  }
-});
 
 // ════════════════════════════════════════════════════════════════════════════
 // AUTH  (users table — schema: user_id UUID, username, password_hash, role)
@@ -1098,6 +1079,55 @@ ipcMain.handle("add-company", async (event, data) => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+// SALES  (sale_invoices, sale_invoice_items, stock movements)
+// ════════════════════════════════════════════════════════════════════════════
+
+ipcMain.handle("add-sale", async (event, data) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Create sale invoice
+    const invoiceResult = await client.query(
+      `INSERT INTO sale_invoices
+         (customer_id, invoice_date, total_amount, discount_amount, tax_amount, grand_total, is_credit, status, payment_status)
+       VALUES ($1, NOW(), $2, 0, 0, $2, $3, 'completed', $4)
+       RETURNING sale_invoice_id`,
+      [data.customerId, data.totalAmount, data.isCredit, data.isCredit ? 'pending' : 'paid']
+    );
+    const saleInvoiceId = invoiceResult.rows[0].sale_invoice_id;
+
+    // Add sale items and update stock
+    for (const item of data.items) {
+      // Insert sale invoice item
+      await client.query(
+        `INSERT INTO sale_invoice_items
+           (sale_invoice_id, batch_id, quantity, unit_price, total_price)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [saleInvoiceId, item.batchId, item.quantity, item.saleRate, item.totalAmount]
+      );
+
+      // Create stock movement (sale reduces stock)
+      await client.query(
+        `INSERT INTO stock_movements
+           (batch_id, movement_type, quantity, reference_type, reference_id, notes)
+         VALUES ($1, 'sale', $2, 'sale_invoice', $3, 'Sale transaction')`,
+        [item.batchId, -item.quantity, saleInvoiceId]
+      );
+    }
+
+    await client.query('COMMIT');
+    return { success: true, saleId: saleInvoiceId };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error("❌ add-sale error:", err.message);
+    return { success: false, error: err.message };
+  } finally {
+    client.release();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 // REMOVED HANDLERS  — these no longer exist in pharmax_schema.sql
 // ─────────────────────────────────────────────────────────────────────────
 // ❌ add-area / get-areas  → Area table dropped. Use territory TEXT on customers.
@@ -1109,6 +1139,14 @@ ipcMain.handle("add-company", async (event, data) => {
 // Update those pages to use the new handlers listed above.
 // ════════════════════════════════════════════════════════════════════════════
 
+ipcMain.handle("query-db", async (event, sql, params) => {
+  try {
+    return await queryDb(sql, params);
+  } catch (err) {
+    console.error("❌ query-db error:", err.message);
+    throw err;
+  }
+});
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
