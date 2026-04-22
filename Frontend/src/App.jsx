@@ -11,6 +11,7 @@ import Products from "@/pages/Products";
 import Signup from "@/pages/Signup";
 import CommandMenu from "@/components/Command";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import AddBatch from "@/pages/AddBatch";
 import SalesReport from "@/pages/SalesReport";
 import CreditDues from "@/pages/CreditDues";
