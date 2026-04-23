@@ -111,14 +111,16 @@ flowchart TD
 
     USER -- "Product / Category Data" --> P2
     P2 --> DS2
-    DS2 -- "Stock Levels" --> USER
+    DS2 -- "Stock Levels" --> P2
+    P2 -- "Stock Levels" --> USER
 
     USER -- "Purchase Order Data" --> P3
     P3 --> DS3
 
     USER -- "Sale Order Data" --> P4
     P4 --> DS4
-    DS4 -- "Invoice / Receipt" --> USER
+    DS4 -- "Invoice / Receipt" --> P4
+    P4 -- "Invoice / Receipt" --> USER
 
     USER -- "Payment Info" --> P5
     P5 --> DS5
