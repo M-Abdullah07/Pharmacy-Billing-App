@@ -59,7 +59,7 @@ async function runDb(sql, params = []) {
 ipcMain.handle("login-user", async (event, username, password) => {
   try {
     const rows = await queryDb(
-      `SELECT user_id, password_hash, is_active, failed_attempts, locked_until
+      `SELECT user_id, password_hash, is_active, failed_attempts, locked_until, updated_at
        FROM users WHERE username = $1`,
       [username]
     );
@@ -70,10 +70,36 @@ ipcMain.handle("login-user", async (event, username, password) => {
     if (!user.is_active) {
       return { success: false, error: "Account is deactivated. Contact administrator." };
     }
+    if (user.locked_until) {
+      const now = /* @__PURE__ */ new Date();
+      const lockExpiredTime = new Date(user.locked_until);
+      if (lockExpiredTime <= now) {
+        await runDb(
+          `UPDATE users SET failed_attempts = 0, locked_until = NULL, updated_at = now() WHERE user_id = $1`,
+          [user.user_id]
+        );
+        user.failed_attempts = 0;
+        user.locked_until = null;
+      }
+    }
+    const RESET_WINDOW_HOURS = 24;
+    if (user.failed_attempts > 0 && user.updated_at) {
+      const lastUpdate = new Date(user.updated_at);
+      const now = /* @__PURE__ */ new Date();
+      const hoursPassed = (now - lastUpdate) / (1e3 * 60 * 60);
+      if (hoursPassed >= RESET_WINDOW_HOURS) {
+        await runDb(
+          `UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE user_id = $1`,
+          [user.user_id]
+        );
+        user.failed_attempts = 0;
+        user.locked_until = null;
+      }
+    }
     if (user.locked_until && new Date(user.locked_until) > /* @__PURE__ */ new Date()) {
-      const minutesLeft = Math.ceil(
+      const minutesLeft = Math.max(1, Math.ceil(
         (new Date(user.locked_until) - /* @__PURE__ */ new Date()) / (1e3 * 60)
-      );
+      ));
       return {
         success: false,
         error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
@@ -90,9 +116,9 @@ ipcMain.handle("login-user", async (event, username, password) => {
         [newFailCount, lockUntil, user.user_id]
       );
       if (newFailCount >= 5) {
-        const minutesLeft = Math.ceil(
-          (new Date(user.locked_until) - /* @__PURE__ */ new Date()) / (1e3 * 60)
-        );
+        const minutesLeft = Math.max(1, Math.ceil(
+          (new Date(lockUntil) - /* @__PURE__ */ new Date()) / (1e3 * 60)
+        ));
         return {
           success: false,
           error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
