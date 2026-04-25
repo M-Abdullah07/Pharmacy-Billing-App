@@ -5,7 +5,8 @@ import { TfiPackage } from "react-icons/tfi";
 import { HiOutlineBuildingOffice, HiOutlineCreditCard, HiOutlineUser } from "react-icons/hi2";
 import { HiOutlineDocumentReport } from "react-icons/hi";
 import { IoLayersOutline, IoLogOutOutline, IoPricetagOutline, IoSettingsOutline } from "react-icons/io5";
-import { Factory } from "lucide-react";
+import { Factory, FileText } from "lucide-react";
+
 import {
   Sidebar,
   SidebarHeader,
@@ -19,7 +20,7 @@ import {
   SidebarMenuButton,
   SidebarSeparator,
 } from "./ui/sidebar";
-import { Avatar, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
 // ── SALES ─────────────────────────────────────────────────────────────────────
 const salesItems = [
@@ -35,7 +36,8 @@ const inventoryItems = [
   { title: "Products",      icon: TfiPackage },
   { title: "Manufacturers", icon: Factory },
   { title: "Companies",     icon: HiOutlineBuildingOffice },
-  { title: "Add Batch",     icon: IoLayersOutline },
+  { title: "Batches",     icon: IoLayersOutline },
+  { title: "Purchase Invoice", icon: FileText }
 ];
 
 export default function AppSidebar({ onNavigate, onLogout, username }) {
@@ -118,6 +120,7 @@ export default function AppSidebar({ onNavigate, onLogout, username }) {
             <SidebarMenuButton>
               <Avatar>
                 <AvatarImage src="https://i.pravatar.cc/20" />
+                <AvatarFallback>{username?.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <span>{username}</span>
             </SidebarMenuButton>

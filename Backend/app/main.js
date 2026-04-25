@@ -86,9 +86,12 @@ ipcMain.handle("login-user", async (event, username, password) => {
 
     // UC-101 Alt Flow B — account lock check
     if (user.locked_until && new Date(user.locked_until) > new Date()) {
+      const minutesLeft = Math.ceil(
+        (new Date(user.locked_until) - /* @__PURE__ */ new Date()) / (1e3 * 60)
+      );
       return {
         success: false,
-        error: "Account temporarily locked. Please try again after 15 minutes.",
+        error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
       };
     }
 
@@ -108,9 +111,12 @@ ipcMain.handle("login-user", async (event, username, password) => {
       );
 
       if (newFailCount >= 5) {
+        const minutesLeft = Math.ceil(
+          (new Date(user.locked_until) - new Date()) / (1000 * 60)
+        );
         return {
           success: false,
-          error: "Account temporarily locked. Please try again after 15 minutes.",
+          error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`,
         };
       }
 

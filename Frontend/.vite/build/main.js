@@ -71,9 +71,12 @@ ipcMain.handle("login-user", async (event, username, password) => {
       return { success: false, error: "Account is deactivated. Contact administrator." };
     }
     if (user.locked_until && new Date(user.locked_until) > /* @__PURE__ */ new Date()) {
+      const minutesLeft = Math.ceil(
+        (new Date(user.locked_until) - /* @__PURE__ */ new Date()) / (1e3 * 60)
+      );
       return {
         success: false,
-        error: "Account temporarily locked. Please try again after 15 minutes."
+        error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
       };
     }
     const passwordMatch = await argon2.verify(user.password_hash, password);
@@ -87,9 +90,12 @@ ipcMain.handle("login-user", async (event, username, password) => {
         [newFailCount, lockUntil, user.user_id]
       );
       if (newFailCount >= 5) {
+        const minutesLeft = Math.ceil(
+          (new Date(user.locked_until) - /* @__PURE__ */ new Date()) / (1e3 * 60)
+        );
         return {
           success: false,
-          error: "Account temporarily locked. Please try again after 15 minutes."
+          error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
         };
       }
       return { success: false, error: "Invalid username or password." };
