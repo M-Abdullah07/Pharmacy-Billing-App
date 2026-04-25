@@ -3,6 +3,8 @@ import {
   Plus, Search, X, CheckCircle2, AlertCircle, FileText,
   Trash2, ChevronDown, ChevronUp, AlertTriangle
 } from 'lucide-react';
+import { getUserId } from "@/utilis/sessions";
+
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GST_SLABS = [0, 5, 12, 18, 28];
@@ -480,7 +482,11 @@ export default function PurchaseInvoice() {
   const handleConfirm = async (invoiceId) => {
     if (!window.confirm('Confirm this GRN? Stock will be updated and supplier payable will increase. This cannot be undone.')) return;
     try {
-      const userId = "ab2e5736-cf94-4710-aa1c-be47f08785b4";
+      const userId = getUserId();
+      if (!userId) {
+        showToast('Please login first.', 'error');
+        return;
+      }
       const result = await window.electronAPI.confirmPurchaseInvoice(invoiceId, userId);
       if (result.success) {
         showToast('GRN confirmed. Stock and supplier ledger updated.', 'success');
