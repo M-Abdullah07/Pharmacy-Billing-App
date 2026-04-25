@@ -1219,10 +1219,34 @@ app.whenReady().then(async () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
-
 app.on("window-all-closed", async () => {
+  console.log("🔴 window-all-closed fired");
+
   if (process.platform !== "darwin") {
-    await pool.end();
+    console.log("🔵 Platform is not darwin, proceeding...");
+
+    try {
+      const { session } = require("electron");
+      console.log("🔵 Got electron session");
+
+      await session.defaultSession.clearStorageData({
+        storages: ["localstorage"],
+      });
+      console.log("✅ localStorage cleared successfully");
+    } catch (err) {
+      console.error("❌ Failed to clear localStorage:", err.message);
+    }
+
+    try {
+      await pool.end();
+      console.log("✅ PostgreSQL pool closed");
+    } catch (err) {
+      console.error("❌ Failed to close pool:", err.message);
+    }
+
+    console.log("🔴 Calling app.quit()");
     app.quit();
+  } else {
+    console.log("⚠️ Platform is darwin — skipping cleanup");
   }
 });
