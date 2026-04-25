@@ -6,13 +6,20 @@ require('dotenv').config({
 const argon2 = require('argon2');
 const { Pool } = require("pg");
 // ─── PostgreSQL Connection Pool ───────────────────────────────────────────────
-const pool = new Pool({
-  host:     process.env.DB_HOST     || "127.0.0.1",
-  port:     process.env.DB_PORT     || 5432,
-  database: process.env.DB_NAME     || "Pharmax",
-  user:     process.env.DB_USER     || "postgres",
-  password: process.env.DB_PASSWORD,
-});
+if (!process.env.DB_PASSWORD && !process.env.DATABASE_URL) {
+  console.error("❌ ERROR: DB_PASSWORD or DATABASE_URL is not set in environment variables.");
+  console.error("👉 Please copy Backend/app/.env.example to Backend/app/.env and configure your credentials.");
+}
+
+const pool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL })
+  : new Pool({
+      host:     process.env.DB_HOST     || "127.0.0.1",
+      port:     process.env.DB_PORT     || 5432,
+      database: process.env.DB_NAME     || "Pharmax",
+      user:     process.env.DB_USER     || "postgres",
+      password: process.env.DB_PASSWORD || "",
+    });
 console.log(process.env.DB_NAME);
 pool.on("error", (err) => {
   console.error("❌ Unexpected PostgreSQL pool error:", err.message);
