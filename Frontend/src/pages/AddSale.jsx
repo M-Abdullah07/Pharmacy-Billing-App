@@ -487,7 +487,7 @@ export default function AddSale() {
         </TableHeader>
         <TableBody>
           {saleItems.length === 0 && (
-            <TableRow><TableCell colSpan="7" style={{ textAlign: 'center' }}>No items added</TableCell></TableRow>
+            <TableRow><TableCell colSpan="7" className="text-center">No items added</TableCell></TableRow>
           )}
           {saleItems.map((item, index) => (
             <TableRow key={index}>
@@ -504,8 +504,8 @@ export default function AddSale() {
           ))}
           {saleItems.length > 0 && (
             <TableRow>
-              <TableCell colSpan="4" style={{ fontWeight: 'bold', textAlign: 'right' }}>Grand Total:</TableCell>
-              <TableCell colSpan="3" style={{ fontWeight: 'bold' }}>₹{grandTotal.toFixed(2)}</TableCell>
+              <TableCell colSpan="4" className="font-bold text-right">Grand Total:</TableCell>
+              <TableCell colSpan="3" className="font-bold">₹{grandTotal.toFixed(2)}</TableCell>
             </TableRow>
           )}
         </TableBody>

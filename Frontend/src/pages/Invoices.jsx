@@ -64,17 +64,12 @@ export default function Invoices() {
   // Sale item inputs
   const [quantity, setQuantity] = useState(1);
   const [saleRate, setSaleRate] = useState("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
 
   // Sale items list
   const [saleItems, setSaleItems] = useState([]);
 
   // Credit sale checkbox
   const [isCredit, setIsCredit] = useState(false);
-
-  // Loading and errors
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
   // Electron API shortcut
   const api = window.electronAPI;
@@ -657,9 +652,9 @@ export default function Invoices() {
       {/* Sale Items Table */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Bill Items</CardTitle>
+          <CardTitle>Sale Items</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="max-h-[300px] overflow-y-auto space-y-4">
           {saleItems.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No items added
@@ -723,22 +718,22 @@ export default function Invoices() {
                     </TableCell>
                   </TableRow>
                 ))}
-              </ <TableBody>
+              </TableBody>
               {saleItems.length > 0 && (
                 <TableRow>
-                  <TableCell colSpan="4" style={{ fontWeight: 'bold', textAlign: 'right' }}>
+                  <TableCell colSpan="4" className="font-bold text-right">
                     <span>Total</span>
                   </TableCell>
-                  <TableCell colSpan="2" style={{ fontWeight: 'bold', textAlign: 'right' }}>
+                  <TableCell colSpan="2" className="font-bold text-right">
                     <span>Amount</span>
                   </TableCell>
                 </TableRow>
               )}
               <TableRow>
-                <TableCell colSpan="4" style={{ fontWeight: 'bold', textAlign: 'right' }}>
+                <TableCell colSpan="4" className="font-bold text-right">
                   <span>Grand Total:</span>
                 </TableCell>
-                <TableCell colSpan="2" style={{ fontWeight: 'bold' }}>
+                <TableCell colSpan="2" className="font-bold">
                   <span>₹{grandTotal.toFixed(2)}</span>
                 </TableCell>
               </TableRow>
@@ -753,7 +748,7 @@ export default function Invoices() {
           <CardTitle>Payment Method</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 {selectedBatch && batches.length > 0 ? 'grid grid-cols-2 gap-2' : ''}">
+          <div className={`flex gap-2 ${selectedBatch && batches.length > 0 ? 'grid grid-cols-2 gap-2' : ''}`}>
             {bills.map(batch => (
               <Badge key={batch.batch_id} variant="outline" className={selectedBatch === batch.batch_id ? 'bg-blue-600' : ''}>
                 {batch.batch_number} (Stock: {batch.quantity_available})
