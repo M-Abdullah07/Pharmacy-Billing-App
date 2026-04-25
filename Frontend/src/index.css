@@ -1,87 +1,100 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Pharmacy Professional Palette */
-  --background: oklch(0.97 0.01 240);
-  --foreground: oklch(0.15 0.02 240);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 240);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 240);
-  
-  --primary: oklch(0.58 0.17 152);           /* Emerald-600 - fresh & trustworthy */
-  --primary-foreground: oklch(0.98 0.02 240);
-  
-  --secondary: oklch(0.92 0.02 240);
-  --secondary-foreground: oklch(0.25 0.02 240);
-  
-  --muted: oklch(0.94 0.02 240);
-  --muted-foreground: oklch(0.55 0.02 240);
-  
-  --accent: oklch(0.82 0.15 190);            /* Teal accent */
-  --accent-foreground: oklch(0.98 0.02 240);
-  
-  --destructive: oklch(0.64 0.22 27);        /* Rose for expired/critical */
-  --destructive-foreground: oklch(0.98 0.02 240);
-  
-  --border: oklch(0.90 0.02 240);
-  --input: oklch(0.92 0.02 240);
-  --ring: oklch(0.58 0.17 152);
-  
-  --radius: 0.75rem;
-  
-  /* Pharmacy Semantic Colors */
-  --success: oklch(0.62 0.18 152);           /* In stock */
-  --warning: oklch(0.78 0.15 80);            /* Low stock */
-  --expired: oklch(0.64 0.22 27);
-  
-  /* Sidebar - calm medical feel */
-  --sidebar: oklch(0.96 0.01 240);
-  --sidebar-foreground: oklch(0.18 0.02 240);
-  --sidebar-primary: oklch(0.58 0.17 152);
-  --sidebar-primary-foreground: oklch(0.98 0.02 240);
-  --sidebar-accent: oklch(0.92 0.02 240);
-  --sidebar-accent-foreground: oklch(0.18 0.02 240);
-  --sidebar-border: oklch(0.90 0.02 240);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* ── Form surface tokens (light mode) ─────────────────────────── */
+  --form-bg:            oklch(1 0 0);          /* white */
+  --form-bg-subtle:     oklch(0.97 0 0);       /* gray-50 equivalent */
+  --form-border:        oklch(0.922 0 0);      /* gray-200 equivalent */
+  --form-text:          oklch(0.145 0 0);      /* near-black */
+  --form-text-muted:    oklch(0.556 0 0);      /* gray-500 equivalent */
+  --form-placeholder:   oklch(0.65 0 0);       /* gray-400 equivalent */
+  --form-focus-ring:    oklch(0.6 0.15 250);   /* blue-500 equivalent */
+  --form-error-bg:      oklch(0.97 0.02 20);   /* red-50 equivalent */
+  --form-error-border:  oklch(0.65 0.2 20);    /* red-400 equivalent */
 }
 
 .dark {
-  --background: oklch(0.12 0.02 240);
-  --foreground: oklch(0.96 0.02 240);
-  --card: oklch(0.15 0.02 240);
-  --card-foreground: oklch(0.96 0.02 240);
-  --popover: oklch(0.15 0.02 240);
-  --popover-foreground: oklch(0.96 0.02 240);
-  
-  --primary: oklch(0.68 0.18 152);
-  --primary-foreground: oklch(0.12 0.02 240);
-  
-  --secondary: oklch(0.22 0.02 240);
-  --secondary-foreground: oklch(0.96 0.02 240);
-  --muted: oklch(0.22 0.02 240);
-  --muted-foreground: oklch(0.65 0.02 240);
-  
-  --accent: oklch(0.75 0.16 190);
-  --accent-foreground: oklch(0.12 0.02 240);
-  
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.96 0.02 240);
-  
-  --border: oklch(0.28 0.02 240);
-  --input: oklch(0.22 0.02 240);
-  --ring: oklch(0.68 0.18 152);
-  
-  --sidebar: oklch(0.15 0.02 240);
-  --sidebar-foreground: oklch(0.92 0.02 240);
-  --sidebar-primary: oklch(0.68 0.18 152);
-  --sidebar-primary-foreground: oklch(0.12 0.02 240);
-  --sidebar-accent: oklch(0.22 0.02 240);
-  --sidebar-accent-foreground: oklch(0.96 0.02 240);
-  --sidebar-border: oklch(0.28 0.02 240);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+
+  /* ── Form surface tokens (dark mode) ──────────────────────────── */
+  --form-bg:            oklch(0.2 0 0);        /* dark input background */
+  --form-bg-subtle:     oklch(0.18 0 0);       /* slightly darker for sections */
+  --form-border:        oklch(0.32 0 0);       /* visible but subtle border */
+  --form-text:          oklch(0.95 0 0);       /* near-white text */
+  --form-text-muted:    oklch(0.65 0 0);       /* muted label text */
+  --form-placeholder:   oklch(0.5 0 0);        /* placeholder text */
+  --form-focus-ring:    oklch(0.6 0.15 250);   /* same blue focus ring */
+  --form-error-bg:      oklch(0.18 0.03 20);   /* dark red tint */
+  --form-error-border:  oklch(0.55 0.2 20);    /* red border in dark */
 }
 
 @theme inline {
@@ -104,21 +117,15 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-expired: var(--expired);
-  
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  
-  --shadow-soft: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  --shadow-card: 0 4px 20px -2px rgb(16 185 129 / 0.08);
-  
-  --font-sans: "Inter", "system-ui", "sans-serif";
-  --font-heading: "Inter", "system-ui", "sans-serif";
-  
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -126,32 +133,168 @@
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
 @layer base {
   * {
-    @apply border-border outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    @apply border-border outline-ring/50;
   }
-  
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "cv02","cv03","cv04","cv11";
-  }
-  
-  .card {
-    @apply bg-card border border-border shadow-soft rounded-xl;
+    @apply bg-background text-foreground;
   }
 }
 
-/* Modern Button Variants */
-@layer components {
-  .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 
-           shadow-sm transition-all active:scale-[0.985] font-medium;
+@layer base {
+  :root {
+    --font-segoe: "Segoe UI", sans-serif;
   }
-  
-  .btn-outline {
-    @apply border border-border hover:bg-secondary hover:text-foreground 
-           transition-colors font-medium;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK MODE — GLOBAL FORM OVERRIDES
+   These rules automatically apply to ALL form elements across every
+   .jsx page when the app is in dark mode. No changes needed in
+   individual page files.
+   ══════════════════════════════════════════════════════════════════ */
+@layer base {
+
+  /* ── Form containers / cards ───────────────────────────────────── */
+  .dark .bg-white {
+    background-color: var(--form-bg) !important;
   }
+
+  .dark .bg-gray-50,
+  .dark .bg-gray-50\/50,
+  .dark .bg-gray-50\/40,
+  .dark .bg-gray-50\/30 {
+    background-color: var(--form-bg-subtle) !important;
+  }
+
+  /* ── Borders ───────────────────────────────────────────────────── */
+  .dark .border-gray-200,
+  .dark .border-gray-100 {
+    border-color: var(--form-border) !important;
+  }
+
+  /* ── Text colors ───────────────────────────────────────────────── */
+  .dark .text-gray-900 {
+    color: var(--form-text) !important;
+  }
+
+  .dark .text-gray-700,
+  .dark .text-gray-600 {
+    color: var(--form-text-muted) !important;
+  }
+
+  .dark .text-gray-500,
+  .dark .text-gray-400 {
+    color: var(--form-placeholder) !important;
+  }
+
+  /* ── Inputs, selects, textareas ────────────────────────────────── */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="number"],
+  .dark input[type="date"],
+  .dark input[type="search"],
+  .dark select,
+  .dark textarea {
+    background-color: var(--form-bg)      !important;
+    color:            var(--form-text)    !important;
+    border-color:     var(--form-border)  !important;
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: var(--form-placeholder) !important;
+  }
+
+  /* Select option text in dark mode */
+  .dark select option {
+    background-color: var(--form-bg)   !important;
+    color:            var(--form-text) !important;
+  }
+
+  /* ── Error states ──────────────────────────────────────────────── */
+  .dark .border-red-400,
+  .dark .border-red-200 {
+    border-color: var(--form-error-border) !important;
+  }
+
+  .dark .bg-red-50 {
+    background-color: var(--form-error-bg) !important;
+  }
+
+  /* ── Table headers / rows ──────────────────────────────────────── */
+  .dark .bg-gray-50 th,
+  .dark thead tr {
+    background-color: var(--form-bg-subtle) !important;
+  }
+
+  .dark tbody tr:hover {
+    background-color: oklch(0.22 0 0) !important;
+  }
+
+  /* ── Dividers ──────────────────────────────────────────────────── */
+  .dark .divide-gray-50 > * + * {
+    border-color: var(--form-border) !important;
+  }
+
+  /* ── Tab buttons (All / Discontinued etc.) ─────────────────────── */
+  .dark .bg-gray-100 {
+    background-color: oklch(0.22 0 0) !important;
+  }
+
+  /* Active tab pill */
+  .dark .bg-white.shadow-sm {
+    background-color: oklch(0.28 0 0) !important;
+    color: var(--form-text) !important;
+  }
+
+  /* ── Inline form section backgrounds ───────────────────────────── */
+  .dark .rounded-xl.border.border-gray-200 {
+    background-color: var(--form-bg) !important;
+    border-color: var(--form-border) !important;
+  }
+
+  /* ── Toast notifications — keep them readable in dark mode ─────── */
+  .dark .bg-green-50 {
+    background-color: oklch(0.2 0.05 150) !important;
+  }
+  .dark .bg-amber-50 {
+    background-color: oklch(0.2 0.05 80) !important;
+  }
+  .dark .bg-blue-50,
+  .dark .bg-blue-50\/40,
+  .dark .bg-blue-50\/30 {
+    background-color: oklch(0.2 0.04 250) !important;
+  }
+  .dark .border-blue-100,
+  .dark .border-blue-200 {
+    border-color: oklch(0.35 0.08 250) !important;
+  }
+
+  /* ── Cancel / secondary buttons ────────────────────────────────── */
+  .dark .bg-gray-100.hover\:bg-gray-200,
+  .dark button.bg-gray-100 {
+    background-color: oklch(0.25 0 0) !important;
+    color: var(--form-text-muted) !important;
+  }
+
+  /* ── Summary / totals panel ─────────────────────────────────────── */
+  .dark .bg-gray-50.border.border-gray-200.rounded-xl {
+    background-color: var(--form-bg-subtle) !important;
+    border-color: var(--form-border) !important;
+  }
+}
+
+/* ── .btn — login/signup button (unchanged) ──────────────────────── */
+.btn {
+  @apply w-full bg-gradient-to-br from-blue-500 to-indigo-700 text-lg text-white px-4 py-3
+         rounded-md font-medium font-sans outline-none
+         disabled:opacity-50 disabled:cursor-not-allowed
+         hover:from-blue-600 hover:to-indigo-800 hover:cursor-pointer
+         transition-colors duration-300;
 }
