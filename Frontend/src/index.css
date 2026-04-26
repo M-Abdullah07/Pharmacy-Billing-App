@@ -38,6 +38,17 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ── Form surface tokens (light mode) ─────────────────────────── */
+  --form-bg:            oklch(1 0 0);          /* white */
+  --form-bg-subtle:     oklch(0.97 0 0);       /* gray-50 equivalent */
+  --form-border:        oklch(0.922 0 0);      /* gray-200 equivalent */
+  --form-text:          oklch(0.145 0 0);      /* near-black */
+  --form-text-muted:    oklch(0.556 0 0);      /* gray-500 equivalent */
+  --form-placeholder:   oklch(0.65 0 0);       /* gray-400 equivalent */
+  --form-focus-ring:    oklch(0.6 0.15 250);   /* blue-500 equivalent */
+  --form-error-bg:      oklch(0.97 0.02 20);   /* red-50 equivalent */
+  --form-error-border:  oklch(0.65 0.2 20);    /* red-400 equivalent */
 }
 
 .dark {
@@ -73,6 +84,17 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* ── Form surface tokens (dark mode) ──────────────────────────── */
+  --form-bg:            oklch(0.2 0 0);        /* dark input background */
+  --form-bg-subtle:     oklch(0.18 0 0);       /* slightly darker for sections */
+  --form-border:        oklch(0.32 0 0);       /* visible but subtle border */
+  --form-text:          oklch(0.95 0 0);       /* near-white text */
+  --form-text-muted:    oklch(0.65 0 0);       /* muted label text */
+  --form-placeholder:   oklch(0.5 0 0);        /* placeholder text */
+  --form-focus-ring:    oklch(0.6 0.15 250);   /* same blue focus ring */
+  --form-error-bg:      oklch(0.18 0.03 20);   /* dark red tint */
+  --form-error-border:  oklch(0.55 0.2 20);    /* red border in dark */
 }
 
 @theme inline {
@@ -129,6 +151,146 @@
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   DARK MODE — GLOBAL FORM OVERRIDES
+   These rules automatically apply to ALL form elements across every
+   .jsx page when the app is in dark mode. No changes needed in
+   individual page files.
+   ══════════════════════════════════════════════════════════════════ */
+@layer base {
+
+  /* ── Form containers / cards ───────────────────────────────────── */
+  .dark .bg-white {
+    background-color: var(--form-bg) !important;
+  }
+
+  .dark .bg-gray-50,
+  .dark .bg-gray-50\/50,
+  .dark .bg-gray-50\/40,
+  .dark .bg-gray-50\/30 {
+    background-color: var(--form-bg-subtle) !important;
+  }
+
+  /* ── Borders ───────────────────────────────────────────────────── */
+  .dark .border-gray-200,
+  .dark .border-gray-100 {
+    border-color: var(--form-border) !important;
+  }
+
+  /* ── Text colors ───────────────────────────────────────────────── */
+  .dark .text-gray-900 {
+    color: var(--form-text) !important;
+  }
+
+  .dark .text-gray-700,
+  .dark .text-gray-600 {
+    color: var(--form-text-muted) !important;
+  }
+
+  .dark .text-gray-500,
+  .dark .text-gray-400 {
+    color: var(--form-placeholder) !important;
+  }
+
+  /* ── Inputs, selects, textareas ────────────────────────────────── */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="number"],
+  .dark input[type="date"],
+  .dark input[type="search"],
+  .dark select,
+  .dark textarea {
+    background-color: var(--form-bg)      !important;
+    color:            var(--form-text)    !important;
+    border-color:     var(--form-border)  !important;
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: var(--form-placeholder) !important;
+  }
+
+  /* Select option text in dark mode */
+  .dark select option {
+    background-color: var(--form-bg)   !important;
+    color:            var(--form-text) !important;
+  }
+
+  /* ── Error states ──────────────────────────────────────────────── */
+  .dark .border-red-400,
+  .dark .border-red-200 {
+    border-color: var(--form-error-border) !important;
+  }
+
+  .dark .bg-red-50 {
+    background-color: var(--form-error-bg) !important;
+  }
+
+  /* ── Table headers / rows ──────────────────────────────────────── */
+  .dark .bg-gray-50 th,
+  .dark thead tr {
+    background-color: var(--form-bg-subtle) !important;
+  }
+
+  .dark tbody tr:hover {
+    background-color: oklch(0.22 0 0) !important;
+  }
+
+  /* ── Dividers ──────────────────────────────────────────────────── */
+  .dark .divide-gray-50 > * + * {
+    border-color: var(--form-border) !important;
+  }
+
+  /* ── Tab buttons (All / Discontinued etc.) ─────────────────────── */
+  .dark .bg-gray-100 {
+    background-color: oklch(0.22 0 0) !important;
+  }
+
+  /* Active tab pill */
+  .dark .bg-white.shadow-sm {
+    background-color: oklch(0.28 0 0) !important;
+    color: var(--form-text) !important;
+  }
+
+  /* ── Inline form section backgrounds ───────────────────────────── */
+  .dark .rounded-xl.border.border-gray-200 {
+    background-color: var(--form-bg) !important;
+    border-color: var(--form-border) !important;
+  }
+
+  /* ── Toast notifications — keep them readable in dark mode ─────── */
+  .dark .bg-green-50 {
+    background-color: oklch(0.2 0.05 150) !important;
+  }
+  .dark .bg-amber-50 {
+    background-color: oklch(0.2 0.05 80) !important;
+  }
+  .dark .bg-blue-50,
+  .dark .bg-blue-50\/40,
+  .dark .bg-blue-50\/30 {
+    background-color: oklch(0.2 0.04 250) !important;
+  }
+  .dark .border-blue-100,
+  .dark .border-blue-200 {
+    border-color: oklch(0.35 0.08 250) !important;
+  }
+
+  /* ── Cancel / secondary buttons ────────────────────────────────── */
+  .dark .bg-gray-100.hover\:bg-gray-200,
+  .dark button.bg-gray-100 {
+    background-color: oklch(0.25 0 0) !important;
+    color: var(--form-text-muted) !important;
+  }
+
+  /* ── Summary / totals panel ─────────────────────────────────────── */
+  .dark .bg-gray-50.border.border-gray-200.rounded-xl {
+    background-color: var(--form-bg-subtle) !important;
+    border-color: var(--form-border) !important;
+  }
+}
+
+/* ── .btn — login/signup button (unchanged) ──────────────────────── */
 .btn {
   @apply w-full bg-gradient-to-br from-blue-500 to-indigo-700 text-lg text-white px-4 py-3
          rounded-md font-medium font-sans outline-none

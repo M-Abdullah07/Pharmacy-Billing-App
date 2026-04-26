@@ -50,46 +50,7 @@ graph TD
 
 ## 2. Component Diagram
 
-```mermaid
-graph LR
-    subgraph Frontend["Frontend Components (React)"]
-        AUTH_UI[AuthComponent]
-        DASH[Dashboard]
-        PROD_UI[ProductManagement]
-        PURCH_UI[PurchaseManagement]
-        SALE_UI[SaleManagement]
-        INV_UI[InventoryBatchView]
-        PAY_UI[PaymentComponent]
-        RETURN_UI[ReturnsComponent]
-        RPT_UI[ReportsComponent]
-    end
-
-    subgraph IPC_Layer["IPC Bridge"]
-        IPC_BUS[ipcRenderer / ipcMain]
-    end
-
-    subgraph Backend["Backend Services (Main Process)"]
-        AUTH_SVC[AuthService]
-        PROD_SVC[ProductService]
-        PURCH_SVC[PurchaseInvoiceService]
-        SALE_SVC[SaleInvoiceService]
-        INV_SVC[InventoryService]
-        PAY_SVC[PaymentService]
-        RETURN_SVC[ReturnService]
-        RPT_SVC[ReportService]
-        DB_SVC[DatabaseService\n pg pool]
-    end
-
-    subgraph DB["Database (PostgreSQL)"]
-        DB_SCHEMA[(pharmax_schema\nAll Tables)]
-    end
-
-    AUTH_UI & DASH & PROD_UI & PURCH_UI & SALE_UI & INV_UI & PAY_UI & RETURN_UI & RPT_UI --> IPC_BUS
-    IPC_BUS --> AUTH_SVC & PROD_SVC & PURCH_SVC & SALE_SVC & INV_SVC & PAY_SVC & RETURN_SVC & RPT_SVC
-    AUTH_SVC & PROD_SVC & PURCH_SVC & SALE_SVC & INV_SVC & PAY_SVC & RETURN_SVC & RPT_SVC --> DB_SVC
-    DB_SVC --> DB_SCHEMA
-```
-
+![Component Diagram](component_diagram.jpeg)
 ---
 
 ## 3. Data Flow Diagrams
@@ -100,17 +61,24 @@ graph LR
 graph LR
     U["Pharmacist / Admin"]
     SYS(["PharmaX\nPharmacy Billing System"])
-    EXT1["Manufacturer\nExternal Info"]
-    EXT2["Supplier\nExternal Entity"]
-    EXT3["Customer\nExternal Entity"]
 
-    U -->|"Login Credentials\nSale Data\nInventory Data\nMaster Data Forms"| SYS
-    SYS -->|"Invoices - Reports\nStock Alerts - Receipts"| U
-    EXT1 -->|"Product Info\nDRAP Licence"| SYS
-    EXT2 -->|"Purchase Invoices\nBatch and Expiry Info"| SYS
-    SYS -->|"Purchase Orders\nPayment Records"| EXT2
-    EXT3 -->|"Sale Orders\nPayments"| SYS
-    SYS -->|"Sale Invoices\nCredit Statements"| EXT3
+    %% Input flows from Admin to System
+    U -->|"Login Credentials
+    Sale Data
+    Inventory Data 
+    Purchase Data
+    Customer Info
+    Supplier Info
+    Manufacturer Info
+    Master Data Forms"| SYS
+
+    %% Output flows from System to Admin
+    SYS -->|"Invoices
+    Reports
+    Stock Alerts
+    Receipts
+    Payment Records
+    Credit Statements"| U
 ```
 
 ---
@@ -143,14 +111,16 @@ flowchart TD
 
     USER -- "Product / Category Data" --> P2
     P2 --> DS2
-    DS2 -- "Stock Levels" --> USER
+    DS2 -- "Stock Levels" --> P2
+    P2 -- "Stock Levels" --> USER
 
     USER -- "Purchase Order Data" --> P3
     P3 --> DS3
 
     USER -- "Sale Order Data" --> P4
     P4 --> DS4
-    DS4 -- "Invoice / Receipt" --> USER
+    DS4 -- "Invoice / Receipt" --> P4
+    P4 -- "Invoice / Receipt" --> USER
 
     USER -- "Payment Info" --> P5
     P5 --> DS5

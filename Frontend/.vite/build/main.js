@@ -1,39 +1,36 @@
+"use strict";
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-require('dotenv').config({ 
-  path: path.join(__dirname, '..', '..', '..', 'Backend', 'app', '.env') 
+require("dotenv").config({
+  path: path.join(__dirname, "..", "..", "..", "Backend", "app", ".env")
 });
-const argon2 = require('argon2');
+const argon2 = require("argon2");
 const { Pool } = require("pg");
-// ─── PostgreSQL Connection Pool ───────────────────────────────────────────────
-if (!process.env.DB_PASSWORD && !process.env.DATABASE_URL) {
-  console.error("❌ ERROR: DB_PASSWORD or DATABASE_URL is not set in environment variables.");
-  console.error("👉 Please copy Backend/app/.env.example to Backend/app/.env and configure your credentials.");
-}
-
-const pool = process.env.DATABASE_URL
-  ? new Pool({ connectionString: process.env.DATABASE_URL })
-  : new Pool({
-      host:     process.env.DB_HOST     || "127.0.0.1",
-      port:     process.env.DB_PORT     || 5432,
-      database: process.env.DB_NAME     || "Pharmax",
-      user:     process.env.DB_USER     || "postgres",
-      password: process.env.DB_PASSWORD || "",
-    });
+const pool = new Pool({
+  host: process.env.DB_HOST || "127.0.0.1",
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || "Pharmax",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD
+});
 console.log(process.env.DB_NAME);
 pool.on("error", (err) => {
   console.error("❌ Unexpected PostgreSQL pool error:", err.message);
 });
-
-// ─── Connection Test ──────────────────────────────────────────────────────────
 async function testConnection() {
   try {
     const res = await pool.query("SELECT NOW() AS now");
     console.log("✅ PostgreSQL connected at:", res.rows[0].now);
-
-    // Schema sanity check — tells you immediately if tables are missing
-    const tables = ["users", "products", "manufacturers", "categories",
-                    "suppliers", "customers", "batches", "stock_movements"];
+    const tables = [
+      "users",
+      "products",
+      "manufacturers",
+      "categories",
+      "suppliers",
+      "customers",
+      "batches",
+      "stock_movements"
+    ];
     for (const t of tables) {
       const check = await pool.query(
         `SELECT to_regclass('public.${t}') AS tbl`
@@ -46,33 +43,19 @@ async function testConnection() {
     console.error("👉 Check your .env: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD");
   }
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 async function queryDb(sql, params = []) {
   const result = await pool.query(sql, params);
   return result.rows;
 }
-
 async function runDb(sql, params = []) {
+  var _a, _b, _c, _d, _e, _f, _g;
   const result = await pool.query(sql, params);
   return {
     rowCount: result.rowCount,
-    lastID:   result.rows[0]?.id             ?? result.rows[0]?.user_id
-           ?? result.rows[0]?.product_id     ?? result.rows[0]?.customer_id
-           ?? result.rows[0]?.supplier_id    ?? result.rows[0]?.manufacturer_id
-           ?? result.rows[0]?.batch_id       ?? null,
-    row: result.rows[0] ?? null,
+    lastID: ((_a = result.rows[0]) == null ? void 0 : _a.id) ?? ((_b = result.rows[0]) == null ? void 0 : _b.user_id) ?? ((_c = result.rows[0]) == null ? void 0 : _c.product_id) ?? ((_d = result.rows[0]) == null ? void 0 : _d.customer_id) ?? ((_e = result.rows[0]) == null ? void 0 : _e.supplier_id) ?? ((_f = result.rows[0]) == null ? void 0 : _f.manufacturer_id) ?? ((_g = result.rows[0]) == null ? void 0 : _g.batch_id) ?? null,
+    row: result.rows[0] ?? null
   };
 }
-
-
-// ════════════════════════════════════════════════════════════════════════════
-// AUTH  (users table — schema: user_id UUID, username, password_hash, role)
-// ⚠️  PRODUCTION NOTE: schema stores bcrypt hashes in password_hash.
-//     Currently using plain-text for development. Before go-live:
-//     npm install bcryptjs  →  use bcrypt.hash() on signup,
-//                              bcrypt.compare() on login.
-// ════════════════════════════════════════════════════════════════════════════
 ipcMain.handle("login-user", async (event, username, password) => {
   try {
     const rows = await queryDb(
@@ -80,20 +63,15 @@ ipcMain.handle("login-user", async (event, username, password) => {
        FROM users WHERE username = $1`,
       [username]
     );
-
     if (rows.length === 0) {
       return { success: false, error: "Invalid username or password." };
     }
-
     const user = rows[0];
-
     if (!user.is_active) {
       return { success: false, error: "Account is deactivated. Contact administrator." };
     }
-
-    // ─── Reset failed_attempts if lock period has expired ───────────────────
     if (user.locked_until) {
-      const now = new Date();
+      const now = /* @__PURE__ */ new Date();
       const lockExpiredTime = new Date(user.locked_until);
       if (lockExpiredTime <= now) {
         await runDb(
@@ -104,13 +82,11 @@ ipcMain.handle("login-user", async (event, username, password) => {
         user.locked_until = null;
       }
     }
-
-    // ─── Auto-reset failed_attempts if 24 hours have passed since last update ──
     const RESET_WINDOW_HOURS = 24;
     if (user.failed_attempts > 0 && user.updated_at) {
       const lastUpdate = new Date(user.updated_at);
-      const now = new Date();
-      const hoursPassed = (now - lastUpdate) / (1000 * 60 * 60);
+      const now = /* @__PURE__ */ new Date();
+      const hoursPassed = (now - lastUpdate) / (1e3 * 60 * 60);
       if (hoursPassed >= RESET_WINDOW_HOURS) {
         await runDb(
           `UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE user_id = $1`,
@@ -120,47 +96,36 @@ ipcMain.handle("login-user", async (event, username, password) => {
         user.locked_until = null;
       }
     }
-
-    // UC-101 Alt Flow B — account lock check
-    if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    if (user.locked_until && new Date(user.locked_until) > /* @__PURE__ */ new Date()) {
       const minutesLeft = Math.max(1, Math.ceil(
-        (new Date(user.locked_until) - new Date()) / (1e3 * 60)
+        (new Date(user.locked_until) - /* @__PURE__ */ new Date()) / (1e3 * 60)
       ));
       return {
         success: false,
         error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
       };
     }
-
     const passwordMatch = await argon2.verify(user.password_hash, password);
-
     if (!passwordMatch) {
       const newFailCount = (user.failed_attempts || 0) + 1;
-      const lockUntil = newFailCount >= 5
-        ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
-        : null;
-
+      const lockUntil = newFailCount >= 5 ? new Date(Date.now() + 15 * 60 * 1e3).toISOString() : null;
       await runDb(
         `UPDATE users
          SET failed_attempts = $1, locked_until = $2, updated_at = now()
          WHERE user_id = $3`,
         [newFailCount, lockUntil, user.user_id]
       );
-
       if (newFailCount >= 5) {
         const minutesLeft = Math.max(1, Math.ceil(
-          (new Date(lockUntil) - new Date()) / (1000 * 60)
+          (new Date(lockUntil) - /* @__PURE__ */ new Date()) / (1e3 * 60)
         ));
         return {
           success: false,
-          error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`,
+          error: `Account temporarily locked. Please try again after ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
         };
       }
-
       return { success: false, error: "Invalid username or password." };
     }
-
-    // Successful login — reset counters
     await runDb(
       `UPDATE users
        SET failed_attempts = 0, locked_until = NULL,
@@ -168,7 +133,6 @@ ipcMain.handle("login-user", async (event, username, password) => {
        WHERE user_id = $1`,
       [user.user_id]
     );
-
     return { success: true, userId: user.user_id };
   } catch (err) {
     console.error("❌ login-user error:", err.message);
@@ -178,14 +142,13 @@ ipcMain.handle("login-user", async (event, username, password) => {
 ipcMain.handle("signup-user", async (event, username, password) => {
   try {
     const existing = await queryDb(
-      `SELECT user_id FROM users WHERE username = $1`, [username]
+      `SELECT user_id FROM users WHERE username = $1`,
+      [username]
     );
     if (existing.length > 0) {
       return { success: false, error: "Username already exists." };
     }
-
     const hash = await argon2.hash(password, { type: argon2.argon2id });
-
     const result = await runDb(
       `INSERT INTO users (username, password_hash)
        VALUES ($1, $2) RETURNING user_id`,
@@ -197,11 +160,6 @@ ipcMain.handle("signup-user", async (event, username, password) => {
     return { success: false, error: "Service unavailable. Contact administrator." };
   }
 });
-// ════════════════════════════════════════════════════════════════════════════
-// MANUFACTURERS  (schema: manufacturer_id UUID, name, drap_mfg_licence,
-//                 country, contact_number, email, is_active)
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("get-manufacturers", async () => {
   try {
     return await queryDb(
@@ -216,7 +174,6 @@ ipcMain.handle("get-manufacturers", async () => {
     return [];
   }
 });
-
 ipcMain.handle("add-manufacturer", async (event, data) => {
   try {
     const result = await runDb(
@@ -226,9 +183,9 @@ ipcMain.handle("add-manufacturer", async (event, data) => {
       [
         data.name,
         data.drap_mfg_licence || null,
-        data.country          || "Pakistan",
-        data.contact_number   || null,
-        data.email            || null,
+        data.country || "Pakistan",
+        data.contact_number || null,
+        data.email || null
       ]
     );
     return { success: true, manufacturerId: result.row.manufacturer_id };
@@ -240,7 +197,6 @@ ipcMain.handle("add-manufacturer", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("update-manufacturer", async (event, id, data) => {
   try {
     await runDb(
@@ -251,10 +207,10 @@ ipcMain.handle("update-manufacturer", async (event, id, data) => {
       [
         data.name,
         data.drap_mfg_licence || null,
-        data.country          || "Pakistan",
-        data.contact_number   || null,
-        data.email            || null,
-        id,
+        data.country || "Pakistan",
+        data.contact_number || null,
+        data.email || null,
+        id
       ]
     );
     return { success: true };
@@ -263,7 +219,6 @@ ipcMain.handle("update-manufacturer", async (event, id, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("deactivate-manufacturer", async (event, id) => {
   try {
     await runDb(
@@ -278,12 +233,6 @@ ipcMain.handle("deactivate-manufacturer", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// CATEGORIES  (schema: category_id UUID, name, description, is_active)
-//             Pre-seeded by pharmax_schema.sql — no add/edit needed for Iter 1
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("get-categories", async () => {
   try {
     return await queryDb(
@@ -297,14 +246,6 @@ ipcMain.handle("get-categories", async () => {
     return [];
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// PRODUCTS  (schema: product_id UUID, name, manufacturer_id FK, category_id FK,
-//            form, uom, quantity_in_uom, hsn_code, gst_rate ENUM(0/5/12/18/28),
-//            drug_schedule ENUM, generic_formula, default_sale_rate,
-//            default_purchase_rate, shelf_no, is_active)
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("get-products", async () => {
   try {
     return await queryDb(
@@ -325,8 +266,6 @@ ipcMain.handle("get-products", async () => {
     return [];
   }
 });
-
-// Alias kept for components that call getProducts (camelCase)
 ipcMain.handle("getProducts", async () => {
   try {
     return await queryDb(
@@ -345,7 +284,6 @@ ipcMain.handle("getProducts", async () => {
     return { error: err.message };
   }
 });
-
 ipcMain.handle("add-product", async (event, data) => {
   try {
     const result = await runDb(
@@ -357,18 +295,18 @@ ipcMain.handle("add-product", async (event, data) => {
        RETURNING product_id`,
       [
         data.name,
-        data.manufacturer_id       || null,
-        data.category_id           || null,
-        data.form                  || null,
-        data.uom                   || "Strip",
-        data.quantity_in_uom       || 1,
-        data.hsn_code              || null,
-        data.gst_rate              ?? 0,
-        data.drug_schedule         || "OTC",
-        data.generic_formula       || null,
-        data.default_sale_rate     ?? 0,
+        data.manufacturer_id || null,
+        data.category_id || null,
+        data.form || null,
+        data.uom || "Strip",
+        data.quantity_in_uom || 1,
+        data.hsn_code || null,
+        data.gst_rate ?? 0,
+        data.drug_schedule || "OTC",
+        data.generic_formula || null,
+        data.default_sale_rate ?? 0,
         data.default_purchase_rate ?? 0,
-        data.shelf_no              || null,
+        data.shelf_no || null
       ]
     );
     return { success: true, productId: result.row.product_id };
@@ -380,7 +318,6 @@ ipcMain.handle("add-product", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("update-product", async (event, id, data) => {
   try {
     await runDb(
@@ -393,19 +330,19 @@ ipcMain.handle("update-product", async (event, id, data) => {
        WHERE product_id = $14`,
       [
         data.name,
-        data.manufacturer_id       || null,
-        data.category_id           || null,
-        data.form                  || null,
-        data.uom                   || "Strip",
-        data.quantity_in_uom       || 1,
-        data.hsn_code              || null,
-        data.gst_rate              ?? 0,
-        data.drug_schedule         || "OTC",
-        data.generic_formula       || null,
-        data.default_sale_rate     ?? 0,
+        data.manufacturer_id || null,
+        data.category_id || null,
+        data.form || null,
+        data.uom || "Strip",
+        data.quantity_in_uom || 1,
+        data.hsn_code || null,
+        data.gst_rate ?? 0,
+        data.drug_schedule || "OTC",
+        data.generic_formula || null,
+        data.default_sale_rate ?? 0,
         data.default_purchase_rate ?? 0,
-        data.shelf_no              || null,
-        id,
+        data.shelf_no || null,
+        id
       ]
     );
     return { success: true };
@@ -414,7 +351,6 @@ ipcMain.handle("update-product", async (event, id, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("deactivate-product", async (event, id) => {
   try {
     await runDb(
@@ -429,12 +365,6 @@ ipcMain.handle("deactivate-product", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// SUPPLIERS  (schema: supplier_id UUID, name, strn, ntn, drug_licence_no,
-//             address, city, payment_terms, credit_period_days, is_active)
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("get-suppliers", async () => {
   try {
     return await queryDb(
@@ -450,7 +380,6 @@ ipcMain.handle("get-suppliers", async () => {
     return [];
   }
 });
-
 ipcMain.handle("add-supplier", async (event, data) => {
   try {
     const result = await runDb(
@@ -460,13 +389,13 @@ ipcMain.handle("add-supplier", async (event, data) => {
        RETURNING supplier_id`,
       [
         data.name,
-        data.strn               || null,
-        data.ntn                || null,
-        data.drug_licence_no    || null,
-        data.address            || null,
-        data.city               || null,
-        data.payment_terms      || null,
-        data.credit_period_days ?? 0,
+        data.strn || null,
+        data.ntn || null,
+        data.drug_licence_no || null,
+        data.address || null,
+        data.city || null,
+        data.payment_terms || null,
+        data.credit_period_days ?? 0
       ]
     );
     return { success: true, supplierId: result.row.supplier_id };
@@ -478,7 +407,6 @@ ipcMain.handle("add-supplier", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("update-supplier", async (event, id, data) => {
   try {
     await runDb(
@@ -489,14 +417,14 @@ ipcMain.handle("update-supplier", async (event, id, data) => {
        WHERE supplier_id = $9`,
       [
         data.name,
-        data.strn               || null,
-        data.ntn                || null,
-        data.drug_licence_no    || null,
-        data.address            || null,
-        data.city               || null,
-        data.payment_terms      || null,
+        data.strn || null,
+        data.ntn || null,
+        data.drug_licence_no || null,
+        data.address || null,
+        data.city || null,
+        data.payment_terms || null,
         data.credit_period_days ?? 0,
-        id,
+        id
       ]
     );
     return { success: true };
@@ -505,7 +433,6 @@ ipcMain.handle("update-supplier", async (event, id, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("deactivate-supplier", async (event, id) => {
   try {
     await runDb(
@@ -520,18 +447,6 @@ ipcMain.handle("deactivate-supplier", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// CUSTOMERS  (schema: customer_id UUID, name, strn, ntn, drug_licence_no,
-//             address, city, territory TEXT, customer_type ENUM,
-//             credit_limit, payment_terms, is_active)
-//
-// ⚠️  BREAKING CHANGE from old schema:
-//     - area_id / Area table are GONE — territory is now a plain TEXT field
-//     - If AddCustomers.jsx still sends area_id, update that form to send
-//       territory (string) instead
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("get-customers", async () => {
   try {
     return await queryDb(
@@ -547,7 +462,6 @@ ipcMain.handle("get-customers", async () => {
     return [];
   }
 });
-
 ipcMain.handle("add-customer", async (event, data) => {
   try {
     const result = await runDb(
@@ -558,15 +472,15 @@ ipcMain.handle("add-customer", async (event, data) => {
        RETURNING customer_id`,
       [
         data.name,
-        data.strn            || null,
-        data.ntn             || null,
+        data.strn || null,
+        data.ntn || null,
         data.drug_licence_no || null,
-        data.address         || null,
-        data.city            || null,
-        data.territory       || null,
-        data.customer_type   || "retailer",
-        data.credit_limit    ?? 0,
-        data.payment_terms   || null,
+        data.address || null,
+        data.city || null,
+        data.territory || null,
+        data.customer_type || "retailer",
+        data.credit_limit ?? 0,
+        data.payment_terms || null
       ]
     );
     return { success: true, customerId: result.row.customer_id };
@@ -578,7 +492,6 @@ ipcMain.handle("add-customer", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("update-customer", async (event, id, data) => {
   try {
     await runDb(
@@ -590,16 +503,16 @@ ipcMain.handle("update-customer", async (event, id, data) => {
        WHERE customer_id = $11`,
       [
         data.name,
-        data.strn            || null,
-        data.ntn             || null,
+        data.strn || null,
+        data.ntn || null,
         data.drug_licence_no || null,
-        data.address         || null,
-        data.city            || null,
-        data.territory       || null,
-        data.customer_type   || "retailer",
-        data.credit_limit    ?? 0,
-        data.payment_terms   || null,
-        id,
+        data.address || null,
+        data.city || null,
+        data.territory || null,
+        data.customer_type || "retailer",
+        data.credit_limit ?? 0,
+        data.payment_terms || null,
+        id
       ]
     );
     return { success: true };
@@ -608,8 +521,6 @@ ipcMain.handle("update-customer", async (event, id, data) => {
     return { success: false, error: err.message };
   }
 });
-
-// Soft-delete — hard DELETE breaks invoice/ledger history
 ipcMain.handle("delete-customer", async (event, id) => {
   try {
     await runDb(
@@ -624,8 +535,6 @@ ipcMain.handle("delete-customer", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
-// ── Contact Persons ───────────────────────────────────────────────────────────
 ipcMain.handle("add-contact-person", async (event, data) => {
   try {
     const result = await runDb(
@@ -637,10 +546,10 @@ ipcMain.handle("add-contact-person", async (event, data) => {
         data.entity_type,
         data.entity_id,
         data.name,
-        data.role           || null,
+        data.role || null,
         data.contact_number || null,
-        data.email          || null,
-        data.is_primary     ?? false,
+        data.email || null,
+        data.is_primary ?? false
       ]
     );
     return { success: true, contactId: result.row.contact_id };
@@ -649,7 +558,6 @@ ipcMain.handle("add-contact-person", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("get-contact-persons", async (event, entityType, entityId) => {
   try {
     return await queryDb(
@@ -664,7 +572,6 @@ ipcMain.handle("get-contact-persons", async (event, entityType, entityId) => {
     return [];
   }
 });
-
 ipcMain.handle("delete-contact-person", async (event, contactId) => {
   try {
     await runDb(
@@ -677,7 +584,6 @@ ipcMain.handle("delete-contact-person", async (event, contactId) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("reactivate-supplier", async (event, id) => {
   try {
     await runDb(
@@ -692,7 +598,6 @@ ipcMain.handle("reactivate-supplier", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("reactivate-customer", async (event, id) => {
   try {
     await runDb(
@@ -707,7 +612,6 @@ ipcMain.handle("reactivate-customer", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("reactivate-product", async (event, id) => {
   try {
     await runDb(
@@ -722,7 +626,6 @@ ipcMain.handle("reactivate-product", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("reactivate-manufacturer", async (event, id) => {
   try {
     await runDb(
@@ -737,17 +640,6 @@ ipcMain.handle("reactivate-manufacturer", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-// ════════════════════════════════════════════════════════════════════════════
-// BATCHES  (schema: batch_id UUID, product_id FK, supplier_id FK,
-//           purchase_invoice_id FK nullable, batch_number,
-//           manufacturing_date, expiry_date, mrp, purchase_cost_per_unit,
-//           quantity_received, quantity_available — trigger-maintained)
-//
-// KEY: the schema trigger trg_batch_insert_opening_movement fires on INSERT
-// and auto-creates a stock_movement record + updates quantity_available.
-// You do NOT manually touch quantity_available.
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("get-batches", async () => {
   try {
     return await queryDb(
@@ -776,7 +668,6 @@ ipcMain.handle("get-batches", async () => {
     return [];
   }
 });
-
 ipcMain.handle("add-batch", async (event, data) => {
   try {
     const result = await runDb(
@@ -788,13 +679,13 @@ ipcMain.handle("add-batch", async (event, data) => {
       [
         data.product_id,
         data.supplier_id,
-        data.purchase_invoice_id    || null,
+        data.purchase_invoice_id || null,
         data.batch_number,
         data.manufacturing_date,
         data.expiry_date,
         data.mrp,
         data.purchase_cost_per_unit,
-        data.quantity_received,
+        data.quantity_received
       ]
     );
     return { success: true, batchId: result.row.batch_id };
@@ -806,13 +697,6 @@ ipcMain.handle("add-batch", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// STOCK VIEW  (uses v_stock_summary view — defined in pharmax_schema.sql)
-// ════════════════════════════════════════════════════════════════════════════
-
-// ── Purchase Invoices (GRN) ───────────────────────────────────────────────────
-
 ipcMain.handle("get-purchase-invoices", async () => {
   try {
     return await queryDb(
@@ -829,7 +713,6 @@ ipcMain.handle("get-purchase-invoices", async () => {
     return [];
   }
 });
-
 ipcMain.handle("get-purchase-invoice", async (event, id) => {
   try {
     const [header, items] = await Promise.all([
@@ -847,7 +730,7 @@ ipcMain.handle("get-purchase-invoice", async (event, id) => {
          WHERE pii.purchase_invoice_id = $1
          ORDER BY pii.item_id`,
         [id]
-      ),
+      )
     ]);
     return { header: header[0] || null, items };
   } catch (err) {
@@ -855,7 +738,6 @@ ipcMain.handle("get-purchase-invoice", async (event, id) => {
     return { header: null, items: [] };
   }
 });
-
 ipcMain.handle("add-purchase-invoice", async (event, data) => {
   try {
     const result = await runDb(
@@ -869,11 +751,11 @@ ipcMain.handle("add-purchase-invoice", async (event, data) => {
         data.invoice_number,
         data.invoice_date,
         data.received_date || data.invoice_date,
-        data.subtotal        ?? 0,
+        data.subtotal ?? 0,
         data.discount_amount ?? 0,
-        data.tax_amount      ?? 0,
-        data.net_payable     ?? 0,
-        data.notes           || null,
+        data.tax_amount ?? 0,
+        data.net_payable ?? 0,
+        data.notes || null
       ]
     );
     return { success: true, purchaseInvoiceId: result.row.purchase_invoice_id };
@@ -884,7 +766,6 @@ ipcMain.handle("add-purchase-invoice", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("add-purchase-invoice-item", async (event, data) => {
   try {
     const result = await runDb(
@@ -903,10 +784,10 @@ ipcMain.handle("add-purchase-invoice-item", async (event, data) => {
         data.mrp,
         data.purchase_cost_per_unit,
         data.quantity,
-        data.discount_pct  ?? 0,
-        data.gst_rate      ?? 0,
+        data.discount_pct ?? 0,
+        data.gst_rate ?? 0,
         data.line_total,
-        data.tax_amount    ?? 0,
+        data.tax_amount ?? 0
       ]
     );
     return { success: true, itemId: result.row.item_id };
@@ -915,13 +796,10 @@ ipcMain.handle("add-purchase-invoice-item", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("confirm-purchase-invoice", async (event, id, userId) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-
-    // Fetch invoice header
     const headerRes = await client.query(
       `SELECT * FROM purchase_invoices WHERE purchase_invoice_id = $1 FOR UPDATE`,
       [id]
@@ -929,24 +807,18 @@ ipcMain.handle("confirm-purchase-invoice", async (event, id, userId) => {
     const header = headerRes.rows[0];
     if (!header) throw new Error("Purchase invoice not found.");
     if (header.status !== "draft") throw new Error("Only draft invoices can be confirmed.");
-
-    // Fetch all line items
     const itemsRes = await client.query(
       `SELECT * FROM purchase_invoice_items WHERE purchase_invoice_id = $1`,
       [id]
     );
     const items = itemsRes.rows;
-
     for (const item of items) {
-      // Check if batch already exists for this product
       const existingBatch = await client.query(
         `SELECT batch_id, quantity_available FROM batches
          WHERE product_id = $1 AND batch_number = $2`,
         [item.product_id, item.batch_number]
       );
-
       if (existingBatch.rows.length > 0) {
-        // Existing batch — insert stock movement directly
         const batchId = existingBatch.rows[0].batch_id;
         await client.query(
           `INSERT INTO stock_movements
@@ -955,7 +827,6 @@ ipcMain.handle("confirm-purchase-invoice", async (event, id, userId) => {
           [batchId, item.quantity, id]
         );
       } else {
-        // New batch — INSERT triggers auto stock_movement via trg_batch_insert_opening_movement
         await client.query(
           `INSERT INTO batches
              (product_id, supplier_id, purchase_invoice_id, batch_number,
@@ -970,21 +841,17 @@ ipcMain.handle("confirm-purchase-invoice", async (event, id, userId) => {
             item.expiry_date,
             item.mrp,
             item.purchase_cost_per_unit,
-            item.quantity,
+            item.quantity
           ]
         );
       }
     }
-
-    // Update supplier payable (opening_balance += net_payable)
     await client.query(
       `UPDATE suppliers
        SET opening_balance = opening_balance + $1, updated_at = now()
        WHERE supplier_id = $2`,
       [header.net_payable, header.supplier_id]
     );
-
-    // Confirm the invoice
     await client.query(
       `UPDATE purchase_invoices
       SET status = 'confirmed',
@@ -994,7 +861,6 @@ ipcMain.handle("confirm-purchase-invoice", async (event, id, userId) => {
       WHERE purchase_invoice_id = $1`,
       [id, userId]
     );
-
     await client.query("COMMIT");
     return { success: true };
   } catch (err) {
@@ -1005,16 +871,15 @@ ipcMain.handle("confirm-purchase-invoice", async (event, id, userId) => {
     client.release();
   }
 });
-
 ipcMain.handle("cancel-purchase-invoice", async (event, id) => {
   try {
     const rows = await queryDb(
-      `SELECT status FROM purchase_invoices WHERE purchase_invoice_id = $1`, [id]
+      `SELECT status FROM purchase_invoices WHERE purchase_invoice_id = $1`,
+      [id]
     );
     if (!rows.length) return { success: false, error: "Invoice not found." };
     if (rows[0].status === "confirmed")
       return { success: false, error: "Confirmed invoices cannot be cancelled." };
-
     await runDb(
       `UPDATE purchase_invoices
        SET status = 'cancelled', updated_at = now()
@@ -1027,7 +892,6 @@ ipcMain.handle("cancel-purchase-invoice", async (event, id) => {
     return { success: false, error: err.message };
   }
 });
-
 ipcMain.handle("get-batches-by-product", async (event, productId) => {
   try {
     return await queryDb(
@@ -1043,7 +907,6 @@ ipcMain.handle("get-batches-by-product", async (event, productId) => {
     return [];
   }
 });
-
 ipcMain.handle("get-stock-summary", async () => {
   try {
     return await queryDb(
@@ -1054,7 +917,6 @@ ipcMain.handle("get-stock-summary", async () => {
     return [];
   }
 });
-
 ipcMain.handle("get-stock-by-product", async (event, productId) => {
   try {
     return await queryDb(
@@ -1076,7 +938,6 @@ ipcMain.handle("get-stock-by-product", async (event, productId) => {
     return [];
   }
 });
-
 ipcMain.handle("get-near-expiry", async () => {
   try {
     return await queryDb(`SELECT * FROM v_near_expiry_batches`);
@@ -1085,13 +946,6 @@ ipcMain.handle("get-near-expiry", async () => {
     return [];
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// COMPANIES  (backward compat for Companies.jsx + preload.js)
-// The old "companies" table is now "suppliers" in the new schema.
-// These handlers map to suppliers so Companies.jsx keeps working.
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("get-companies", async () => {
   try {
     return await queryDb(
@@ -1106,7 +960,6 @@ ipcMain.handle("get-companies", async () => {
     return [];
   }
 });
-
 ipcMain.handle("add-company", async (event, data) => {
   try {
     await runDb(
@@ -1120,37 +973,25 @@ ipcMain.handle("add-company", async (event, data) => {
     return { success: false, error: err.message };
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// SALES  (sale_invoices, sale_invoice_items, stock movements)
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("add-sale", async (event, data) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-
-    // Create sale invoice
+    await client.query("BEGIN");
     const invoiceResult = await client.query(
       `INSERT INTO sale_invoices
          (customer_id, invoice_date, total_amount, discount_amount, tax_amount, grand_total, is_credit, status, payment_status)
        VALUES ($1, NOW(), $2, 0, 0, $2, $3, 'completed', $4)
        RETURNING sale_invoice_id`,
-      [data.customerId, data.totalAmount, data.isCredit, data.isCredit ? 'pending' : 'paid']
+      [data.customerId, data.totalAmount, data.isCredit, data.isCredit ? "pending" : "paid"]
     );
     const saleInvoiceId = invoiceResult.rows[0].sale_invoice_id;
-
-    // Add sale items and update stock
     for (const item of data.items) {
-      // Insert sale invoice item
       await client.query(
         `INSERT INTO sale_invoice_items
            (sale_invoice_id, batch_id, quantity, unit_price, total_price)
          VALUES ($1, $2, $3, $4, $5)`,
         [saleInvoiceId, item.batchId, item.quantity, item.saleRate, item.totalAmount]
       );
-
-      // Create stock movement (sale reduces stock)
       await client.query(
         `INSERT INTO stock_movements
            (batch_id, movement_type, quantity, reference_type, reference_id, notes)
@@ -1158,30 +999,16 @@ ipcMain.handle("add-sale", async (event, data) => {
         [item.batchId, -item.quantity, saleInvoiceId]
       );
     }
-
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     return { success: true, saleId: saleInvoiceId };
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     console.error("❌ add-sale error:", err.message);
     return { success: false, error: err.message };
   } finally {
     client.release();
   }
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// REMOVED HANDLERS  — these no longer exist in pharmax_schema.sql
-// ─────────────────────────────────────────────────────────────────────────
-// ❌ add-area / get-areas  → Area table dropped. Use territory TEXT on customers.
-// ❌ add-medicine          → medicines table dropped. Use products + batches.
-// ❌ insert-sale           → Use sale_invoices + sale_invoice_items (Iteration 2).
-//
-// If your .jsx pages still call these you will see:
-//   "Error invoking remote method: No handler registered for 'add-area'"
-// Update those pages to use the new handlers listed above.
-// ════════════════════════════════════════════════════════════════════════════
-
 ipcMain.handle("query-db", async (event, sql, params) => {
   try {
     return await queryDb(sql, params);
@@ -1190,25 +1017,18 @@ ipcMain.handle("query-db", async (event, sql, params) => {
     throw err;
   }
 });
-
-// ─── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-    },
+      contextIsolation: true
+    }
   });
-
   const isDev = process.argv.some(
-    (arg) =>
-      arg.includes("--no-sandbox") ||
-      arg.includes("--inspect") ||
-      arg.includes("electron")
+    (arg) => arg.includes("--no-sandbox") || arg.includes("--inspect") || arg.includes("electron")
   );
-
   if (isDev) {
     win.loadURL("http://localhost:5173");
     win.webContents.openDevTools();
@@ -1216,41 +1036,33 @@ function createWindow() {
     win.loadFile(path.join(__dirname, "../../Frontend/dist/index.html"));
   }
 }
-
-// ─── App Lifecycle ────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
   await testConnection();
   createWindow();
-
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 app.on("window-all-closed", async () => {
   console.log("🔴 window-all-closed fired");
-
   if (process.platform !== "darwin") {
     console.log("🔵 Platform is not darwin, proceeding...");
-
     try {
       const { session } = require("electron");
       console.log("🔵 Got electron session");
-
       await session.defaultSession.clearStorageData({
-        storages: ["localstorage"],
+        storages: ["localstorage"]
       });
       console.log("✅ localStorage cleared successfully");
     } catch (err) {
       console.error("❌ Failed to clear localStorage:", err.message);
     }
-
     try {
       await pool.end();
       console.log("✅ PostgreSQL pool closed");
     } catch (err) {
       console.error("❌ Failed to close pool:", err.message);
     }
-
     console.log("🔴 Calling app.quit()");
     app.quit();
   } else {
