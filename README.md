@@ -368,6 +368,74 @@ erDiagram
     users ||--o{ expenses : "recorded by"
 ```
 
+
+## 📈 Progress Report (Iteration 1 & 2)
+
+### Iteration 1 (Sprint 1) - Complete ~~[Done]~~
+- ~~**US-101** - System Authentication (Register, Login, Role-based redirect)~~
+- ~~**US-102** - Add / Manage Products (Medicine master, DRAP scheduling, FBR GST rate)~~
+- ~~**US-103** - Add / Manage Suppliers (STRN, NTN, DRAP drug licence)~~
+- ~~**US-104** - Add / Manage Customers (Credit limits, territory)~~
+- ~~**US-105** - Add / Manage Batches (MRP enforced, expiry info)~~
+- ~~**US-106** - View Current Stock Levels (Stock summary, search, filter)~~
+
+### Iteration 2 (Sprint 2) - In Progress
+- ~~**US-201** - Create Purchase Invoice (GRN)~~
+  - *Status:* Implemented (`Frontend/src/pages/Purchaseinvoice.jsx`, `add-purchase-invoice` IPC)
+- ~~**US-202** - Generate Sales Invoice with GST~~
+  - *Status:* Implemented (`Frontend/src/pages/AddSale.jsx`, `add-sale` IPC)
+
+#### Remaining User Stories to Implement:
+
+- **US-203** - Record Purchase Returns
+  - **Description:** Record returns to suppliers, specifying batch and quantity returned, and automatically adjust stock and supplier payables.
+  - **Sub-Stories:**
+    - US-203a: Record return against a purchase invoice, specify batch and quantity returned.
+    - US-203b: Adjust stock and supplier payable automatically on return save.
+  - **Files to consider:**
+    - `Frontend/src/pages/PurchaseReturn.jsx` (New)
+    - `Frontend/src/App.jsx` (Add route)
+    - `Backend/app/main.js` (Add `add-purchase-return` IPC)
+
+- **US-204** - Process Sales Returns
+  - **Description:** Process customer returns against a sales invoice, restore batch stock, and update the customer ledger account.
+  - **Sub-Stories:**
+    - US-204a: Process sales return against a sales invoice and credit the customer account.
+    - US-204b: Restore batch stock on sales return and update customer ledger.
+  - **Files to consider:**
+    - `Frontend/src/pages/SalesReturn.jsx` (New)
+    - `Frontend/src/App.jsx` (Add route)
+    - `Backend/app/main.js` (Add `add-sales-return` IPC)
+
+- **US-205** - Near-Expiry Batch Alerts
+  - **Description:** Automated dashboard warnings for batches expiring within 30, 60, and 90 days.
+  - **Sub-Stories:**
+    - US-205a: Show dashboard alert for batches expiring within 30 days (Critical).
+    - US-205b: Show warning for batches 31-60 days from expiry; block sale of expired batches.
+  - **Files to consider:**
+    - `Frontend/src/pages/Dashboard.jsx` (Modify to fetch/display alerts)
+    - `Frontend/src/components/ui/ExpiryAlerts.jsx` (New)
+    - `Backend/app/main.js` (Modify `get-near-expiry` IPC if needed)
+
+- **US-206** - View Customer Ledger & Outstanding Dues
+  - **Description:** Real-time account view per customer including dues, ageing analysis (0-30, 31-60, etc.), and credit limit status.
+  - **Sub-Stories:**
+    - US-206a: View running account per customer with sales, returns, payments, and balance.
+    - US-206b: Show ageing analysis (0-30, 31-60, 61-90, 90+ days overdue) and credit limit status.
+  - **Files to consider:**
+    - `Frontend/src/pages/CustomerLedger.jsx` (New) or `CreditDues.jsx` (Modify)
+    - `Backend/app/main.js` (Add `get-customer-ledger` IPC)
+
+- **US-207** - View Supplier Ledger & Outstanding Payables
+  - **Description:** Real-time account view per supplier with outstanding payables, payment history, and reconciliation.
+  - **Sub-Stories:**
+    - US-207a: View running account per supplier with purchases, returns, payments made, and balance.
+    - US-207b: Filter supplier ledger by date range and export outstanding payables list.
+  - **Files to consider:**
+    - `Frontend/src/pages/SupplierLedger.jsx` (New)
+    - `Backend/app/main.js` (Add `get-supplier-ledger` IPC)
+
+
 ## 🚀 How to Run
 
 ### Database
@@ -399,6 +467,19 @@ npm start
 ```
 
 ---
+
+
+## 📘 Comprehensive Architecture Tutorial
+
+PharmaX features a modern, secure dual-process Electron architecture backed by an industrial-grade PostgreSQL database.
+
+**Quick Overview:**
+- **What it is:** A desktop application combining Node.js native capabilities with a fast React frontend, connected to a robust PostgreSQL database.
+- **Why we built it this way:** To provide a responsive, offline-capable application that guarantees financial integrity (using PostgreSQL locking) while maintaining strict security boundaries (preventing SQL injection from the frontend).
+- **How it works:** The React frontend (Renderer) captures user input and sends messages via Inter-Process Communication (IPC) to the Node.js backend (Main Process). The Main Process safely executes database queries and returns the results.
+
+For a full, deep-dive tutorial complete with codebase snippets, architectural choices, and visual diagrams, please read the [Comprehensive PharmaX Tutorial & Deep Dive](Docs/TUTORIAL.md).
+
 
 ## 🛠️ Testing & Quality
 
