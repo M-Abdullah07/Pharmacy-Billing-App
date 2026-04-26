@@ -989,18 +989,33 @@ ipcMain.handle("add-sale", async (event, data) => {
       [data.customerId, data.totalAmount, data.isCredit, data.isCredit ? "pending" : "paid"]
     );
     const saleInvoiceId = invoiceResult.rows[0].sale_invoice_id;
-    for (const item of data.items) {
+    if (data.items && data.items.length > 0) {
+      const itemValues = [
+        data.items.map(() => saleInvoiceId),
+        data.items.map((item) => item.batchId),
+        data.items.map((item) => item.quantity),
+        data.items.map((item) => item.saleRate),
+        data.items.map((item) => item.totalAmount)
+      ];
       await client.query(
         `INSERT INTO sale_invoice_items
            (sale_invoice_id, batch_id, quantity, unit_price, total_price)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [saleInvoiceId, item.batchId, item.quantity, item.saleRate, item.totalAmount]
+         SELECT * FROM unnest($1::uuid[], $2::uuid[], $3::int[], $4::numeric[], $5::numeric[])`,
+        itemValues
       );
+      const movementValues = [
+        data.items.map((item) => item.batchId),
+        data.items.map(() => "sale"),
+        data.items.map((item) => -item.quantity),
+        data.items.map(() => "sale_invoice"),
+        data.items.map(() => saleInvoiceId),
+        data.items.map(() => "Sale transaction")
+      ];
       await client.query(
         `INSERT INTO stock_movements
            (batch_id, movement_type, quantity, reference_type, reference_id, notes)
-         VALUES ($1, 'sale', $2, 'sale_invoice', $3, 'Sale transaction')`,
-        [item.batchId, -item.quantity, saleInvoiceId]
+         SELECT * FROM unnest($1::uuid[], $2::movement_type[], $3::int[], $4::text[], $5::uuid[], $6::text[])`,
+        movementValues
       );
     }
     await client.query("COMMIT");
