@@ -94,7 +94,7 @@ Backend/app/.env
 
 # Vite
 .vite/
-
+Frontend/.vite/
 # Electron-Forge
 out/
 
