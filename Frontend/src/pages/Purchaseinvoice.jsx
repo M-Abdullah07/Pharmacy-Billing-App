@@ -4,6 +4,7 @@ import {
   Trash2, ChevronDown, ChevronUp, AlertTriangle
 } from 'lucide-react';
 import { getUserId } from "@/utilis/sessions";
+import { Pagination } from "@/components/shared/Pagination";
 
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -362,6 +363,10 @@ export default function PurchaseInvoice() {
   const [toast, setToast]         = useState(null);
   const [expandedId, setExpandedId] = useState(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // ── Form state ──────────────────────────────────────────────────────────────
   const [header, setHeader]         = useState(EMPTY_HEADER);
   const [lines, setLines]           = useState([{ ...EMPTY_LINE }]);
@@ -385,6 +390,11 @@ export default function PurchaseInvoice() {
     } catch (err) { showToast('Failed to load data.', 'error'); }
     finally { setLoading(false); }
   };
+
+  // Reset page on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
 
   // ── Line management ─────────────────────────────────────────────────────────
   const addLine    = () => setLines(prev => [...prev, { ...EMPTY_LINE }]);
@@ -756,7 +766,7 @@ export default function PurchaseInvoice() {
                   </td>
                 </tr>
               ) : (
-                filtered.map(inv => (
+                filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(inv => (
                   <React.Fragment key={inv.purchase_invoice_id}>
                     <tr className={`border-t border-gray-50 transition-colors
                       ${expandedId === inv.purchase_invoice_id ? 'bg-blue-50/30' : 'hover:bg-gray-50/70'}`}>
@@ -807,6 +817,12 @@ export default function PurchaseInvoice() {
             </tbody>
           </table>
         )}
+        <Pagination 
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

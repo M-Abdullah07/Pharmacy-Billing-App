@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Truck, UserPlus, Trash2, Star } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 const PAYMENT_TERMS = ['Cash on Delivery', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60'];
 const CONTACT_ROLES = ['Owner', 'Manager', 'Salesman', 'Accounts', 'Other'];
@@ -37,6 +38,10 @@ export default function Companies() {
   const [newContact, setNewContact]     = useState(EMPTY_CONTACT);
   const [showContactForm, setShowContactForm] = useState(false);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => { loadSuppliers(); }, []);
 
   const loadSuppliers = async () => {
@@ -59,6 +64,10 @@ export default function Companies() {
     } catch (err) { showToast('Failed to load suppliers.', 'error'); }
     finally { setLoading(false); }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
 
   const handleOpenForm = () => {
     setForm(EMPTY_FORM); setFieldErrors({}); setEditingId(null);
@@ -441,7 +450,7 @@ export default function Companies() {
                       : 'No suppliers yet. Add your first supplier above.'}</p>
                   </td>
                 </tr>
-              ) : filtered.map(s => (
+              ) : filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(s => (
                 <tr key={s.supplier_id} className="hover:bg-gray-50/70 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-600">{s.strn || <span className="text-gray-300">—</span>}</td>
@@ -487,6 +496,12 @@ export default function Companies() {
             </tbody>
           </table>
         )}
+        <Pagination 
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
