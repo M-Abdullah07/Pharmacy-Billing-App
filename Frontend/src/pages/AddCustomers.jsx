@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Users, UserPlus, Trash2, Star } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 const CUSTOMER_TYPES = ['retailer', 'wholesaler', 'hospital', 'clinic', 'government'];
 const PAYMENT_TERMS  = ['Cash on Delivery', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60'];
@@ -39,6 +40,10 @@ export default function AddCustomer() {
   const [newContact, setNewContact]   = useState(EMPTY_CONTACT);
   const [showContactForm, setShowContactForm] = useState(false);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => { loadCustomers(); }, []);
 
   const loadCustomers = async () => {
@@ -61,6 +66,10 @@ export default function AddCustomer() {
     } catch (err) { showToast('Failed to load customers.', 'error'); }
     finally { setLoading(false); }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
 
   const handleOpenForm = () => {
     setForm(EMPTY_FORM); setFieldErrors({}); setEditingId(null);
@@ -468,7 +477,7 @@ export default function AddCustomer() {
                       : 'No customers yet. Add your first customer above.'}</p>
                   </td>
                 </tr>
-              ) : filtered.map(c => (
+              ) : filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(c => (
                 <tr key={c.customer_id} className="hover:bg-gray-50/70 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                   <td className="px-4 py-3">
@@ -521,6 +530,12 @@ export default function AddCustomer() {
             </tbody>
           </table>
         )}
+        <Pagination 
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

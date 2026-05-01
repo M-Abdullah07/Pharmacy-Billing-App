@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Building2 } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 const EMPTY_FORM = {
   name: '', drap_mfg_licence: '', country: 'Pakistan', contact_number: '', email: '',
@@ -28,6 +29,10 @@ export default function Manufacturers() {
   const [toast, setToast]                 = useState(null);
   const [activeTab, setActiveTab]         = useState('active');
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => { loadManufacturers(); }, []);
 
   const loadManufacturers = async () => {
@@ -42,6 +47,10 @@ export default function Manufacturers() {
     } catch (err) { showToast('Failed to load manufacturers.', 'error'); }
     finally { setLoading(false); }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
 
   const handleOpenForm = () => {
     setForm(EMPTY_FORM); setFieldErrors({}); setEditingId(null); setShowForm(true);
@@ -258,7 +267,7 @@ export default function Manufacturers() {
                       : 'No manufacturers yet. Add your first manufacturer above.'}</p>
                   </td>
                 </tr>
-              ) : filtered.map(mfg => (
+              ) : filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(mfg => (
                 <tr key={mfg.manufacturer_id} className="hover:bg-gray-50/70 transition-colors">
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900">{mfg.name}</div>
@@ -299,6 +308,12 @@ export default function Manufacturers() {
             </tbody>
           </table>
         )}
+        <Pagination 
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

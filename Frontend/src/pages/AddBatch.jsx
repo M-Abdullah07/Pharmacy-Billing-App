@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Layers, AlertTriangle } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 // ── Expiry status helpers ─────────────────────────────────────────────────────
 const getExpiryStatus = (expiryDate) => {
@@ -51,6 +52,10 @@ export default function AddBatch() {
   const [toast, setToast]           = useState(null);
   const [expiryWarning, setExpiryWarning] = useState('');
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // ── Load ────────────────────────────────────────────────────────────────────
   useEffect(() => { loadAll(); }, []);
 
@@ -71,6 +76,10 @@ export default function AddBatch() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
 
   // ── Open form ───────────────────────────────────────────────────────────────
   const handleOpenForm = () => {
@@ -480,7 +489,7 @@ export default function AddBatch() {
                   </td>
                 </tr>
               ) : (
-                filtered.map(b => {
+                filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(b => {
                   const expiry  = getExpiryStatus(b.expiry_date);
                   const daysLeft = getDaysToExpiry(b.expiry_date);
                   return (
@@ -523,6 +532,12 @@ export default function AddBatch() {
             </tbody>
           </table>
         )}
+        <Pagination 
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

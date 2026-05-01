@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Package, AlertTriangle, ChevronRight, BarChart3 } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GST_SLABS      = [0, 5, 12, 18, 28];
@@ -217,6 +218,10 @@ export default function Products() {
   const [loading, setLoading]   = useState(false);
   const [toast, setToast]       = useState(null);
 
+  // ── Pagination ──────────────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // ── Load ────────────────────────────────────────────────────────────────────
   useEffect(() => { loadAll(); }, []);
 
@@ -259,6 +264,11 @@ export default function Products() {
     } catch (err) { showToast('Failed to load batch details.', 'error'); }
     finally { setSidePanelLoading(false); }
   };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [prodSearchQuery, prodTab, stockSearch, stockStatusFilter, stockMfgFilter]);
 
   // ── Products CRUD ───────────────────────────────────────────────────────────
   const handleOpenForm = () => {
@@ -621,7 +631,7 @@ export default function Products() {
                           : 'No products yet. Add your first product above.'}</p>
                       </td>
                     </tr>
-                  ) : filteredProducts.map(product => (
+                  ) : filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(product => (
                     <tr key={product.product_id} className="hover:bg-gray-50/70 transition-colors">
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{product.name}</div>
@@ -675,6 +685,14 @@ export default function Products() {
                 </tbody>
               </table>
             )}
+            
+            {/* Pagination Controls */}
+            <Pagination 
+              totalItems={filteredProducts.length}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </>
       )}
@@ -753,7 +771,7 @@ export default function Products() {
                           : 'No stock data yet. Add batches first.'}</p>
                       </td>
                     </tr>
-                  ) : filteredStock.map(s => {
+                  ) : filteredStock.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(s => {
                     const status  = stockStatusBadge(s.stock_status);
                     const nearest = s.nearest_expiry
                       ? Math.floor((new Date(s.nearest_expiry) - new Date()) / (1000 * 60 * 60 * 24))
@@ -812,6 +830,14 @@ export default function Products() {
                 </tbody>
               </table>
             )}
+
+            {/* Pagination Controls */}
+            <Pagination 
+              totalItems={filteredStock.length}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </>
       )}
