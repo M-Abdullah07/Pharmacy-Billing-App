@@ -18,6 +18,8 @@ import Backup from "@/pages/Backup";
 import Settings from "@/pages/Settings";
 import Manufacturers from "@/pages/Manufacturer";
 import PurchaseInvoice from "@/pages/Purchaseinvoice";
+import PurchaseReturns from "@/pages/PurchaseReturns";
+import SupplierLedger from "@/pages/SupplierLedger";
 
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
@@ -90,6 +92,10 @@ export default function App() {
         return <Manufacturers />;
       case "Purchase Invoice":
         return <PurchaseInvoice />;
+      case "Purchase Returns":
+        return <PurchaseReturns />;
+      case "Supplier Ledger":
+        return <SupplierLedger />;
       default:
         return <Dashboard />;
     }
