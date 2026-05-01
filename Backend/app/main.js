@@ -1133,47 +1133,36 @@ ipcMain.handle("add-sale", async (event, data) => {
     // Create sale invoice
     const invoiceResult = await client.query(
       `INSERT INTO sale_invoices
-         (customer_id, invoice_date, total_amount, discount_amount, tax_amount, grand_total, is_credit, status, payment_status)
-       VALUES ($1, NOW(), $2, 0, 0, $2, $3, 'completed', $4)
+         (customer_id, invoice_date, subtotal, discount_amount, tax_amount, net_receivable, amount_paid, status)
+       VALUES ($1, NOW(), $2, 0, 0, $2, $3, 'confirmed')
        RETURNING sale_invoice_id`,
-      [data.customerId, data.totalAmount, data.isCredit, data.isCredit ? 'pending' : 'paid']
+      [data.customerId, data.totalAmount, data.isCredit ? 0 : data.totalAmount]
     );
     const saleInvoiceId = invoiceResult.rows[0].sale_invoice_id;
 
     // Add sale items and update stock
     if (data.items && data.items.length > 0) {
-      // Bulk insert into sale_invoice_items
-      const itemValues = [
-        data.items.map(() => saleInvoiceId),
-        data.items.map(item => item.batchId),
-        data.items.map(item => item.quantity),
-        data.items.map(item => item.saleRate),
-        data.items.map(item => item.totalAmount)
-      ];
+      for (const item of data.items) {
+        // Fetch mrp from batch for the schema requirement
+        const batchRes = await client.query('SELECT mrp, product_id FROM batches WHERE batch_id = $1', [item.batchId]);
+        const mrp = batchRes.rows[0]?.mrp || item.saleRate;
+        const productId = batchRes.rows[0]?.product_id;
 
-      await client.query(
-        `INSERT INTO sale_invoice_items
-           (sale_invoice_id, batch_id, quantity, unit_price, total_price)
-         SELECT * FROM unnest($1::uuid[], $2::uuid[], $3::int[], $4::numeric[], $5::numeric[])`,
-        itemValues
-      );
+        await client.query(
+          `INSERT INTO sale_invoice_items
+             (sale_invoice_id, product_id, batch_id, quantity, mrp, sale_rate, line_total)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [saleInvoiceId, productId, item.batchId, item.quantity, mrp, item.saleRate, item.totalAmount]
+        );
 
-      // Bulk insert into stock_movements
-      const movementValues = [
-        data.items.map(item => item.batchId),
-        data.items.map(() => 'sale'),
-        data.items.map(item => -item.quantity),
-        data.items.map(() => 'sale_invoice'),
-        data.items.map(() => saleInvoiceId),
-        data.items.map(() => 'Sale transaction')
-      ];
-
-      await client.query(
-        `INSERT INTO stock_movements
-           (batch_id, movement_type, quantity, reference_type, reference_id, notes)
-         SELECT * FROM unnest($1::uuid[], $2::movement_type[], $3::int[], $4::text[], $5::uuid[], $6::text[])`,
-        movementValues
-      );
+        // Update stock movement
+        await client.query(
+          `INSERT INTO stock_movements
+             (batch_id, movement_type, quantity, reference_type, reference_id, notes)
+           VALUES ($1, 'sale', $2, 'sale_invoice', $3, 'Sale transaction')`,
+          [item.batchId, item.quantity, saleInvoiceId]
+        );
+      }
     }
 
     await client.query('COMMIT');
@@ -1198,6 +1187,161 @@ ipcMain.handle("add-sale", async (event, data) => {
 //   "Error invoking remote method: No handler registered for 'add-area'"
 // Update those pages to use the new handlers listed above.
 // ════════════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════════════
+// PURCHASE RETURNS
+// ════════════════════════════════════════════════════════════════════════════
+
+ipcMain.handle("get-purchase-returns", async () => {
+  try {
+    return await queryDb(`
+      SELECT pr.*, pi.invoice_number AS purchase_invoice_number, s.name AS supplier_name
+      FROM purchase_returns pr
+      JOIN purchase_invoices pi ON pi.purchase_invoice_id = pr.purchase_invoice_id
+      JOIN suppliers s ON s.supplier_id = pr.supplier_id
+      ORDER BY pr.created_at DESC
+    `);
+  } catch (err) {
+    console.error("❌ get-purchase-returns error:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("add-purchase-return", async (event, data) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Create Purchase Return Header
+    const returnResult = await client.query(
+      `INSERT INTO purchase_returns
+         (purchase_invoice_id, supplier_id, return_date, reason, notes, total_credit, status, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7)
+       RETURNING return_id`,
+      [
+        data.purchase_invoice_id,
+        data.supplier_id,
+        data.return_date || new Date().toISOString().split('T')[0],
+        data.reason || 'other',
+        data.notes || '',
+        data.total_credit || 0,
+        data.user_id || null
+      ]
+    );
+    const returnId = returnResult.rows[0].return_id;
+
+    // 2. Process Items
+    if (data.items && data.items.length > 0) {
+      for (const item of data.items) {
+        if (item.quantity <= 0) {
+          throw new Error("Quantity must be greater than zero for all returned items.");
+        }
+
+        // Insert return item
+        await client.query(
+          `INSERT INTO purchase_return_items
+             (return_id, batch_id, quantity, credit_rate, line_credit)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [returnId, item.batch_id, item.quantity, item.credit_rate, item.line_credit]
+        );
+
+        // Deduct Stock
+        await client.query(
+          `INSERT INTO stock_movements
+             (batch_id, movement_type, quantity, reference_type, reference_id, notes)
+           VALUES ($1, 'purchase_return', $2, 'purchase_return', $3, 'Purchase Return')`,
+          [item.batch_id, item.quantity, returnId]
+        );
+      }
+    }
+
+    // 3. Update Supplier Payable Balance
+    await client.query(
+      `UPDATE suppliers
+       SET opening_balance = opening_balance - $1, updated_at = now()
+       WHERE supplier_id = $2`,
+      [data.total_credit || 0, data.supplier_id]
+    );
+
+    await client.query("COMMIT");
+    return { success: true, returnId };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("❌ add-purchase-return error:", err.message);
+    return { success: false, error: err.message };
+  } finally {
+    client.release();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUPPLIER LEDGER & PAYABLES
+// ════════════════════════════════════════════════════════════════════════════
+
+ipcMain.handle("get-outstanding-payables", async () => {
+  try {
+    return await queryDb(`
+      SELECT supplier_id, name, city, opening_balance AS payable_balance, payment_terms, credit_period_days
+      FROM suppliers
+      WHERE is_active = TRUE AND opening_balance > 0
+      ORDER BY opening_balance DESC
+    `);
+  } catch (err) {
+    console.error("❌ get-outstanding-payables error:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("get-supplier-ledger", async (event, supplierId, startDate, endDate) => {
+  try {
+    let dateFilter = "";
+    const params = [supplierId];
+    let paramIndex = 2;
+
+    if (startDate) {
+      dateFilter += ` AND date >= $${paramIndex++}`;
+      params.push(startDate);
+    }
+    if (endDate) {
+      dateFilter += ` AND date <= $${paramIndex++}`;
+      params.push(endDate);
+    }
+
+    // Combine Opening Balance + Purchase Invoices + Payments (Paid to Supplier) + Returns
+    // This is a simplified ledger view query
+    const sql = `
+      SELECT * FROM (
+        -- Purchases
+        SELECT purchase_invoice_id AS id, invoice_date AS date, 'Purchase' AS type,
+               invoice_number AS reference, net_payable AS credit, 0 AS debit, notes
+        FROM purchase_invoices
+        WHERE supplier_id = $1 AND status = 'confirmed'
+
+        UNION ALL
+
+        -- Returns
+        SELECT return_id AS id, return_date AS date, 'Return' AS type,
+               '' AS reference, 0 AS credit, total_credit AS debit, notes
+        FROM purchase_returns
+        WHERE supplier_id = $1 AND status = 'confirmed'
+
+        UNION ALL
+
+        -- Payments
+        SELECT payment_id AS id, payment_date AS date, 'Payment' AS type,
+               reference_no AS reference, 0 AS credit, amount AS debit, notes
+        FROM payments
+        WHERE party_id = $1 AND direction = 'paid'
+      ) AS ledger
+      WHERE 1=1 ${dateFilter}
+      ORDER BY date ASC
+    `;
+    return await queryDb(sql, params);
+  } catch (err) {
+    console.error("❌ get-supplier-ledger error:", err.message);
+    return [];
+  }
+});
 
 ipcMain.handle("query-db", async (event, sql, params) => {
   try {

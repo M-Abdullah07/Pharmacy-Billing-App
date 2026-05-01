@@ -71,6 +71,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Sales ─────────────────────────────────────────────────────────────────
   addSale: (data) => ipcRenderer.invoke('add-sale', data),
 
+  // ── Purchase Returns ──────────────────────────────────────────────────────
+  getPurchaseReturns: () => ipcRenderer.invoke('get-purchase-returns'),
+  addPurchaseReturn: (data) => ipcRenderer.invoke('add-purchase-return', data),
+
+  // ── Supplier Ledger ───────────────────────────────────────────────────────
+  getOutstandingPayables: () => ipcRenderer.invoke('get-outstanding-payables'),
+  getSupplierLedger: (supplierId, startDate, endDate) => ipcRenderer.invoke('get-supplier-ledger', supplierId, startDate, endDate),
+
   // ── General Database Query ───────────────────────────────────────────────
   queryDb: (sql, params) => ipcRenderer.invoke('query-db', sql, params),
 
