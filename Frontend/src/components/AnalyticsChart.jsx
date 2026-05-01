@@ -1,28 +1,81 @@
+import React, { useState, useEffect } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartTooltip, ChartLegendContent, ChartLegend } from "@/components/ui/chart"
 
-const chartData = [
-  { month: "January", antibiotics: 120, painkillers: 90 },
-  { month: "February", antibiotics: 160, painkillers: 130 },
-  { month: "March", antibiotics: 140, painkillers: 100 },
-  { month: "April", antibiotics: 110, painkillers: 150 },
-  { month: "May", antibiotics: 180, painkillers: 120 },
-  { month: "June", antibiotics: 170, painkillers: 140 },
-];
-
 const chartConfig = {
-  antibiotics: {
-    label: "Antibiotics",
+  sales: {
+    label: "Sales",
     color: "#2563eb",
   },
-  painkillers: {
-    label: "Painkillers",
+  purchases: {
+    label: "Purchases",
     color: "#60a5fa",
   },
 };
 
-
 export default function AnalyticsChart() {
+  const [chartData, setChartData] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const data = await window.electronAPI.queryDb(`
+          WITH months AS (
+              SELECT generate_series(
+                  date_trunc('month', CURRENT_DATE) - INTERVAL '5 months',
+                  date_trunc('month', CURRENT_DATE),
+                  '1 month'
+              ) AS month
+          )
+          SELECT
+              to_char(m.month, 'FMMonth') AS month,
+              COALESCE(SUM(s.net_receivable), 0) AS sales,
+              COALESCE(SUM(p.net_payable), 0) AS purchases
+          FROM months m
+          LEFT JOIN sale_invoices s ON date_trunc('month', s.invoice_date) = m.month AND s.status = 'confirmed'
+          LEFT JOIN purchase_invoices p ON date_trunc('month', p.invoice_date) = m.month AND p.status = 'confirmed'
+          GROUP BY m.month
+          ORDER BY m.month;
+        `);
+        
+        const formattedData = data.map(item => ({
+          month: item.month,
+          sales: parseFloat(item.sales || 0),
+          purchases: parseFloat(item.purchases || 0)
+        }));
+        setChartData(formattedData);
+      } catch (err) {
+        console.error("Error fetching analytics:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
+
+  if (error) {
+    return (
+      <div className="flex justify-center pb-24">
+        <div className="w-full max-w-4xl p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-sm text-red-500 text-sm">
+          Analytics error: {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center pb-24">
+        <div className="w-full max-w-4xl p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-sm text-zinc-400 text-center">
+          Loading Analytics…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center pb-24">
       <div className="w-full max-w-4xl p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-sm">
@@ -41,15 +94,15 @@ export default function AnalyticsChart() {
             <ChartLegend content={<ChartLegendContent />} />
             <Line
               type="linear"
-              dataKey="antibiotics"
-              stroke="var(--color-antibiotics)"
+              dataKey="sales"
+              stroke="var(--color-sales)"
               strokeWidth={2}
               dot={{ r: 3 }}
             />
             <Line
               type="linear"
-              dataKey="painkillers"
-              stroke="var(--color-painkillers)"
+              dataKey="purchases"
+              stroke="var(--color-purchases)"
               strokeWidth={2}
               dot={{ r: 3 }}
             />
