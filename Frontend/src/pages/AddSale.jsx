@@ -19,10 +19,9 @@ export default function AddSale() {
   // Selected values
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
-  const [selectedBatch, setSelectedBatch] = useState("");
 
   // Sale item inputs
-  const [quantity, setQuantity] = useState(1);
+    const [quantity, setQuantity] = useState(1);
   const [saleRate, setSaleRate] = useState("");
 
   // Sale items list
@@ -40,15 +39,6 @@ export default function AddSale() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
 
-  const [showAddBatch, setShowAddBatch] = useState(false);
-  const [newBatch, setNewBatch] = useState({
-    batch_no: "",
-    purchase_rate: "",
-    quantity: "",
-    expiry: ""
-  });
-  const [open, setOpen] = useState(false)
-  const [date, setDate] = useState(false)
 
   // Electron API shortcut
   const api = window.electronAPI;
@@ -141,88 +131,39 @@ export default function AddSale() {
     }
   };
 
-  // Handlers for adding new Batch
-  const handleAddBatch = async () => {
-    const { batch_no, purchase_rate, quantity, expiry } = newBatch;
-    if (!batch_no.trim() || !purchase_rate || !quantity || !expiry) {
-      alert("Please fill all batch fields");
-      return;
-    }
-    if (!selectedProduct) {
-      alert("Please select a product first");
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const result = await api.addBatch({
-        product_id: selectedProduct,
-        batch_number: batch_no.trim(),
-        purchase_cost_per_unit: parseFloat(purchase_rate),
-        quantity_received: parseInt(quantity, 10),
-        expiry_date: expiry,
-        supplier_id: null,
-        manufacturing_date: null,
-        mrp: parseFloat(purchase_rate) * 1.2 // Default markup
-      });
-      if (result.success) {
-        await refreshBatches(selectedProduct);
-        setSelectedBatch(result.batchId.toString());
-        setShowAddBatch(false);
-        setNewBatch({ batch_no: "", purchase_rate: "", quantity: "", expiry: "" });
-      } else {
-        alert("Failed to add batch: " + (result.error || "Unknown Error"));
-      }
-    } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Add an item to the sale list
   const handleAddItem = () => {
-    if (!selectedBatch || !quantity || !saleRate) {
+    if (!selectedProduct || !quantity) {
       alert("Please fill all fields");
       return;
     }
-    const batch = batches.find(b => b.batch_id === selectedBatch);
     const product = products.find(p => p.product_id === selectedProduct);
 
-    if (!batch || !product) {
+    if (!product) {
       alert("Invalid selection");
       return;
     }
 
-    if (quantity > batch.quantity_available) {
-      alert(`Insufficient stock! Available: ${batch.quantity_available}`);
-      return;
-    }
-
-    const existingItem = saleItems.find(item => item.batchId === batch.batch_id);
+    const existingItem = saleItems.find(item => item.productId === product.product_id);
     if (existingItem) {
-      alert("This batch is already added. Remove it first to change quantity.");
+      alert("This product is already added. Remove it first to change quantity.");
       return;
     }
-
-    const totalAmount = quantity * parseFloat(saleRate);
 
     setSaleItems(prev => [
       ...prev,
       {
-        batchId: batch.batch_id,
+        productId: product.product_id,
         productName: product.name,
-        batchNumber: batch.batch_number,
         quantity: parseInt(quantity),
-        saleRate: parseFloat(saleRate),
-        totalAmount,
-        expiry: batch.expiry_date
+        saleRate: saleRate ? parseFloat(saleRate) : null,
+        discountPct: 0
       }
     ]);
 
     // Reset input controls
     setQuantity(1);
     setSaleRate("");
-    setSelectedBatch("");
     setSelectedProduct("");
   };
 
@@ -239,12 +180,10 @@ export default function AddSale() {
 
     try {
       setIsLoading(true);
-      const totalAmount = saleItems.reduce((sum, item) => sum + item.totalAmount, 0);
-      const result = await api.addSale({
+            const result = await api.addSale({
         customerId: selectedCustomer,
         isCredit,
-        items: saleItems,
-        totalAmount
+        items: saleItems
       });
       if (result.success) {
         alert(`Sale recorded successfully! Sale ID: ${result.saleId}`);
@@ -266,7 +205,6 @@ export default function AddSale() {
     }
   };
 
-  const grandTotal = saleItems.reduce((sum, item) => sum + item.totalAmount, 0);
 
   return (
     <div className="grid grid-cols-1">
@@ -354,88 +292,6 @@ export default function AddSale() {
         </Select>
       </div>
 
-      {/* Batch select */}
-      <Label className="mb-2">Batch:</Label>
-      <div className="flex flex-row items-center gap-2 mb-4">
-        <Select value={selectedBatch} onValueChange={setSelectedBatch}>
-          <SelectTrigger className="w-[240px]">
-            <SelectValue placeholder="Select Batch" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Batches</SelectLabel>
-              {batches.map(b => (
-                <SelectItem key={b.batch_id} value={b.batch_id}>
-                  {b.batch_number} (Stock: {b.quantity_available})
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Button variant="link" size="sm" onClick={() => setShowAddBatch(true)}>+ Add Batch</Button>
-      </div>
-
-      <Dialog open={showAddBatch} onOpenChange={setShowAddBatch}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Batch</DialogTitle>
-            <DialogDescription>
-              Fill in the details and click save to add a new Batch.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-4 mt-4">
-            <Label>Batch Info:</Label>
-            <Input
-              type="text"
-              placeholder="Batch Number"
-              value={newBatch.batch_no}
-              onChange={(e) => setNewBatch({ ...newBatch, batch_no: e.target.value })}
-            />
-            <Input
-              type="number"
-              placeholder="Purchase Rate"
-              value={newBatch.purchase_rate}
-              onChange={(e) => setNewBatch({ ...newBatch, purchase_rate: e.target.value })}
-            />
-            <Input
-              type="number"
-              min={0}
-              step={1}
-              placeholder="Quantity"
-              value={newBatch.quantity}
-              onChange={(e) => setNewBatch({ ...newBatch, quantity: e.target.value })}
-            />
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" id="date" className="justify-center font-normal">
-                  {date ? date.toLocaleDateString() : "Select Expiry date"}
-                  <CalendarIcon />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto overflow-hidden p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  captionLayout="dropdown"
-                  onSelect={(selectedDate) => {
-                    setDate(selectedDate)
-                    setNewBatch({ ...newBatch, expiry: selectedDate?.toISOString().split("T")[0] || "" })
-                    setOpen(false)
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={handleAddBatch}>Save</Button>
-            <Button variant="outline" onClick={() => setShowAddBatch(false)}>
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Quantity and Sale Rate Inputs */}
       <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 w-full max-w-xl space-y-4">
@@ -456,14 +312,14 @@ export default function AddSale() {
             type="number"
             min="0"
             step="0.01"
-            placeholder="Sale Rate"
+            placeholder="Sale Rate Override (optional)"
             value={saleRate}
             onChange={(e) => setSaleRate(e.target.value)}
           />
           <Button
             variant="secondary"
             onClick={handleAddItem}
-            disabled={!selectedBatch || !quantity || !saleRate}
+            disabled={!selectedProduct || !quantity}
             className="w-full"
           >
             Add Item
@@ -477,11 +333,9 @@ export default function AddSale() {
         <TableHeader>
           <TableRow>
             <TableHead>Product</TableHead>
-            <TableHead>Batch</TableHead>
             <TableHead>Qty</TableHead>
-            <TableHead>Rate</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead>Expiry</TableHead>
+            <TableHead>Rate (FEFO)</TableHead>
+            <TableHead>Total (FEFO)</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -492,22 +346,15 @@ export default function AddSale() {
           {saleItems.map((item, index) => (
             <TableRow key={index}>
               <TableCell>{item.productName}</TableCell>
-              <TableCell>{item.batchNumber}</TableCell>
               <TableCell>{item.quantity}</TableCell>
-              <TableCell>₹{item.saleRate.toFixed(2)}</TableCell>
-              <TableCell>₹{item.totalAmount.toFixed(2)}</TableCell>
-              <TableCell>{item.expiry}</TableCell>
+              <TableCell>{item.saleRate ? `₹${item.saleRate.toFixed(2)}` : "Auto-calculated"}</TableCell>
+              <TableCell>{item.saleRate ? `₹${(item.quantity * item.saleRate).toFixed(2)}` : "Auto-calculated"}</TableCell>
               <TableCell>
                 <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(index)}>Remove</Button>
               </TableCell>
             </TableRow>
           ))}
-          {saleItems.length > 0 && (
-            <TableRow>
-              <TableCell colSpan="4" style={{ fontWeight: 'bold', textAlign: 'right' }}>Grand Total:</TableCell>
-              <TableCell colSpan="3" style={{ fontWeight: 'bold' }}>₹{grandTotal.toFixed(2)}</TableCell>
-            </TableRow>
-          )}
+
         </TableBody>
       </Table>
 
