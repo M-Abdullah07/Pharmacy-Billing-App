@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, X, CheckCircle2, AlertCircle, Users, UserPlus, Trash2, Star } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Users,
+  UserPlus,
+  Trash2,
+  Star,
+} from 'lucide-react';
 import { Pagination } from '@/components/shared/Pagination';
 
 const CUSTOMER_TYPES = ['retailer', 'wholesaler', 'hospital', 'clinic', 'government'];
@@ -49,8 +59,8 @@ export default function AddCustomer() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
   const [contactErrors, setContactErrors] = useState({});
-  const [toast, setToast]             = useState(null);
-  const [contacts, setContacts]       = useState([]);
+  const [toast, setToast] = useState(null);
+  const [contacts, setContacts] = useState([]);
   const [pendingContacts, setPendingContacts] = useState([]);
   const [newContact, setNewContact] = useState(EMPTY_CONTACT);
   const [showContactForm, setShowContactForm] = useState(false);
@@ -59,7 +69,9 @@ export default function AddCustomer() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => { loadCustomers(); }, []);
+  useEffect(() => {
+    loadCustomers();
+  }, []);
 
   const loadCustomers = async () => {
     setLoading(true);
@@ -90,9 +102,15 @@ export default function AddCustomer() {
   }, [searchQuery, activeTab]);
 
   const handleOpenForm = () => {
-    setForm(EMPTY_FORM); setFieldErrors({}); setContactErrors({}); setEditingId(null);
-    setContacts([]); setPendingContacts([]); setNewContact(EMPTY_CONTACT);
-    setShowContactForm(false); setShowForm(true);
+    setForm(EMPTY_FORM);
+    setFieldErrors({});
+    setContactErrors({});
+    setEditingId(null);
+    setContacts([]);
+    setPendingContacts([]);
+    setNewContact(EMPTY_CONTACT);
+    setShowContactForm(false);
+    setShowForm(true);
   };
 
   const handleEdit = async (customer) => {
@@ -109,8 +127,11 @@ export default function AddCustomer() {
       payment_terms: customer.payment_terms || '',
     });
     setEditingId(customer.customer_id);
-    setFieldErrors({}); setContactErrors({}); setNewContact(EMPTY_CONTACT);
-    setShowContactForm(false); setPendingContacts([]);
+    setFieldErrors({});
+    setContactErrors({});
+    setNewContact(EMPTY_CONTACT);
+    setShowContactForm(false);
+    setPendingContacts([]);
     const existing = await window.electronAPI.getContactPersons('customer', customer.customer_id);
     setContacts(Array.isArray(existing) ? existing : []);
     setShowForm(true);
@@ -136,7 +157,10 @@ export default function AddCustomer() {
     if (!newContact.name.trim()) {
       errors.name = 'Contact name is required.';
     }
-    if (newContact.contact_number && !/^\+?(?:\d[ -]?|\(\d+\)[ -]?){7,20}$/.test(newContact.contact_number.trim())) {
+    if (
+      newContact.contact_number &&
+      !/^\+?(?:\d[ -]?|\(\d+\)[ -]?){7,20}$/.test(newContact.contact_number.trim())
+    ) {
       errors.contact_number = 'Invalid phone number format.';
     }
     if (newContact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContact.email.trim())) {
@@ -150,8 +174,13 @@ export default function AddCustomer() {
 
   const handleSave = async () => {
     const errors = validate();
-    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
-    setFieldErrors({}); setContactErrors({}); setLoading(true);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
+    setContactErrors({});
+    setLoading(true);
     try {
       const payload = { ...form, credit_limit: Number(form.credit_limit) || 0 };
       let result;
@@ -199,8 +228,9 @@ export default function AddCustomer() {
       return;
     }
     setContactErrors({});
-    setPendingContacts(prev => [...prev, { ...newContact }]);
-    setNewContact(EMPTY_CONTACT); setShowContactForm(false);
+    setPendingContacts((prev) => [...prev, { ...newContact }]);
+    setNewContact(EMPTY_CONTACT);
+    setShowContactForm(false);
   };
 
   const handleSaveContact = async () => {
@@ -418,15 +448,29 @@ export default function AddCustomer() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">NTN</label>
-              <input type="text" value={form.ntn} onChange={e => field('ntn', e.target.value)}
-                placeholder="e.g. 1234567-8" className={inputCls('ntn')} />
+              <input
+                type="text"
+                value={form.ntn}
+                onChange={(e) => field('ntn', e.target.value)}
+                placeholder="e.g. 1234567-8"
+                className={inputCls('ntn')}
+              />
               {fieldErrors.ntn && <p className="text-red-500 text-xs mt-1">{fieldErrors.ntn}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">DRAP Drug Licence</label>
-              <input type="text" value={form.drug_licence_no} onChange={e => field('drug_licence_no', e.target.value)}
-                placeholder="e.g. RTL-2024-001" className={inputCls('drug_licence_no')} />
-              {fieldErrors.drug_licence_no && <p className="text-red-500 text-xs mt-1">{fieldErrors.drug_licence_no}</p>}
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                DRAP Drug Licence
+              </label>
+              <input
+                type="text"
+                value={form.drug_licence_no}
+                onChange={(e) => field('drug_licence_no', e.target.value)}
+                placeholder="e.g. RTL-2024-001"
+                className={inputCls('drug_licence_no')}
+              />
+              {fieldErrors.drug_licence_no && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.drug_licence_no}</p>
+              )}
             </div>
           </div>
 
@@ -538,15 +582,22 @@ export default function AddCustomer() {
               <div className="border border-blue-100 bg-blue-50/40 rounded-lg p-3 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-                    <input type="text" value={newContact.name}
-                      onChange={e => {
-                        setNewContact(p => ({ ...p, name: e.target.value }));
-                        if (contactErrors.name) setContactErrors(prev => ({ ...prev, name: '' }));
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newContact.name}
+                      onChange={(e) => {
+                        setNewContact((p) => ({ ...p, name: e.target.value }));
+                        if (contactErrors.name) setContactErrors((prev) => ({ ...prev, name: '' }));
                       }}
                       placeholder="Contact name"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
-                    {contactErrors.name && <p className="text-red-500 text-xs mt-1">{contactErrors.name}</p>}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                    />
+                    {contactErrors.name && (
+                      <p className="text-red-500 text-xs mt-1">{contactErrors.name}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
@@ -565,25 +616,37 @@ export default function AddCustomer() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
-                    <input type="text" value={newContact.contact_number}
-                      onChange={e => {
-                        setNewContact(p => ({ ...p, contact_number: e.target.value }));
-                        if (contactErrors.contact_number) setContactErrors(prev => ({ ...prev, contact_number: '' }));
+                    <input
+                      type="text"
+                      value={newContact.contact_number}
+                      onChange={(e) => {
+                        setNewContact((p) => ({ ...p, contact_number: e.target.value }));
+                        if (contactErrors.contact_number)
+                          setContactErrors((prev) => ({ ...prev, contact_number: '' }));
                       }}
                       placeholder="e.g. 0300-1234567"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
-                    {contactErrors.contact_number && <p className="text-red-500 text-xs mt-1">{contactErrors.contact_number}</p>}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                    />
+                    {contactErrors.contact_number && (
+                      <p className="text-red-500 text-xs mt-1">{contactErrors.contact_number}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" value={newContact.email}
-                      onChange={e => {
-                        setNewContact(p => ({ ...p, email: e.target.value }));
-                        if (contactErrors.email) setContactErrors(prev => ({ ...prev, email: '' }));
+                    <input
+                      type="email"
+                      value={newContact.email}
+                      onChange={(e) => {
+                        setNewContact((p) => ({ ...p, email: e.target.value }));
+                        if (contactErrors.email)
+                          setContactErrors((prev) => ({ ...prev, email: '' }));
                       }}
                       placeholder="e.g. contact@pharmacy.com"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
-                    {contactErrors.email && <p className="text-red-500 text-xs mt-1">{contactErrors.email}</p>}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                    />
+                    {contactErrors.email && (
+                      <p className="text-red-500 text-xs mt-1">{contactErrors.email}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
@@ -721,105 +784,92 @@ export default function AddCustomer() {
                     </p>
                   </td>
                 </tr>
-              ) : filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(c => (
-                <tr key={c.customer_id} className="hover:bg-gray-50/70 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${typeBadge(c.customer_type)}`}>
-                      {c.customer_type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.strn || <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.city || <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.territory || <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {c.credit_limit > 0 ? `Rs ${Number(c.credit_limit).toLocaleString()}` : <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    {c.primary_contact_name ? (
-                      <div>
-                        <p className="text-xs font-medium text-gray-800">{c.primary_contact_name}</p>
-                        <p className="text-xs text-gray-400">{c.primary_contact_number || '—'}</p>
-                      </div>
-                    ) : <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full
-                      ${c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${c.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
-                      {c.is_active ? 'Active' : 'Deactivated'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleEdit(c)}
-                        className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
-                        Edit
-                      </button>
-                      {c.is_active ? (
-                        <button onClick={() => handleDeactivate(c.customer_id, c.name)}
-                          className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors">
-                          Deactivate
-                        </button>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {c.primary_contact_name ? (
-                        <div>
-                          <p className="text-xs font-medium text-gray-800">
-                            {c.primary_contact_name}
-                          </p>
-                          <p className="text-xs text-gray-400">{c.primary_contact_number || '—'}</p>
-                        </div>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full
-                      ${c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}
-                      >
+              ) : (
+                filtered
+                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  .map((c) => (
+                    <tr key={c.customer_id} className="hover:bg-gray-50/70 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
+                      <td className="px-4 py-3">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${c.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
-                        />
-                        {c.is_active ? 'Active' : 'Deactivated'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEdit(c)}
-                          className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${typeBadge(c.customer_type)}`}
                         >
-                          Edit
-                        </button>
-                        {c.is_active ? (
-                          <button
-                            onClick={() => handleDeactivate(c.customer_id, c.name)}
-                            className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
-                          >
-                            Deactivate
-                          </button>
+                          {c.customer_type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                        {c.strn || <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {c.city || <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {c.territory || <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {c.credit_limit > 0 ? (
+                          `Rs ${Number(c.credit_limit).toLocaleString()}`
                         ) : (
-                          <button
-                            onClick={() => handleReactivate(c.customer_id, c.name)}
-                            className="px-3 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
-                          >
-                            Reactivate
-                          </button>
+                          <span className="text-gray-300">—</span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-4 py-3">
+                        {c.primary_contact_name ? (
+                          <div>
+                            <p className="text-xs font-medium text-gray-800">
+                              {c.primary_contact_name}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {c.primary_contact_number || '—'}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full
+                      ${c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${c.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
+                          />
+                          {c.is_active ? 'Active' : 'Deactivated'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEdit(c)}
+                            className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                          >
+                            Edit
+                          </button>
+                          {c.is_active ? (
+                            <button
+                              onClick={() => handleDeactivate(c.customer_id, c.name)}
+                              className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                            >
+                              Deactivate
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleReactivate(c.customer_id, c.name)}
+                              className="px-3 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+                            >
+                              Reactivate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
         )}
-        <Pagination 
+        <Pagination
           totalItems={filtered.length}
           itemsPerPage={itemsPerPage}
           currentPage={currentPage}
