@@ -19,6 +19,7 @@ import Settings from '@/pages/Settings';
 import Manufacturers from '@/pages/Manufacturer';
 import PurchaseInvoice from '@/pages/Purchaseinvoice';
 import SupplierLedger from '@/pages/SupplierLedger';
+import PurchaseReturns from './pages/PurchaseReturns';
 
 export default function App() {
   const [activePage, setActivePage] = useState('Dashboard');
