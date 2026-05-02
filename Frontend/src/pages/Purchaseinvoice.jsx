@@ -11,9 +11,8 @@ import {
   ChevronUp,
   AlertTriangle,
 } from 'lucide-react';
-import { getUserId } from "@/utilis/sessions";
-import { Pagination } from "@/components/shared/Pagination";
-
+import { getUserId } from '@/utilis/sessions';
+import { Pagination } from '@/components/shared/Pagination';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GST_SLABS = [0, 5, 12, 18, 28];
@@ -28,11 +27,11 @@ const EMPTY_HEADER = {
 };
 
 const EMPTY_LINE = {
-  product_id:             '',
-  batch_number:           '',
-  manufacturing_date:     '',
-  expiry_date:            '',
-  mrp:                    '',
+  product_id: '',
+  batch_number: '',
+  manufacturing_date: '',
+  expiry_date: '',
+  mrp: '',
   purchase_cost_per_unit: '',
   quantity: '',
   discount_pct: 0,
@@ -137,8 +136,14 @@ function LineItem({ line, idx, products, onUpdate, onRemove, error = {} }) {
       {/* Row 1 — Product + Batch details */}
       <div className="grid grid-cols-4 gap-3 mb-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Product <span className="text-red-500">*</span></label>
-          <select value={line.product_id} onChange={e => u('product_id', e.target.value)} className={selectCls}>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Product <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={line.product_id}
+            onChange={(e) => u('product_id', e.target.value)}
+            className={selectCls}
+          >
             <option value="">Select Product</option>
             {products.map((p) => (
               <option key={p.product_id} value={p.product_id}>
@@ -150,25 +155,49 @@ function LineItem({ line, idx, products, onUpdate, onRemove, error = {} }) {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Batch Number <span className="text-red-500">*</span></label>
-          <input type="text" value={line.batch_number}
-            onChange={e => u('batch_number', e.target.value)}
-            placeholder="e.g. AMX-2024-001" className={inputCls} />
-          {error.batch_number && <p className="text-red-500 text-[10px] mt-1">{error.batch_number}</p>}
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Batch Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={line.batch_number}
+            onChange={(e) => u('batch_number', e.target.value)}
+            placeholder="e.g. AMX-2024-001"
+            className={inputCls}
+          />
+          {error.batch_number && (
+            <p className="text-red-500 text-[10px] mt-1">{error.batch_number}</p>
+          )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Mfg. Date <span className="text-red-500">*</span></label>
-          <input type="date" value={line.manufacturing_date}
-            onChange={e => u('manufacturing_date', e.target.value)} className={inputCls} />
-          {error.manufacturing_date && <p className="text-red-500 text-[10px] mt-1">{error.manufacturing_date}</p>}
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Mfg. Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            value={line.manufacturing_date}
+            onChange={(e) => u('manufacturing_date', e.target.value)}
+            className={inputCls}
+          />
+          {error.manufacturing_date && (
+            <p className="text-red-500 text-[10px] mt-1">{error.manufacturing_date}</p>
+          )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Expiry Date <span className="text-red-500">*</span></label>
-          <input type="date" value={line.expiry_date}
-            onChange={e => u('expiry_date', e.target.value)} className={inputCls} />
-          {error.expiry_date && <p className="text-red-500 text-[10px] mt-1">{error.expiry_date}</p>}
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Expiry Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            value={line.expiry_date}
+            onChange={(e) => u('expiry_date', e.target.value)}
+            className={inputCls}
+          />
+          {error.expiry_date && (
+            <p className="text-red-500 text-[10px] mt-1">{error.expiry_date}</p>
+          )}
         </div>
       </div>
 
@@ -218,10 +247,19 @@ function LineItem({ line, idx, products, onUpdate, onRemove, error = {} }) {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Discount %</label>
-          <input type="number" min="0" max="100" step="0.01" value={line.discount_pct}
-            onChange={e => u('discount_pct', e.target.value)}
-            placeholder="0" className={inputCls} />
-          {error.discount_pct && <p className="text-red-500 text-[10px] mt-1">{error.discount_pct}</p>}
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={line.discount_pct}
+            onChange={(e) => u('discount_pct', e.target.value)}
+            placeholder="0"
+            className={inputCls}
+          />
+          {error.discount_pct && (
+            <p className="text-red-500 text-[10px] mt-1">{error.discount_pct}</p>
+          )}
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">GST %</label>
@@ -424,22 +462,24 @@ export default function PurchaseInvoice() {
     const hErrors = {};
     if (!header.supplier_id) hErrors.supplier_id = 'Required.';
     if (!header.invoice_number.trim()) hErrors.invoice_number = 'Required.';
-    if (!header.invoice_date)   hErrors.invoice_date   = 'Required.';
+    if (!header.invoice_date) hErrors.invoice_date = 'Required.';
     if (header.discount_amount && Number(header.discount_amount) < 0) {
       hErrors.discount_amount = 'Cannot be negative.';
     }
 
     const lErrors = lines.map((line) => {
       const e = {};
-      if (!line.product_id)             e.product_id             = 'Required.';
-      if (!line.batch_number.trim())    e.batch_number           = 'Required.';
-      if (!line.manufacturing_date)     e.manufacturing_date     = 'Required.';
-      if (!line.expiry_date)            e.expiry_date            = 'Required.';
-      if (line.expiry_date && line.manufacturing_date &&
-          new Date(line.expiry_date) <= new Date(line.manufacturing_date))
+      if (!line.product_id) e.product_id = 'Required.';
+      if (!line.batch_number.trim()) e.batch_number = 'Required.';
+      if (!line.manufacturing_date) e.manufacturing_date = 'Required.';
+      if (!line.expiry_date) e.expiry_date = 'Required.';
+      if (
+        line.expiry_date &&
+        line.manufacturing_date &&
+        new Date(line.expiry_date) <= new Date(line.manufacturing_date)
+      )
         e.expiry_date = 'Must be after manufacturing date.';
-      if (!line.mrp || Number(line.mrp) <= 0)
-        e.mrp = 'MRP must be > 0.';
+      if (!line.mrp || Number(line.mrp) <= 0) e.mrp = 'MRP must be > 0.';
       if (!line.purchase_cost_per_unit || Number(line.purchase_cost_per_unit) <= 0)
         e.purchase_cost_per_unit = 'Rate must be > 0.';
       if (!line.quantity || Number(line.quantity) <= 0)
@@ -479,12 +519,12 @@ export default function PurchaseInvoice() {
       for (const line of lines) {
         const lineCalc = calcLine(line);
         await window.electronAPI.addPurchaseInvoiceItem({
-          purchase_invoice_id:    invoiceId,
-          product_id:             line.product_id,
-          batch_number:           line.batch_number,
-          manufacturing_date:     line.manufacturing_date,
-          expiry_date:            line.expiry_date,
-          mrp:                    Number(line.mrp),
+          purchase_invoice_id: invoiceId,
+          product_id: line.product_id,
+          batch_number: line.batch_number,
+          manufacturing_date: line.manufacturing_date,
+          expiry_date: line.expiry_date,
+          mrp: Number(line.mrp),
           purchase_cost_per_unit: Number(line.purchase_cost_per_unit),
           quantity: Number(line.quantity),
           discount_pct: Number(line.discount_pct) || 0,
@@ -749,13 +789,19 @@ export default function PurchaseInvoice() {
                   <span>Header Discount</span>
                   <div className="flex flex-col items-end">
                     <input
-                      type="number" min="0" step="0.01"
+                      type="number"
+                      min="0"
+                      step="0.01"
                       value={header.discount_amount}
-                      onChange={e => hField('discount_amount', e.target.value)}
+                      onChange={(e) => hField('discount_amount', e.target.value)}
                       className="w-28 px-2 py-1 text-xs text-right border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20"
                       placeholder="0.00"
                     />
-                    {headerErrors.discount_amount && <p className="text-red-500 text-[10px] mt-1">{headerErrors.discount_amount}</p>}
+                    {headerErrors.discount_amount && (
+                      <p className="text-red-500 text-[10px] mt-1">
+                        {headerErrors.discount_amount}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-between text-gray-600">
@@ -864,87 +910,89 @@ export default function PurchaseInvoice() {
                   </td>
                 </tr>
               ) : (
-                filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(inv => (
-                  <React.Fragment key={inv.purchase_invoice_id}>
-                    <tr
-                      className={`border-t border-gray-50 transition-colors
+                filtered
+                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  .map((inv) => (
+                    <React.Fragment key={inv.purchase_invoice_id}>
+                      <tr
+                        className={`border-t border-gray-50 transition-colors
                       ${expandedId === inv.purchase_invoice_id ? 'bg-blue-50/30' : 'hover:bg-gray-50/70'}`}
-                    >
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-800">
-                        {inv.invoice_number}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{inv.supplier_name}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">
-                        {new Date(inv.invoice_date).toLocaleDateString('en-PK', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">
-                        {fmt(inv.net_payable)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={inv.status} />
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        {new Date(inv.created_at).toLocaleDateString('en-PK', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          {/* Expand/collapse */}
-                          <button
-                            onClick={() =>
-                              setExpandedId(
-                                expandedId === inv.purchase_invoice_id
-                                  ? null
-                                  : inv.purchase_invoice_id
-                              )
-                            }
-                            className="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                          >
-                            {expandedId === inv.purchase_invoice_id ? (
-                              <ChevronUp size={13} />
-                            ) : (
-                              <ChevronDown size={13} />
+                      >
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-800">
+                          {inv.invoice_number}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-gray-900">{inv.supplier_name}</td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">
+                          {new Date(inv.invoice_date).toLocaleDateString('en-PK', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-gray-800">
+                          {fmt(inv.net_payable)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={inv.status} />
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {new Date(inv.created_at).toLocaleDateString('en-PK', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {/* Expand/collapse */}
+                            <button
+                              onClick={() =>
+                                setExpandedId(
+                                  expandedId === inv.purchase_invoice_id
+                                    ? null
+                                    : inv.purchase_invoice_id
+                                )
+                              }
+                              className="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                            >
+                              {expandedId === inv.purchase_invoice_id ? (
+                                <ChevronUp size={13} />
+                              ) : (
+                                <ChevronDown size={13} />
+                              )}
+                            </button>
+                            {inv.status === 'draft' && (
+                              <>
+                                <button
+                                  onClick={() => handleConfirm(inv.purchase_invoice_id)}
+                                  className="px-3 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  onClick={() => handleCancel(inv.purchase_invoice_id)}
+                                  className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </>
                             )}
-                          </button>
-                          {inv.status === 'draft' && (
-                            <>
-                              <button
-                                onClick={() => handleConfirm(inv.purchase_invoice_id)}
-                                className="px-3 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
-                              >
-                                Confirm
-                              </button>
-                              <button
-                                onClick={() => handleCancel(inv.purchase_invoice_id)}
-                                className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedId === inv.purchase_invoice_id && (
-                      <GRNDetail
-                        invoiceId={inv.purchase_invoice_id}
-                        onClose={() => setExpandedId(null)}
-                      />
-                    )}
-                  </React.Fragment>
-                ))
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedId === inv.purchase_invoice_id && (
+                        <GRNDetail
+                          invoiceId={inv.purchase_invoice_id}
+                          onClose={() => setExpandedId(null)}
+                        />
+                      )}
+                    </React.Fragment>
+                  ))
               )}
             </tbody>
           </table>
         )}
-        <Pagination 
+        <Pagination
           totalItems={filtered.length}
           itemsPerPage={itemsPerPage}
           currentPage={currentPage}

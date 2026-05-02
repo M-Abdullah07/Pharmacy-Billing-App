@@ -1,5 +1,5 @@
-import React from "react";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import React from 'react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 export function Pagination({ totalItems, itemsPerPage, currentPage, onPageChange }) {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -9,7 +9,7 @@ export function Pagination({ totalItems, itemsPerPage, currentPage, onPageChange
   return (
     <div className="flex items-center justify-between px-2 py-3 border-t">
       <div className="text-sm text-gray-500">
-        Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+        Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
         {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
       </div>
       <div className="flex items-center space-x-2">

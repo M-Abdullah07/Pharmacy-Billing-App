@@ -18,17 +18,19 @@ const getDaysToExpiry = (expiryDate) =>
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AddBatch() {
-  const [batches, setBatches]           = useState([]);
-  const [searchQuery, setSearchQuery]   = useState('');
-  const [activeTab, setActiveTab]       = useState('all');
-  const [loading, setLoading]           = useState(false);
+  const [batches, setBatches] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [loading, setLoading] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   // ── Load ────────────────────────────────────────────────────────────────────
-  useEffect(() => { loadBatches(); }, []);
+  useEffect(() => {
+    loadBatches();
+  }, []);
 
   const loadBatches = async () => {
     setLoading(true);
@@ -89,8 +91,8 @@ export default function AddBatch() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Batch Inventory</h1>
           <p className="text-xs text-gray-500 mt-0.5">
-            View all stock batches, expiry timelines, and DRAP compliance status.
-            New batches are created automatically when a Purchase Invoice is confirmed.
+            View all stock batches, expiry timelines, and DRAP compliance status. New batches are
+            created automatically when a Purchase Invoice is confirmed.
           </p>
         </div>
       </div>
@@ -124,7 +126,7 @@ export default function AddBatch() {
           <input
             type="text"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by product, batch or supplier..."
             className="pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-lg w-72 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
           />
@@ -179,63 +181,65 @@ export default function AddBatch() {
                   </td>
                 </tr>
               ) : (
-                filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(b => {
-                  const expiry   = getExpiryStatus(b.expiry_date);
-                  const daysLeft = getDaysToExpiry(b.expiry_date);
-                  return (
-                    <tr key={b.batch_id} className="hover:bg-gray-50/70 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{b.product_name}</div>
-                        <div className="text-xs text-gray-400">{b.product_uom}</div>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-700">
-                        {b.batch_number}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{b.supplier_name}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">
-                        {new Date(b.manufacturing_date).toLocaleDateString('en-PK', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">
-                        {new Date(b.expiry_date).toLocaleDateString('en-PK', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`text-xs font-medium ${daysLeft <= 30 ? 'text-red-600' : daysLeft <= 60 ? 'text-amber-600' : daysLeft <= 90 ? 'text-yellow-600' : 'text-gray-600'}`}
-                        >
-                          {daysLeft > 0 ? `${daysLeft}d` : 'Expired'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 font-medium">
-                        Rs {Number(b.mrp).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`font-medium ${b.quantity_available === 0 ? 'text-red-500' : 'text-gray-900'}`}
-                        >
-                          {b.quantity_available === 0
-                            ? 'Out of Stock'
-                            : b.quantity_available.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full ${expiry.color}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${expiry.dot}`} />
-                          {expiry.label}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
+                filtered
+                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  .map((b) => {
+                    const expiry = getExpiryStatus(b.expiry_date);
+                    const daysLeft = getDaysToExpiry(b.expiry_date);
+                    return (
+                      <tr key={b.batch_id} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-gray-900">{b.product_name}</div>
+                          <div className="text-xs text-gray-400">{b.product_uom}</div>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-gray-700">
+                          {b.batch_number}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{b.supplier_name}</td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">
+                          {new Date(b.manufacturing_date).toLocaleDateString('en-PK', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">
+                          {new Date(b.expiry_date).toLocaleDateString('en-PK', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`text-xs font-medium ${daysLeft <= 30 ? 'text-red-600' : daysLeft <= 60 ? 'text-amber-600' : daysLeft <= 90 ? 'text-yellow-600' : 'text-gray-600'}`}
+                          >
+                            {daysLeft > 0 ? `${daysLeft}d` : 'Expired'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 font-medium">
+                          Rs {Number(b.mrp).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`font-medium ${b.quantity_available === 0 ? 'text-red-500' : 'text-gray-900'}`}
+                          >
+                            {b.quantity_available === 0
+                              ? 'Out of Stock'
+                              : b.quantity_available.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full ${expiry.color}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${expiry.dot}`} />
+                            {expiry.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
               )}
             </tbody>
           </table>

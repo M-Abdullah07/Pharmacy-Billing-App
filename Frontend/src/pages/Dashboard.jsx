@@ -1,8 +1,8 @@
-import React from "react";
-import StatsPanel from "@/components/StatsPanel";
-import ActivityList from "@/components/ActivityList";
-import AnalyticsChart from "@/components/AnalyticsChart";
-import NearExpiryPanel from "@/components/NearExpiryPanel";
+import React from 'react';
+import StatsPanel from '@/components/StatsPanel';
+import ActivityList from '@/components/ActivityList';
+import AnalyticsChart from '@/components/AnalyticsChart';
+import NearExpiryPanel from '@/components/NearExpiryPanel';
 
 export default function Dashboard() {
   return (

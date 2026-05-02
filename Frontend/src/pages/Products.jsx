@@ -939,65 +939,11 @@ export default function Products() {
                           ) : (
                             '—'
                           )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full
-                          ${
-                            product.drug_schedule === 'X'
-                              ? 'bg-red-100 text-red-700'
-                              : product.drug_schedule === 'H1'
-                                ? 'bg-orange-100 text-orange-700'
-                                : product.drug_schedule === 'H'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : product.drug_schedule === 'G'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-green-100 text-green-700'
-                          }`}
-                          >
-                            {product.drug_schedule}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">{product.gst_rate}%</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full
-                          ${product.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${product.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
-                            />
-                            {product.is_active ? 'Active' : 'Deactivated'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleEdit(product)}
-                              className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
-                            >
-                              Edit
-                            </button>
-                            {product.is_active ? (
-                              <button
-                                onClick={() => handleDeactivate(product.product_id, product.name)}
-                                className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
-                              >
-                                Deactivate
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleReactivate(product.product_id, product.name)}
-                                className="px-3 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
-                              >
-                                Reactivate
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                        </div>
+                      </td>
+                    </tr>
                     ))
-                  )}
+                  }
                 </tbody>
               </table>
             )}
@@ -1232,7 +1178,7 @@ export default function Products() {
                         </tr>
                       );
                     })
-                  )}
+                  }
                 </tbody>
               </table>
             )}

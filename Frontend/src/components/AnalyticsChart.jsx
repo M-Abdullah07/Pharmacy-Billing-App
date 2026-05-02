@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
-import { ChartContainer, ChartTooltipContent, ChartTooltip, ChartLegendContent, ChartLegend } from "@/components/ui/chart"
+import React, { useState, useEffect } from 'react';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltipContent,
+  ChartTooltip,
+  ChartLegendContent,
+  ChartLegend,
+} from '@/components/ui/chart';
 
 const chartConfig = {
   sales: {
-    label: "Sales",
-    color: "#2563eb",
+    label: 'Sales',
+    color: '#2563eb',
   },
   purchases: {
-    label: "Purchases",
-    color: "#60a5fa",
+    label: 'Purchases',
+    color: '#60a5fa',
   },
 };
 
@@ -39,15 +45,15 @@ export default function AnalyticsChart() {
           GROUP BY m.month
           ORDER BY m.month;
         `);
-        
-        const formattedData = data.map(item => ({
+
+        const formattedData = data.map((item) => ({
           month: item.month,
           sales: parseFloat(item.sales || 0),
-          purchases: parseFloat(item.purchases || 0)
+          purchases: parseFloat(item.purchases || 0),
         }));
         setChartData(formattedData);
       } catch (err) {
-        console.error("Error fetching analytics:", err);
+        console.error('Error fetching analytics:', err);
         setError(err.message);
       } finally {
         setLoading(false);
