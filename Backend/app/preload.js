@@ -11,20 +11,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ── Products ──────────────────────────────────────────────────────────────
   getProducts:       ()        => ipcRenderer.invoke('get-products'),
+  getAllProducts:    ()        => ipcRenderer.invoke('get-all-products'),
   getProductsAlias:  ()        => ipcRenderer.invoke('getProducts'),   // camelCase alias
   addProduct:        (data)    => ipcRenderer.invoke('add-product',        data),
   updateProduct:     (id, data)=> ipcRenderer.invoke('update-product',     id, data),
   deactivateProduct: (id)      => ipcRenderer.invoke('deactivate-product', id),
 
   // ── Suppliers ─────────────────────────────────────────────────────────────
-  getSuppliers:       ()        => ipcRenderer.invoke('get-suppliers'),
-  addSupplier:        (data)    => ipcRenderer.invoke('add-supplier',        data),
+  getSuppliers:            ()        => ipcRenderer.invoke('get-suppliers'),
+  getSuppliersWithContact: ()        => ipcRenderer.invoke('get-suppliers-with-contact'),
+  addSupplier:             (data)    => ipcRenderer.invoke('add-supplier',        data),
   updateSupplier:     (id, data)=> ipcRenderer.invoke('update-supplier',     id, data),
   deactivateSupplier: (id)      => ipcRenderer.invoke('deactivate-supplier', id),
 
   // ── Customers ─────────────────────────────────────────────────────────────
-  getCustomers:   ()         => ipcRenderer.invoke('get-customers'),
-  addCustomer:    (data)     => ipcRenderer.invoke('add-customer',    data),
+  getCustomers:            ()        => ipcRenderer.invoke('get-customers'),
+  getCustomersWithContact: ()        => ipcRenderer.invoke('get-customers-with-contact'),
+  addCustomer:             (data)    => ipcRenderer.invoke('add-customer',    data),
   updateCustomer: (id, data) => ipcRenderer.invoke('update-customer', id, data),
   deleteCustomer: (id)       => ipcRenderer.invoke('delete-customer', id),
 
@@ -68,15 +71,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ── Purchase Returns ──────────────────────────────────────────────────────
   getPurchaseReturns: () => ipcRenderer.invoke('get-purchase-returns'),
+  getPurchaseReturnItems: (invoiceId) => ipcRenderer.invoke('get-purchase-return-items', invoiceId),
   addPurchaseReturn: (data) => ipcRenderer.invoke('add-purchase-return', data),
 
   // ── Supplier Ledger ───────────────────────────────────────────────────────
   getOutstandingPayables: () => ipcRenderer.invoke('get-outstanding-payables'),
   getSupplierLedger: (supplierId, startDate, endDate) => ipcRenderer.invoke('get-supplier-ledger', supplierId, startDate, endDate),
 
-  // ── General Database Query ───────────────────────────────────────────────
-  queryDb: (sql, params) => ipcRenderer.invoke('query-db', sql, params),
-  runDb: (sql, params) => ipcRenderer.invoke('run-db', sql, params),
+  // ── Dashboard & Analytics ───────────────────────────────────────────────
+  getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
+  getNearExpiryStats: (crit, warn, watch) => ipcRenderer.invoke('get-near-expiry-stats', crit, warn, watch),
+  getAnalyticsChartData: () => ipcRenderer.invoke('get-analytics-chart-data'),
+  getActivityList: () => ipcRenderer.invoke('get-activity-list'),
 
   // ── Backup & Export ───────────────────────────────────────────────────────
   backupDatabase: () => ipcRenderer.invoke('backup-database'),

@@ -1,3 +1,4 @@
+import Toast from '../components/shared/Toast';
 import React, { useEffect, useState } from 'react';
 import {
   Plus,
@@ -27,24 +28,7 @@ const EMPTY_FORM = {
 };
 const EMPTY_CONTACT = { name: '', role: '', contact_number: '', email: '', is_primary: false };
 
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 3500);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium
-      ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
-    >
-      {type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100">
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
+
 
 export default function Companies() {
   const [allSuppliers, setAllSuppliers] = useState([]);
@@ -73,19 +57,7 @@ export default function Companies() {
   const loadSuppliers = async () => {
     setLoading(true);
     try {
-      const all = await window.electronAPI.queryDb(
-        `SELECT s.supplier_id, s.name, s.strn, s.ntn, s.drug_licence_no,
-                s.address, s.city, s.payment_terms, s.credit_period_days,
-                s.is_active, s.created_at,
-                cp.name AS primary_contact_name,
-                cp.contact_number AS primary_contact_number
-         FROM suppliers s
-         LEFT JOIN contact_persons cp
-           ON cp.entity_id = s.supplier_id
-           AND cp.entity_type = 'supplier'
-           AND cp.is_primary = TRUE
-         ORDER BY s.name`
-      );
+      const all = await window.electronAPI.getSuppliersWithContact();
       setAllSuppliers(Array.isArray(all) ? all : []);
     } catch (err) {
       showToast('Failed to load suppliers.', 'error');

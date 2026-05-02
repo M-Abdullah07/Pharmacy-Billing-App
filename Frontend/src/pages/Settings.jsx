@@ -1,3 +1,4 @@
+import Toast from '../components/shared/Toast';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,32 +55,7 @@ function Toggle({ checked, onCheckedChange }) {
 }
 
 // --- Desktop Toast ---
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 3500);
-    return () => clearTimeout(t);
-  }, [onClose]);
 
-  return (
-    <div
-      className={`fixed top-8 right-8 z-50 flex items-center gap-4 px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] text-sm font-bold animate-in fade-in slide-in-from-right-8 duration-500 border backdrop-blur-xl
-      ${type === 'success' ? 'bg-white/90 dark:bg-zinc-900/90 text-green-800 dark:text-green-400 border-green-100 dark:border-green-900/30' : 'bg-white/90 dark:bg-zinc-900/90 text-red-800 dark:text-red-400 border-red-100 dark:border-red-900/30'}`}
-    >
-      <div
-        className={`p-1.5 rounded-full ${type === 'success' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}
-      >
-        {type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-      </div>
-      <span className="flex-1 tracking-tight">{message}</span>
-      <button
-        onClick={onClose}
-        className="ml-2 text-zinc-400 hover:text-zinc-600 transition-colors"
-      >
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');

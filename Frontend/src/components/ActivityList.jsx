@@ -55,76 +55,13 @@ export default function ActivityList() {
   useEffect(() => {
     const fetchActivity = async () => {
       try {
-        if (!window.electronAPI?.queryDb) {
+        if (!window.electronAPI?.getActivityList) {
           setError('electronAPI not available');
           setLoading(false);
           return;
         }
 
-        const data = await window.electronAPI.queryDb(`
-          (
-            SELECT 'Sale' AS type,
-                   c.name AS name,
-                   s.invoice_number AS id,
-                   s.created_at AS time,
-                   s.status AS status
-            FROM sale_invoices s
-            JOIN customers c ON s.customer_id = c.customer_id
-          )
-          UNION ALL
-          (
-            SELECT 'Purchase' AS type,
-                   sup.name AS name,
-                   p.invoice_number AS id,
-                   p.created_at AS time,
-                   p.status AS status
-            FROM purchase_invoices p
-            JOIN suppliers sup ON p.supplier_id = sup.supplier_id
-          )
-          UNION ALL
-          (
-            SELECT 'Sale Return' AS type,
-                   c.name AS name,
-                   sr.return_id::text AS id,
-                   sr.created_at AS time,
-                   sr.status AS status
-            FROM sale_returns sr
-            JOIN customers c ON sr.customer_id = c.customer_id
-          )
-          UNION ALL
-          (
-            SELECT 'Purchase Return' AS type,
-                   sup.name AS name,
-                   pr.return_id::text AS id,
-                   pr.created_at AS time,
-                   pr.status AS status
-            FROM purchase_returns pr
-            JOIN suppliers sup ON pr.supplier_id = sup.supplier_id
-          )
-          UNION ALL
-          (
-            SELECT 
-              CASE WHEN direction = 'received' THEN 'Payment Received' ELSE 'Payment Paid' END AS type,
-              COALESCE(c.name, s.name) AS name,
-              p.payment_id::text AS id,
-              p.created_at AS time,
-              'confirmed' AS status
-            FROM payments p
-            LEFT JOIN customers c ON p.party_id = c.customer_id AND p.direction = 'received'
-            LEFT JOIN suppliers s ON p.party_id = s.supplier_id AND p.direction = 'paid'
-          )
-          UNION ALL
-          (
-            SELECT 'Expense' AS type,
-                   e.description AS name,
-                   e.expense_id::text AS id,
-                   e.created_at AS time,
-                   'confirmed' AS status
-            FROM expenses e
-          )
-          ORDER BY time DESC
-          LIMIT 10
-        `);
+        const data = await window.electronAPI.getActivityList();
         setActivities(data);
       } catch (err) {
         console.error('ActivityList fetch error:', err);

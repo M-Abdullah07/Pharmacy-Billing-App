@@ -22,40 +22,12 @@ export default function StatsPanel() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        if (!window.electronAPI?.queryDb) {
+        if (!window.electronAPI?.getDashboardStats) {
           setError('electronAPI not available');
           return;
         }
 
-        const [saleData, profitData, outOfStockData, expiryData] = await Promise.all([
-          window.electronAPI.queryDb(
-            `SELECT COALESCE(SUM(net_receivable), 0) AS total_sale
-             FROM sale_invoices WHERE status = 'confirmed'`
-          ),
-          window.electronAPI.queryDb(
-            `SELECT COALESCE(SUM((si.sale_rate - b.purchase_cost_per_unit) * si.quantity), 0) AS total_profit
-             FROM sale_invoice_items si
-             JOIN batches b ON si.batch_id = b.batch_id
-             JOIN sale_invoices inv ON si.sale_invoice_id = inv.sale_invoice_id
-             WHERE inv.status = 'confirmed'`
-          ),
-          window.electronAPI.queryDb(
-            `SELECT COUNT(*) AS out_of_stock
-             FROM products p
-             WHERE p.is_active = TRUE
-               AND (SELECT COALESCE(SUM(quantity_available), 0)
-                    FROM batches b
-                    WHERE b.product_id = p.product_id AND b.is_active = TRUE) = 0`
-          ),
-          window.electronAPI.queryDb(
-            `SELECT
-               COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 1 AND 30)  AS critical,
-               COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 31 AND 60) AS warning,
-               COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 61 AND 90) AS watch
-             FROM batches
-             WHERE is_active = TRUE AND quantity_available > 0`
-          ),
-        ]);
+        const { saleData, profitData, outOfStockData, expiryData } = await window.electronAPI.getDashboardStats();
 
         setStats({
           totalSale: parseFloat(saleData?.[0]?.total_sale ?? 0),

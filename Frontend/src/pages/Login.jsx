@@ -1,3 +1,4 @@
+import Toast from '../components/shared/Toast';
 import React, { useState } from 'react';
 import {
   Lock,
@@ -15,34 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 // --- Desktop Toast Component ---
-function Toast({ message, type, onClose }) {
-  React.useEffect(() => {
-    const t = setTimeout(onClose, 3500);
-    return () => clearTimeout(t);
-  }, [onClose]);
 
-  return (
-    <div
-      className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-lg shadow-2xl text-sm font-semibold animate-in fade-in slide-in-from-right-5 duration-300 border
-      ${type === 'success' ? 'bg-white text-green-800 border-green-200' : 'bg-white text-red-800 border-red-200'}`}
-    >
-      <div className={`p-1 rounded-full ${type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
-        {type === 'success' ? (
-          <CheckCircle2 size={16} className="text-green-600" />
-        ) : (
-          <AlertCircle size={16} className="text-red-600" />
-        )}
-      </div>
-      <span className="flex-1">{message}</span>
-      <button
-        onClick={onClose}
-        className="ml-2 text-zinc-400 hover:text-zinc-600 transition-colors"
-      >
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
 
 const Login = ({ onLogin, setSignup }) => {
   const [username, setUsername] = useState('');

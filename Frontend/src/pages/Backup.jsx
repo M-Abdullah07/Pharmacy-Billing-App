@@ -1,3 +1,4 @@
+import Toast from '../components/shared/Toast';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,25 +15,7 @@ import {
 } from 'lucide-react';
 
 // --- Toast Component (Consistent with Settings.jsx) ---
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4500);
-    return () => clearTimeout(t);
-  }, [onClose]);
 
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-in slide-in-from-bottom-5 duration-300
-      ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
-    >
-      {type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 transition-opacity">
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
 
 export default function Backup() {
   const [message, setMessage] = useState(null);

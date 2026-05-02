@@ -1,3 +1,4 @@
+import Toast from '../components/shared/Toast';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Plus,
@@ -65,28 +66,7 @@ const calcTotals = (lines, headerDiscount) => {
 const fmt = (n) => `Rs ${Number(n || 0).toLocaleString('en-PK', { minimumFractionDigits: 2 })}`;
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium max-w-sm
-      ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
-    >
-      {type === 'success' ? (
-        <CheckCircle2 size={16} className="shrink-0" />
-      ) : (
-        <AlertCircle size={16} className="shrink-0" />
-      )}
-      <span>{message}</span>
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100">
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
+
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {

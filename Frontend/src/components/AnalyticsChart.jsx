@@ -27,24 +27,7 @@ export default function AnalyticsChart() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const data = await window.electronAPI.queryDb(`
-          WITH months AS (
-              SELECT generate_series(
-                  date_trunc('month', CURRENT_DATE) - INTERVAL '5 months',
-                  date_trunc('month', CURRENT_DATE),
-                  '1 month'
-              ) AS month
-          )
-          SELECT
-              to_char(m.month, 'FMMonth') AS month,
-              COALESCE(SUM(s.net_receivable), 0) AS sales,
-              COALESCE(SUM(p.net_payable), 0) AS purchases
-          FROM months m
-          LEFT JOIN sale_invoices s ON date_trunc('month', s.invoice_date) = m.month AND s.status = 'confirmed'
-          LEFT JOIN purchase_invoices p ON date_trunc('month', p.invoice_date) = m.month AND p.status = 'confirmed'
-          GROUP BY m.month
-          ORDER BY m.month;
-        `);
+        const data = await window.electronAPI.getAnalyticsChartData();
 
         const formattedData = data.map((item) => ({
           month: item.month,

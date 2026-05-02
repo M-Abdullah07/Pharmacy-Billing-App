@@ -256,6 +256,26 @@ ipcMain.handle("get-products", async () => {
   }
 });
 
+ipcMain.handle("get-all-products", async () => {
+  try {
+    return await queryDb(
+      `SELECT p.product_id, p.name, p.form, p.uom, p.quantity_in_uom,
+              p.hsn_code, p.gst_rate, p.drug_schedule, p.generic_formula,
+              p.default_sale_rate, p.default_purchase_rate,
+              p.shelf_no, p.is_active, p.requires_prescription,
+              p.manufacturer_id, p.category_id, p.created_at,
+              s.name AS manufacturer_name, c.name AS category_name
+       FROM products p
+       LEFT JOIN suppliers s ON s.supplier_id = p.manufacturer_id
+       LEFT JOIN categories c ON c.category_id = p.category_id
+       ORDER BY p.name`
+    );
+  } catch (err) {
+    console.error("❌ get-all-products error:", err.message);
+    return [];
+  }
+});
+
 // Alias kept for components that call getProducts (camelCase)
 ipcMain.handle("getProducts", async () => {
   try {
@@ -381,6 +401,27 @@ ipcMain.handle("get-suppliers", async () => {
   }
 });
 
+ipcMain.handle("get-suppliers-with-contact", async () => {
+  try {
+    return await queryDb(
+      `SELECT s.supplier_id, s.name, s.strn, s.ntn, s.drug_licence_no,
+              s.address, s.city, s.payment_terms, s.credit_period_days,
+              s.is_active, s.created_at,
+              cp.name AS primary_contact_name,
+              cp.contact_number AS primary_contact_number
+       FROM suppliers s
+       LEFT JOIN contact_persons cp
+         ON cp.entity_id = s.supplier_id
+         AND cp.entity_type = 'supplier'
+         AND cp.is_primary = TRUE
+       ORDER BY s.name`
+    );
+  } catch (err) {
+    console.error("❌ get-suppliers-with-contact error:", err.message);
+    return [];
+  }
+});
+
 ipcMain.handle("add-supplier", async (event, data) => {
   try {
     const result = await runDb(
@@ -474,6 +515,27 @@ ipcMain.handle("get-customers", async () => {
     );
   } catch (err) {
     console.error("❌ get-customers error:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("get-customers-with-contact", async () => {
+  try {
+    return await queryDb(
+      `SELECT c.customer_id, c.name, c.strn, c.ntn, c.drug_licence_no,
+              c.address, c.city, c.territory, c.customer_type,
+              c.credit_limit, c.payment_terms, c.is_active, c.created_at,
+              cp.name AS primary_contact_name,
+              cp.contact_number AS primary_contact_number
+       FROM customers c
+       LEFT JOIN contact_persons cp
+         ON cp.entity_id = c.customer_id
+         AND cp.entity_type = 'customer'
+         AND cp.is_primary = TRUE
+       ORDER BY c.name`
+    );
+  } catch (err) {
+    console.error("❌ get-customers-with-contact error:", err.message);
     return [];
   }
 });
@@ -970,6 +1032,32 @@ ipcMain.handle("get-batches-by-product", async (event, productId) => {
     );
   } catch (err) {
     console.error("❌ get-batches-by-product error:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("get-purchase-return-items", async (event, invoiceId) => {
+  try {
+    return await queryDb(
+      `SELECT b.batch_id,
+              pii.product_id,
+              pii.batch_number,
+              pii.purchase_cost_per_unit,
+              pii.quantity            AS invoiced_qty,
+              b.quantity_available,
+              COALESCE(pii.discount_pct, 0) AS discount_pct,
+              COALESCE(pii.gst_rate,    0) AS gst_rate,
+              p.name                  AS product_name
+       FROM purchase_invoice_items pii
+       JOIN products p ON p.product_id = pii.product_id
+       JOIN batches  b ON b.product_id  = pii.product_id
+                      AND b.batch_number = pii.batch_number
+       WHERE pii.purchase_invoice_id = $1
+         AND b.quantity_available > 0`,
+      [invoiceId]
+    );
+  } catch (err) {
+    console.error("❌ get-purchase-return-items error:", err.message);
     return [];
   }
 });
@@ -1575,5 +1663,162 @@ app.on("window-all-closed", async () => {
     app.quit();
   } else {
     console.log("⚠️ Platform is darwin — skipping cleanup");
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// DASHBOARD & ANALYTICS
+// ════════════════════════════════════════════════════════════════════════════
+
+ipcMain.handle("get-dashboard-stats", async () => {
+  try {
+    const [saleData, profitData, outOfStockData, expiryData] = await Promise.all([
+      queryDb(
+        `SELECT COALESCE(SUM(net_receivable), 0) AS total_sale
+         FROM sale_invoices WHERE status = 'confirmed'`
+      ),
+      queryDb(
+        `SELECT COALESCE(SUM((si.sale_rate - b.purchase_cost_per_unit) * si.quantity), 0) AS total_profit
+         FROM sale_invoice_items si
+         JOIN batches b ON si.batch_id = b.batch_id
+         JOIN sale_invoices inv ON si.sale_invoice_id = inv.sale_invoice_id
+         WHERE inv.status = 'confirmed'`
+      ),
+      queryDb(
+        `SELECT COUNT(*) AS out_of_stock
+         FROM products p
+         WHERE p.is_active = TRUE
+           AND (SELECT COALESCE(SUM(quantity_available), 0)
+                FROM batches b
+                WHERE b.product_id = p.product_id AND b.is_active = TRUE) = 0`
+      ),
+      queryDb(
+        `SELECT
+           COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 1 AND 30)  AS critical,
+           COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 31 AND 60) AS warning,
+           COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 61 AND 90) AS watch
+         FROM batches
+         WHERE is_active = TRUE AND quantity_available > 0`
+      )
+    ]);
+    return { saleData, profitData, outOfStockData, expiryData };
+  } catch (err) {
+    console.error("❌ get-dashboard-stats error:", err.message);
+    return { saleData: [], profitData: [], outOfStockData: [], expiryData: [] };
+  }
+});
+
+ipcMain.handle("get-near-expiry-stats", async (event, crit, warn, watch) => {
+  try {
+    return await queryDb(
+      `SELECT
+         COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 1 AND $1)  AS critical,
+         COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN $1+1 AND $2) AS warning,
+         COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN $2+1 AND $3) AS watch
+       FROM batches
+       WHERE is_active = TRUE AND quantity_available > 0`,
+      [crit, warn, watch]
+    );
+  } catch (err) {
+    console.error("❌ get-near-expiry-stats error:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("get-analytics-chart-data", async () => {
+  try {
+    return await queryDb(`
+      WITH months AS (
+          SELECT generate_series(
+              date_trunc('month', CURRENT_DATE) - INTERVAL '5 months',
+              date_trunc('month', CURRENT_DATE),
+              '1 month'
+          ) AS month
+      )
+      SELECT
+          to_char(m.month, 'FMMonth') AS month,
+          COALESCE(SUM(s.net_receivable), 0) AS sales,
+          COALESCE(SUM(p.net_payable), 0) AS purchases
+      FROM months m
+      LEFT JOIN sale_invoices s ON date_trunc('month', s.invoice_date) = m.month AND s.status = 'confirmed'
+      LEFT JOIN purchase_invoices p ON date_trunc('month', p.invoice_date) = m.month AND p.status = 'confirmed'
+      GROUP BY m.month
+      ORDER BY m.month
+    `);
+  } catch (err) {
+    console.error("❌ get-analytics-chart-data error:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("get-activity-list", async () => {
+  try {
+    return await queryDb(`
+      (
+        SELECT 'Sale' AS type,
+               c.name AS name,
+               s.invoice_number AS id,
+               s.created_at AS time,
+               s.status AS status
+        FROM sale_invoices s
+        JOIN customers c ON s.customer_id = c.customer_id
+      )
+      UNION ALL
+      (
+        SELECT 'Purchase' AS type,
+               sup.name AS name,
+               p.invoice_number AS id,
+               p.created_at AS time,
+               p.status AS status
+        FROM purchase_invoices p
+        JOIN suppliers sup ON p.supplier_id = sup.supplier_id
+      )
+      UNION ALL
+      (
+        SELECT 'Sale Return' AS type,
+               c.name AS name,
+               sr.return_id::text AS id,
+               sr.created_at AS time,
+               sr.status AS status
+        FROM sale_returns sr
+        JOIN customers c ON sr.customer_id = c.customer_id
+      )
+      UNION ALL
+      (
+        SELECT 'Purchase Return' AS type,
+               sup.name AS name,
+               pr.return_id::text AS id,
+               pr.created_at AS time,
+               pr.status AS status
+        FROM purchase_returns pr
+        JOIN suppliers sup ON p.supplier_id = sup.supplier_id
+      )
+      UNION ALL
+      (
+        SELECT 
+          CASE WHEN direction = 'received' THEN 'Payment Received' ELSE 'Payment Paid' END AS type,
+          COALESCE(c.name, s.name) AS name,
+          p.payment_id::text AS id,
+          p.created_at AS time,
+          'confirmed' AS status
+        FROM payments p
+        LEFT JOIN customers c ON p.party_id = c.customer_id AND p.direction = 'received'
+        LEFT JOIN suppliers s ON p.party_id = s.supplier_id AND p.direction = 'paid'
+      )
+      UNION ALL
+      (
+        SELECT 'Expense' AS type,
+               e.description AS name,
+               e.expense_id::text AS id,
+               e.created_at AS time,
+               'confirmed' AS status
+        FROM expenses e
+      )
+      ORDER BY time DESC
+      LIMIT 10
+    `);
+  } catch (err) {
+    console.error("❌ get-activity-list error:", err.message);
+    return [];
   }
 });

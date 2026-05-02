@@ -47,20 +47,12 @@ export default function NearExpiryPanel({ thresholds = DEFAULT_THRESHOLDS }) {
   useEffect(() => {
     const load = async () => {
       try {
-        if (!window.electronAPI?.queryDb) {
+        if (!window.electronAPI?.getNearExpiryStats) {
           setError('electronAPI not available');
           return;
         }
 
-        const rows = await window.electronAPI.queryDb(
-          `SELECT
-             COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN 1 AND $1)  AS critical,
-             COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN $1+1 AND $2) AS warning,
-             COUNT(*) FILTER (WHERE (expiry_date - CURRENT_DATE) BETWEEN $2+1 AND $3) AS watch
-           FROM batches
-           WHERE is_active = TRUE AND quantity_available > 0`,
-          [thresholds.critical, thresholds.warning, thresholds.watch]
-        );
+        const rows = await window.electronAPI.getNearExpiryStats(thresholds.critical, thresholds.warning, thresholds.watch);
 
         const row = rows?.[0] ?? { critical: 0, warning: 0, watch: 0 };
         setCounts({

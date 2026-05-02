@@ -1,3 +1,4 @@
+import Toast from '../components/shared/Toast';
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Package, AlertTriangle, ChevronRight, BarChart3 } from 'lucide-react';
 import { Pagination } from '@/components/shared/Pagination';
@@ -62,24 +63,7 @@ const expiryBadge = (days) => {
 };
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 3500);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium
-      ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
-    >
-      {type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100">
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
+
 
 // ── Stock Side Panel ──────────────────────────────────────────────────────────
 function StockSidePanel({ product, batches, onClose, loading }) {
@@ -294,18 +278,7 @@ export default function Products() {
     setLoading(true);
     try {
       const [prods, sups, cats, stock] = await Promise.all([
-        window.electronAPI.queryDb(
-          `SELECT p.product_id, p.name, p.form, p.uom, p.quantity_in_uom,
-                  p.hsn_code, p.gst_rate, p.drug_schedule, p.generic_formula,
-                  p.default_sale_rate, p.default_purchase_rate,
-                  p.shelf_no, p.is_active, p.requires_prescription,
-                  p.manufacturer_id, p.category_id, p.created_at,
-                  s.name AS manufacturer_name, c.name AS category_name
-           FROM products p
-           LEFT JOIN suppliers s ON s.supplier_id = p.manufacturer_id
-           LEFT JOIN categories c ON c.category_id = p.category_id
-           ORDER BY p.name`
-        ),
+        window.electronAPI.getAllProducts(),
         window.electronAPI.getSuppliers(),
         window.electronAPI.getCategories(),
         window.electronAPI.getStockSummary(),

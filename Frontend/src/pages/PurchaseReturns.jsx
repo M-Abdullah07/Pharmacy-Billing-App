@@ -62,24 +62,7 @@ export default function PurchaseReturns() {
 
         // Drive from purchase_invoice_items — this is guaranteed to have a row
         // for every line on a confirmed invoice. Join batches for live stock qty.
-        const rows = await window.electronAPI.queryDb(
-          `SELECT b.batch_id,
-                  pii.product_id,
-                  pii.batch_number,
-                  pii.purchase_cost_per_unit,
-                  pii.quantity            AS invoiced_qty,
-                  b.quantity_available,
-                  COALESCE(pii.discount_pct, 0) AS discount_pct,
-                  COALESCE(pii.gst_rate,    0) AS gst_rate,
-                  p.name                  AS product_name
-           FROM purchase_invoice_items pii
-           JOIN products p ON p.product_id = pii.product_id
-           JOIN batches  b ON b.product_id  = pii.product_id
-                          AND b.batch_number = pii.batch_number
-           WHERE pii.purchase_invoice_id = $1
-             AND b.quantity_available > 0`,
-          [invoiceId]
-        );
+        const rows = await window.electronAPI.getPurchaseReturnItems(invoiceId);
 
         // Cap returnable qty: you can never return more than was invoiced,
         // and never more than what is physically still in stock.
