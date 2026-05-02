@@ -73,7 +73,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSales: () => ipcRenderer.invoke('get-sales'),
   getSaleDetails: (saleInvoiceId) => ipcRenderer.invoke('get-sale-details', saleInvoiceId),
 
+  // ── Purchase Returns ──────────────────────────────────────────────────────
+  getPurchaseReturns: () => ipcRenderer.invoke('get-purchase-returns'),
+  addPurchaseReturn: (data) => ipcRenderer.invoke('add-purchase-return', data),
+
+  // ── Supplier Ledger ───────────────────────────────────────────────────────
+  getOutstandingPayables: () => ipcRenderer.invoke('get-outstanding-payables'),
+  getSupplierLedger: (supplierId, startDate, endDate) => ipcRenderer.invoke('get-supplier-ledger', supplierId, startDate, endDate),
+
   // ── General Database Query ───────────────────────────────────────────────
   queryDb: (sql, params) => ipcRenderer.invoke('query-db', sql, params),
+  runDb: (sql, params) => ipcRenderer.invoke('run-db', sql, params),
+
+  // ── Backup & Export ───────────────────────────────────────────────────────
+  backupDatabase: () => ipcRenderer.invoke('backup-database'),
+  exportToCsv: (data) => ipcRenderer.invoke('export-to-csv', data),
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
 
 });

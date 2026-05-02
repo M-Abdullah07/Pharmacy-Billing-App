@@ -1,15 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Plus,
-  Search,
-  X,
-  CheckCircle2,
-  AlertCircle,
-  Package,
-  AlertTriangle,
-  ChevronRight,
-  BarChart3,
-} from 'lucide-react';
+import { Plus, Search, X, CheckCircle2, AlertCircle, Package, AlertTriangle, ChevronRight, BarChart3 } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GST_SLABS = [0, 5, 12, 18, 28];
@@ -290,6 +281,10 @@ export default function Products() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
+  // ── Pagination ──────────────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // ── Load ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     loadAll();
@@ -341,6 +336,11 @@ export default function Products() {
     }
   };
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [prodSearchQuery, prodTab, stockSearch, stockStatusFilter, stockMfgFilter]);
+
   // ── Products CRUD ───────────────────────────────────────────────────────────
   const handleOpenForm = () => {
     if (manufacturers.length === 0) {
@@ -378,13 +378,15 @@ export default function Products() {
 
   const validate = () => {
     const errors = {};
-    if (!form.name.trim()) errors.name = 'This field is required.';
-    if (!form.manufacturer_id) errors.manufacturer_id = 'This field is required.';
-    if (!form.category_id) errors.category_id = 'This field is required.';
-    if (!form.hsn_code.trim()) errors.hsn_code = 'This field is required.';
-    if (!GST_SLABS.includes(Number(form.gst_rate)))
-      errors.gst_rate = 'Please select a valid FBR GST rate.';
-    if (!form.drug_schedule) errors.drug_schedule = 'This field is required.';
+    if (!form.name.trim())         errors.name            = 'This field is required.';
+    if (!form.manufacturer_id)     errors.manufacturer_id = 'This field is required.';
+    if (!form.category_id)         errors.category_id     = 'This field is required.';
+    if (!form.hsn_code.trim())     errors.hsn_code        = 'This field is required.';
+    if (!GST_SLABS.includes(Number(form.gst_rate))) errors.gst_rate = 'Please select a valid FBR GST rate.';
+    if (!form.drug_schedule)       errors.drug_schedule   = 'This field is required.';
+    if (form.quantity_in_uom && Number(form.quantity_in_uom) < 1) errors.quantity_in_uom = 'Quantity must be at least 1.';
+    if (form.default_sale_rate && Number(form.default_sale_rate) < 0) errors.default_sale_rate = 'Sale rate cannot be negative.';
+    if (form.default_purchase_rate && Number(form.default_purchase_rate) < 0) errors.default_purchase_rate = 'Purchase rate cannot be negative.';
     return errors;
   };
 
@@ -687,17 +689,11 @@ export default function Products() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Units per Pack
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={form.quantity_in_uom}
-                    onChange={(e) => field('quantity_in_uom', e.target.value)}
-                    placeholder="e.g. 10"
-                    className={inputCls('quantity_in_uom')}
-                  />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Units per Pack</label>
+                  <input type="number" min="1" value={form.quantity_in_uom}
+                    onChange={e => field('quantity_in_uom', e.target.value)}
+                    placeholder="e.g. 10" className={inputCls('quantity_in_uom')} />
+                  {fieldErrors.quantity_in_uom && <p className="text-red-500 text-xs mt-1">{fieldErrors.quantity_in_uom}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -757,32 +753,18 @@ export default function Products() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Default Sale Rate (Rs)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.default_sale_rate}
-                    onChange={(e) => field('default_sale_rate', e.target.value)}
-                    placeholder="0.00"
-                    className={inputCls('default_sale_rate')}
-                  />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Default Sale Rate (Rs)</label>
+                  <input type="number" min="0" step="0.01" value={form.default_sale_rate}
+                    onChange={e => field('default_sale_rate', e.target.value)}
+                    placeholder="0.00" className={inputCls('default_sale_rate')} />
+                  {fieldErrors.default_sale_rate && <p className="text-red-500 text-xs mt-1">{fieldErrors.default_sale_rate}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Default Purchase Rate (Rs)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.default_purchase_rate}
-                    onChange={(e) => field('default_purchase_rate', e.target.value)}
-                    placeholder="0.00"
-                    className={inputCls('default_purchase_rate')}
-                  />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Default Purchase Rate (Rs)</label>
+                  <input type="number" min="0" step="0.01" value={form.default_purchase_rate}
+                    onChange={e => field('default_purchase_rate', e.target.value)}
+                    placeholder="0.00" className={inputCls('default_purchase_rate')} />
+                  {fieldErrors.default_purchase_rate && <p className="text-red-500 text-xs mt-1">{fieldErrors.default_purchase_rate}</p>}
                 </div>
               </div>
 
@@ -913,28 +895,47 @@ export default function Products() {
                         </p>
                       </td>
                     </tr>
-                  ) : (
-                    filteredProducts.map((product) => (
-                      <tr
-                        key={product.product_id}
-                        className="hover:bg-gray-50/70 transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-gray-900">{product.name}</div>
-                          {product.generic_formula && (
-                            <div className="text-xs text-gray-400 mt-0.5">
-                              {product.generic_formula}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {product.manufacturer_name || '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          {product.category_name ? (
-                            <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-full">
-                              {product.category_name}
-                            </span>
+                  ) : filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(product => (
+                    <tr key={product.product_id} className="hover:bg-gray-50/70 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{product.name}</div>
+                        {product.generic_formula && <div className="text-xs text-gray-400 mt-0.5">{product.generic_formula}</div>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{product.manufacturer_name || '—'}</td>
+                      <td className="px-4 py-3">
+                        {product.category_name
+                          ? <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-full">{product.category_name}</span>
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+                          ${product.drug_schedule === 'X'  ? 'bg-red-100 text-red-700' :
+                            product.drug_schedule === 'H1' ? 'bg-orange-100 text-orange-700' :
+                            product.drug_schedule === 'H'  ? 'bg-amber-100 text-amber-700' :
+                            product.drug_schedule === 'G'  ? 'bg-yellow-100 text-yellow-700' :
+                                                             'bg-green-100 text-green-700'}`}>
+                          {product.drug_schedule}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{product.gst_rate}%</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full
+                          ${product.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${product.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                          {product.is_active ? 'Active' : 'Deactivated'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => handleEdit(product)}
+                            className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
+                            Edit
+                          </button>
+                          {product.is_active ? (
+                            <button onClick={() => handleDeactivate(product.product_id, product.name)}
+                              className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors">
+                              Deactivate
+                            </button>
                           ) : (
                             '—'
                           )}
@@ -1000,6 +1001,14 @@ export default function Products() {
                 </tbody>
               </table>
             )}
+            
+            {/* Pagination Controls */}
+            <Pagination 
+              totalItems={filteredProducts.length}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </>
       )}
@@ -1141,21 +1150,18 @@ export default function Products() {
                         </p>
                       </td>
                     </tr>
-                  ) : (
-                    filteredStock.map((s) => {
-                      const status = stockStatusBadge(s.stock_status);
-                      const nearest = s.nearest_expiry
-                        ? Math.floor(
-                            (new Date(s.nearest_expiry) - new Date()) / (1000 * 60 * 60 * 24)
-                          )
-                        : null;
-                      const expiry = expiryBadge(nearest);
-                      const isOutOfStock = s.stock_status === 'out_of_stock';
-                      return (
-                        <tr
-                          key={s.product_id}
-                          onClick={() => handleSelectProduct(s)}
-                          className={`cursor-pointer transition-colors
+                  ) : filteredStock.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(s => {
+                    const status  = stockStatusBadge(s.stock_status);
+                    const nearest = s.nearest_expiry
+                      ? Math.floor((new Date(s.nearest_expiry) - new Date()) / (1000 * 60 * 60 * 24))
+                      : null;
+                    const expiry = expiryBadge(nearest);
+                    const isOutOfStock = s.stock_status === 'out_of_stock';
+                    return (
+                      <tr
+                        key={s.product_id}
+                        onClick={() => handleSelectProduct(s)}
+                        className={`cursor-pointer transition-colors
                           ${isOutOfStock ? 'bg-red-50/40' : 'hover:bg-gray-50/70'}
                           ${selectedProduct?.product_id === s.product_id ? 'bg-blue-50/50' : ''}`}
                         >
@@ -1230,6 +1236,14 @@ export default function Products() {
                 </tbody>
               </table>
             )}
+
+            {/* Pagination Controls */}
+            <Pagination 
+              totalItems={filteredStock.length}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </>
       )}

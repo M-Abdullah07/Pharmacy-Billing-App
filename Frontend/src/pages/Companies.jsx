@@ -1,15 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Plus,
-  Search,
-  X,
-  CheckCircle2,
-  AlertCircle,
-  Truck,
-  UserPlus,
-  Trash2,
-  Star,
-} from 'lucide-react';
+import { Plus, Search, X, CheckCircle2, AlertCircle, Truck, UserPlus, Trash2, Star } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 const PAYMENT_TERMS = ['Cash on Delivery', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60'];
 const CONTACT_ROLES = ['Owner', 'Manager', 'Salesman', 'Accounts', 'Other'];
@@ -47,22 +38,25 @@ function Toast({ message, type, onClose }) {
 
 export default function Companies() {
   const [allSuppliers, setAllSuppliers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('active');
-  const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [toast, setToast] = useState(null);
-  const [contacts, setContacts] = useState([]);
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [activeTab, setActiveTab]       = useState('active');
+  const [loading, setLoading]           = useState(false);
+  const [showForm, setShowForm]         = useState(false);
+  const [editingId, setEditingId]       = useState(null);
+  const [form, setForm]                 = useState(EMPTY_FORM);
+  const [fieldErrors, setFieldErrors]   = useState({});
+  const [contactErrors, setContactErrors] = useState({});
+  const [toast, setToast]               = useState(null);
+  const [contacts, setContacts]         = useState([]);
   const [pendingContacts, setPendingContacts] = useState([]);
   const [newContact, setNewContact] = useState(EMPTY_CONTACT);
   const [showContactForm, setShowContactForm] = useState(false);
 
-  useEffect(() => {
-    loadSuppliers();
-  }, []);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => { loadSuppliers(); }, []);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -88,15 +82,14 @@ export default function Companies() {
     }
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
+
   const handleOpenForm = () => {
-    setForm(EMPTY_FORM);
-    setFieldErrors({});
-    setEditingId(null);
-    setContacts([]);
-    setPendingContacts([]);
-    setNewContact(EMPTY_CONTACT);
-    setShowContactForm(false);
-    setShowForm(true);
+    setForm(EMPTY_FORM); setFieldErrors({}); setContactErrors({}); setEditingId(null);
+    setContacts([]); setPendingContacts([]); setNewContact(EMPTY_CONTACT);
+    setShowContactForm(false); setShowForm(true);
   };
 
   const handleEdit = async (supplier) => {
@@ -111,10 +104,8 @@ export default function Companies() {
       credit_period_days: supplier.credit_period_days ?? 0,
     });
     setEditingId(supplier.supplier_id);
-    setFieldErrors({});
-    setNewContact(EMPTY_CONTACT);
-    setShowContactForm(false);
-    setPendingContacts([]);
+    setFieldErrors({}); setContactErrors({}); setNewContact(EMPTY_CONTACT);
+    setShowContactForm(false); setPendingContacts([]);
     const existing = await window.electronAPI.getContactPersons('supplier', supplier.supplier_id);
     setContacts(Array.isArray(existing) ? existing : []);
     setShowForm(true);
@@ -125,10 +116,29 @@ export default function Companies() {
     const errors = {};
     if (!form.name.trim()) errors.name = 'This field is required.';
     if (form.strn && !/^\d{13}$/.test(form.strn.replace(/-/g, '')))
-      errors.strn =
-        'Invalid STRN format. Please enter a valid 13-digit Pakistani Sales Tax Registration Number.';
-    if (form.credit_period_days < 0)
-      errors.credit_period_days = 'Credit period cannot be negative.';
+      errors.strn = 'Invalid STRN format. Please enter a valid 13-digit Pakistani Sales Tax Registration Number.';
+    if (form.ntn && !/^\d{7}-\d{1}$/.test(form.ntn.trim()))
+      errors.ntn = 'Invalid NTN format. Use e.g. 1234567-8.';
+    if (form.drug_licence_no && !/^[A-Z0-9]+-\d{4}-\d{3}$/i.test(form.drug_licence_no.trim()))
+      errors.drug_licence_no = 'Invalid DRAP licence format. Use e.g. WHL-2024-001.';
+    if (Number(form.credit_period_days) < 0) errors.credit_period_days = 'Credit period cannot be negative.';
+    return errors;
+  };
+
+  const validateContact = () => {
+    const errors = {};
+    if (!newContact.name.trim()) {
+      errors.name = 'Contact name is required.';
+    }
+    if (newContact.contact_number && !/^\+?(?:\d[ -]?|\(\d+\)[ -]?){7,20}$/.test(newContact.contact_number.trim())) {
+      errors.contact_number = 'Invalid phone number format.';
+    }
+    if (newContact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContact.email.trim())) {
+      errors.email = 'Invalid email address.';
+    }
+    if (!newContact.contact_number.trim() && !newContact.email.trim()) {
+      errors.contact_number = 'Provide a phone number or email for the contact.';
+    }
     return errors;
   };
 
@@ -181,14 +191,23 @@ export default function Companies() {
   };
 
   const handleAddPendingContact = () => {
-    if (!newContact.name.trim()) return;
-    setPendingContacts((prev) => [...prev, { ...newContact }]);
-    setNewContact(EMPTY_CONTACT);
-    setShowContactForm(false);
+    const errors = validateContact();
+    if (Object.keys(errors).length > 0) {
+      setContactErrors(errors);
+      return;
+    }
+    setContactErrors({});
+    setPendingContacts(prev => [...prev, { ...newContact }]);
+    setNewContact(EMPTY_CONTACT); setShowContactForm(false);
   };
 
   const handleSaveContact = async () => {
-    if (!newContact.name.trim()) return;
+    const errors = validateContact();
+    if (Object.keys(errors).length > 0) {
+      setContactErrors(errors);
+      return;
+    }
+    setContactErrors({});
     try {
       const result = await window.electronAPI.addContactPerson({
         ...newContact,
@@ -348,29 +367,19 @@ export default function Companies() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">NTN</label>
-              <input
-                type="text"
-                value={form.ntn}
-                onChange={(e) => field('ntn', e.target.value)}
-                placeholder="e.g. 1234567-8"
-                className={inputCls('ntn')}
-              />
+              <input type="text" value={form.ntn} onChange={e => field('ntn', e.target.value)}
+                placeholder="e.g. 1234567-8" className={inputCls('ntn')} />
+              {fieldErrors.ntn && <p className="text-red-500 text-xs mt-1">{fieldErrors.ntn}</p>}
             </div>
           </div>
 
           {/* Row 2 */}
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                DRAP Wholesale Drug Licence
-              </label>
-              <input
-                type="text"
-                value={form.drug_licence_no}
-                onChange={(e) => field('drug_licence_no', e.target.value)}
-                placeholder="e.g. WHL-2024-001"
-                className={inputCls('drug_licence_no')}
-              />
+              <label className="block text-xs font-medium text-gray-700 mb-1">DRAP Wholesale Drug Licence</label>
+              <input type="text" value={form.drug_licence_no} onChange={e => field('drug_licence_no', e.target.value)}
+                placeholder="e.g. WHL-2024-001" className={inputCls('drug_licence_no')} />
+              {fieldErrors.drug_licence_no && <p className="text-red-500 text-xs mt-1">{fieldErrors.drug_licence_no}</p>}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
@@ -484,16 +493,15 @@ export default function Companies() {
               <div className="border border-blue-100 bg-blue-50/40 rounded-lg p-3 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newContact.name}
-                      onChange={(e) => setNewContact((p) => ({ ...p, name: e.target.value }))}
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+                    <input type="text" value={newContact.name}
+                      onChange={e => {
+                        setNewContact(p => ({ ...p, name: e.target.value }));
+                        if (contactErrors.name) setContactErrors(prev => ({ ...prev, name: '' }));
+                      }}
                       placeholder="Contact name"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                    />
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
+                    {contactErrors.name && <p className="text-red-500 text-xs mt-1">{contactErrors.name}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
@@ -512,25 +520,25 @@ export default function Companies() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
-                    <input
-                      type="text"
-                      value={newContact.contact_number}
-                      onChange={(e) =>
-                        setNewContact((p) => ({ ...p, contact_number: e.target.value }))
-                      }
+                    <input type="text" value={newContact.contact_number}
+                      onChange={e => {
+                        setNewContact(p => ({ ...p, contact_number: e.target.value }));
+                        if (contactErrors.contact_number) setContactErrors(prev => ({ ...prev, contact_number: '' }));
+                      }}
                       placeholder="e.g. 0300-1234567"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                    />
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
+                    {contactErrors.contact_number && <p className="text-red-500 text-xs mt-1">{contactErrors.contact_number}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={newContact.email}
-                      onChange={(e) => setNewContact((p) => ({ ...p, email: e.target.value }))}
+                    <input type="email" value={newContact.email}
+                      onChange={e => {
+                        setNewContact(p => ({ ...p, email: e.target.value }));
+                        if (contactErrors.email) setContactErrors(prev => ({ ...prev, email: '' }));
+                      }}
                       placeholder="e.g. contact@company.com"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                    />
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
+                    {contactErrors.email && <p className="text-red-500 text-xs mt-1">{contactErrors.email}</p>}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
@@ -667,30 +675,39 @@ export default function Companies() {
                     </p>
                   </td>
                 </tr>
-              ) : (
-                filtered.map((s) => (
-                  <tr key={s.supplier_id} className="hover:bg-gray-50/70 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                      {s.strn || <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                      {s.ntn || <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {s.drug_licence_no || <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {s.city || <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.primary_contact_name ? (
-                        <div>
-                          <p className="text-xs font-medium text-gray-800">
-                            {s.primary_contact_name}
-                          </p>
-                          <p className="text-xs text-gray-400">{s.primary_contact_number || '—'}</p>
-                        </div>
+              ) : filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(s => (
+                <tr key={s.supplier_id} className="hover:bg-gray-50/70 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{s.strn || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{s.ntn || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-gray-600">{s.drug_licence_no || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-gray-600">{s.city || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3">
+                    {s.primary_contact_name ? (
+                      <div>
+                        <p className="text-xs font-medium text-gray-800">{s.primary_contact_name}</p>
+                        <p className="text-xs text-gray-400">{s.primary_contact_number || '—'}</p>
+                      </div>
+                    ) : <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full
+                      ${s.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${s.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      {s.is_active ? 'Active' : 'Deactivated'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleEdit(s)}
+                        className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
+                        Edit
+                      </button>
+                      {s.is_active ? (
+                        <button onClick={() => handleDeactivate(s.supplier_id, s.name)}
+                          className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors">
+                          Deactivate
+                        </button>
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}
@@ -737,6 +754,12 @@ export default function Companies() {
             </tbody>
           </table>
         )}
+        <Pagination 
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

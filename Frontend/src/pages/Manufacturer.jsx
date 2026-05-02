@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Building2 } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 const EMPTY_FORM = {
   name: '',
@@ -39,9 +40,11 @@ export default function Manufacturers() {
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
 
-  useEffect(() => {
-    loadManufacturers();
-  }, []);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => { loadManufacturers(); }, []);
 
   const loadManufacturers = async () => {
     setLoading(true);
@@ -58,6 +61,10 @@ export default function Manufacturers() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
 
   const handleOpenForm = () => {
     setForm(EMPTY_FORM);
@@ -84,6 +91,10 @@ export default function Manufacturers() {
     const errors = {};
     if (!form.name.trim()) errors.name = 'This field is required.';
     if (!form.country.trim()) errors.country = 'This field is required.';
+    if (form.contact_number && !/^\+?(?:\d[ -]?|\(\d+\)[ -]?){7,20}$/.test(form.contact_number.trim()))
+      errors.contact_number = 'Invalid phone number format.';
+    if (form.drap_mfg_licence && !/^[A-Z0-9]+-\d{4}-\d{3}$/i.test(form.drap_mfg_licence.trim()))
+      errors.drap_mfg_licence = 'Invalid DRAP licence format. Use e.g. MFG-2024-001.';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errors.email = 'Please enter a valid email address.';
     return errors;
@@ -238,16 +249,10 @@ export default function Manufacturers() {
               {fieldErrors.name && <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                DRAP Mfg. Licence No.
-              </label>
-              <input
-                type="text"
-                value={form.drap_mfg_licence}
-                onChange={(e) => field('drap_mfg_licence', e.target.value)}
-                placeholder="e.g. MFG-2024-001"
-                className={inputCls('drap_mfg_licence')}
-              />
+              <label className="block text-xs font-medium text-gray-700 mb-1">DRAP Mfg. Licence No.</label>
+              <input type="text" value={form.drap_mfg_licence} onChange={e => field('drap_mfg_licence', e.target.value)}
+                placeholder="e.g. MFG-2024-001" className={inputCls('drap_mfg_licence')} />
+              {fieldErrors.drap_mfg_licence && <p className="text-red-500 text-xs mt-1">{fieldErrors.drap_mfg_licence}</p>}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -270,13 +275,9 @@ export default function Manufacturers() {
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Contact Number</label>
-              <input
-                type="text"
-                value={form.contact_number}
-                onChange={(e) => field('contact_number', e.target.value)}
-                placeholder="e.g. 0300-1234567"
-                className={inputCls('contact_number')}
-              />
+              <input type="text" value={form.contact_number} onChange={e => field('contact_number', e.target.value)}
+                placeholder="e.g. 0300-1234567" className={inputCls('contact_number')} />
+              {fieldErrors.contact_number && <p className="text-red-500 text-xs mt-1">{fieldErrors.contact_number}</p>}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Email Address</label>
@@ -384,13 +385,39 @@ export default function Manufacturers() {
                     </p>
                   </td>
                 </tr>
-              ) : (
-                filtered.map((mfg) => (
-                  <tr key={mfg.manufacturer_id} className="hover:bg-gray-50/70 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{mfg.name}</div>
-                      {mfg.country !== 'Pakistan' && (
-                        <div className="text-xs text-blue-500 mt-0.5">Imported</div>
+              ) : filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(mfg => (
+                <tr key={mfg.manufacturer_id} className="hover:bg-gray-50/70 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-900">{mfg.name}</div>
+                    {mfg.country !== 'Pakistan' && <div className="text-xs text-blue-500 mt-0.5">Imported</div>}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{mfg.drap_mfg_licence || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-gray-600">{mfg.country}</td>
+                  <td className="px-4 py-3 text-gray-600">{mfg.contact_number || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-gray-600">{mfg.email || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full
+                      ${mfg.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${mfg.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      {mfg.is_active ? 'Active' : 'Deactivated'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleEdit(mfg)}
+                        className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
+                        Edit
+                      </button>
+                      {mfg.is_active ? (
+                        <button onClick={() => handleDeactivate(mfg.manufacturer_id, mfg.name)}
+                          className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors">
+                          Deactivate
+                        </button>
+                      ) : (
+                        <button onClick={() => handleReactivate(mfg.manufacturer_id, mfg.name)}
+                          className="px-3 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors">
+                          Reactivate
+                        </button>
                       )}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">
@@ -445,6 +472,12 @@ export default function Manufacturers() {
             </tbody>
           </table>
         )}
+        <Pagination 
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

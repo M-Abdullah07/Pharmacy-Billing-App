@@ -18,8 +18,13 @@ const badgeVariants = cva(
         delivered:
           'bg-green-600 text-green-100 dark:bg-green-900 dark:text-green-200 border-transparent',
         pending:
-          'bg-yellow-600 text-yellow-100 dark:bg-yellow-900 dark:text-yellow-200 border-transparent',
-        cancelled: 'bg-red-600 text-red-100 dark:bg-red-900 dark:text-red-200 border-transparent',
+          "bg-yellow-600 text-yellow-100 dark:bg-yellow-900 dark:text-yellow-200 border-transparent",
+        cancelled:
+          "bg-red-600 text-red-100 dark:bg-red-900 dark:text-red-200 border-transparent",
+        confirmed:
+          "bg-green-600 text-green-100 dark:bg-green-900 dark:text-green-200 border-transparent",
+        draft:
+          "bg-yellow-600 text-yellow-100 dark:bg-yellow-900 dark:text-yellow-200 border-transparent",
       },
     },
     defaultVariants: {
