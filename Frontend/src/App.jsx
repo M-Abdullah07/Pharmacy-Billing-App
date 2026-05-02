@@ -16,10 +16,9 @@ import SalesReport from '@/pages/SalesReport';
 import CreditDues from '@/pages/CreditDues';
 import Backup from '@/pages/Backup';
 import Settings from '@/pages/Settings';
-import Manufacturers from '@/pages/Manufacturer';
 import PurchaseInvoice from '@/pages/Purchaseinvoice';
 import SupplierLedger from '@/pages/SupplierLedger';
-import PurchaseReturns from './pages/PurchaseReturns';
+import PurchaseReturns from '@/pages/PurchaseReturns';
 
 export default function App() {
   const [activePage, setActivePage] = useState('Dashboard');
@@ -93,8 +92,7 @@ export default function App() {
         return <Backup />;
       case 'Settings':
         return <Settings />;
-      case 'Manufacturers':
-        return <Manufacturers />;
+
       case 'Purchase Invoice':
         return <PurchaseInvoice />;
       case 'Purchase Returns':

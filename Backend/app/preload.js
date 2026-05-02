@@ -6,12 +6,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loginUser:  (username, password)       => ipcRenderer.invoke('login-user',  username, password),
   signupUser: (username, password) => ipcRenderer.invoke('signup-user', username, password),
 
-  // ── Manufacturers ─────────────────────────────────────────────────────────
-  getManufacturers:    ()        => ipcRenderer.invoke('get-manufacturers'),
-  addManufacturer:     (data)    => ipcRenderer.invoke('add-manufacturer',    data),
-  updateManufacturer:  (id, data)=> ipcRenderer.invoke('update-manufacturer', id, data),
-  deactivateManufacturer: (id)   => ipcRenderer.invoke('deactivate-manufacturer', id),
-
   // ── Categories (read-only — pre-seeded by schema) ─────────────────────────
   getCategories: () => ipcRenderer.invoke('get-categories'),
 
@@ -42,7 +36,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   reactivateSupplier:     (id) => ipcRenderer.invoke('reactivate-supplier',     id),
   reactivateCustomer:     (id) => ipcRenderer.invoke('reactivate-customer',     id),
   reactivateProduct:      (id) => ipcRenderer.invoke('reactivate-product',      id),
-  reactivateManufacturer: (id) => ipcRenderer.invoke('reactivate-manufacturer', id),
   // ── Batches ───────────────────────────────────────────────────────────────
   getBatches: ()     => ipcRenderer.invoke('get-batches'),
   addBatch:   (data) => ipcRenderer.invoke('add-batch', data),

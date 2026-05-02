@@ -1180,10 +1180,9 @@ CREATE OR REPLACE VIEW v_stock_summary AS
 SELECT
     p.product_id,
     p.name                                          AS product_name,
-    p.generic_formula,                              -- Active ingredient(s); enables substitution decisions at the stock screen
-    m.name                                          AS manufacturer_name,
-    m.country                                       AS manufacturer_country,
-    (m.country != 'Pakistan')                       AS is_imported,
+    p.generic_formula,
+    s.name                                          AS manufacturer_name,
+    FALSE                                           AS is_imported,
     c.name                                          AS category_name,
     p.form,
     p.uom,
@@ -1210,11 +1209,11 @@ SELECT
         ELSE 'normal'
     END                                             AS stock_status
 FROM products p
-JOIN manufacturers m    ON m.manufacturer_id = p.manufacturer_id
+LEFT JOIN suppliers s   ON s.supplier_id = p.manufacturer_id
 LEFT JOIN categories c  ON c.category_id = p.category_id
 LEFT JOIN batches b     ON b.product_id = p.product_id
 WHERE p.is_active = TRUE
-GROUP BY p.product_id, p.name, p.generic_formula, m.name, m.country, c.name,
+GROUP BY p.product_id, p.name, p.generic_formula, s.name, c.name,
          p.form, p.uom, p.drug_schedule, p.requires_prescription,
          p.shelf_no, p.default_sale_rate;
 

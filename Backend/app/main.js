@@ -33,7 +33,7 @@ async function testConnection() {
     console.log("✅ PostgreSQL connected at:", res.rows[0].now);
 
     // Schema sanity check
-    const tables = ["users", "products", "manufacturers", "categories",
+    const tables = ["users", "products", "categories",
       "suppliers", "customers", "batches", "stock_movements", "settings"];
 
     // Ensure settings table exists
@@ -70,7 +70,7 @@ async function runDb(sql, params = []) {
     rowCount: result.rowCount,
     lastID: result.rows[0]?.id ?? result.rows[0]?.user_id
       ?? result.rows[0]?.product_id ?? result.rows[0]?.customer_id
-      ?? result.rows[0]?.supplier_id ?? result.rows[0]?.manufacturer_id
+      ?? result.rows[0]?.supplier_id
       ?? result.rows[0]?.batch_id ?? null,
     row: result.rows[0] ?? null,
   };
@@ -208,87 +208,6 @@ ipcMain.handle("signup-user", async (event, username, password) => {
     return { success: false, error: "Service unavailable. Contact administrator." };
   }
 });
-// ════════════════════════════════════════════════════════════════════════════
-// MANUFACTURERS  (schema: manufacturer_id UUID, name, drap_mfg_licence,
-//                 country, contact_number, email, is_active)
-// ════════════════════════════════════════════════════════════════════════════
-
-ipcMain.handle("get-manufacturers", async () => {
-  try {
-    return await queryDb(
-      `SELECT manufacturer_id, name, drap_mfg_licence, country,
-              contact_number, email, is_active, created_at
-       FROM manufacturers
-       WHERE is_active = TRUE
-       ORDER BY name`
-    );
-  } catch (err) {
-    console.error("❌ get-manufacturers error:", err.message);
-    return [];
-  }
-});
-
-ipcMain.handle("add-manufacturer", async (event, data) => {
-  try {
-    const result = await runDb(
-      `INSERT INTO manufacturers (name, drap_mfg_licence, country, contact_number, email)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING manufacturer_id`,
-      [
-        data.name,
-        data.drap_mfg_licence || null,
-        data.country || "Pakistan",
-        data.contact_number || null,
-        data.email || null,
-      ]
-    );
-    return { success: true, manufacturerId: result.row.manufacturer_id };
-  } catch (err) {
-    if (err.code === "23505") {
-      return { success: false, error: "A manufacturer with this name already exists." };
-    }
-    console.error("❌ add-manufacturer error:", err.message);
-    return { success: false, error: err.message };
-  }
-});
-
-ipcMain.handle("update-manufacturer", async (event, id, data) => {
-  try {
-    await runDb(
-      `UPDATE manufacturers
-       SET name = $1, drap_mfg_licence = $2, country = $3,
-           contact_number = $4, email = $5, updated_at = now()
-       WHERE manufacturer_id = $6`,
-      [
-        data.name,
-        data.drap_mfg_licence || null,
-        data.country || "Pakistan",
-        data.contact_number || null,
-        data.email || null,
-        id,
-      ]
-    );
-    return { success: true };
-  } catch (err) {
-    console.error("❌ update-manufacturer error:", err.message);
-    return { success: false, error: err.message };
-  }
-});
-
-ipcMain.handle("deactivate-manufacturer", async (event, id) => {
-  try {
-    await runDb(
-      `UPDATE manufacturers
-       SET is_active = FALSE, deactivated_at = now(), updated_at = now()
-       WHERE manufacturer_id = $1`,
-      [id]
-    );
-    return { success: true };
-  } catch (err) {
-    console.error("❌ deactivate-manufacturer error:", err.message);
-    return { success: false, error: err.message };
-  }
-});
 
 // ════════════════════════════════════════════════════════════════════════════
 // CATEGORIES  (schema: category_id UUID, name, description, is_active)
@@ -323,11 +242,11 @@ ipcMain.handle("get-products", async () => {
               p.hsn_code, p.gst_rate, p.drug_schedule, p.generic_formula,
               p.default_sale_rate, p.default_purchase_rate,
               p.shelf_no, p.is_active, p.requires_prescription, p.created_at,
-              m.name AS manufacturer_name,
+              s.name AS manufacturer_name,
               c.name AS category_name
        FROM products p
-       LEFT JOIN manufacturers m ON m.manufacturer_id = p.manufacturer_id
-       LEFT JOIN categories    c ON c.category_id     = p.category_id
+       LEFT JOIN suppliers s ON s.supplier_id = p.manufacturer_id
+       LEFT JOIN categories c ON c.category_id = p.category_id
        WHERE p.is_active = TRUE
        ORDER BY p.name`
     );
@@ -343,11 +262,11 @@ ipcMain.handle("getProducts", async () => {
     return await queryDb(
       `SELECT p.product_id, p.name, p.form, p.uom,
               p.gst_rate, p.drug_schedule, p.default_sale_rate,
-              m.name AS manufacturer_name,
+              s.name AS manufacturer_name,
               c.name AS category_name
        FROM products p
-       LEFT JOIN manufacturers m ON m.manufacturer_id = p.manufacturer_id
-       LEFT JOIN categories    c ON c.category_id     = p.category_id
+       LEFT JOIN suppliers s ON s.supplier_id = p.manufacturer_id
+       LEFT JOIN categories c ON c.category_id = p.category_id
        WHERE p.is_active = TRUE
        ORDER BY p.name`
     );
@@ -1514,7 +1433,7 @@ ipcMain.handle("get-supplier-ledger", async (event, supplierId, startDate, endDa
 
 ipcMain.handle("backup-database", async () => {
   try {
-    const tables = ["users", "products", "manufacturers", "categories", "suppliers", "customers", "batches", "stock_movements", "sale_invoices", "sale_invoice_items"];
+    const tables = ["users", "products", "categories", "suppliers", "customers", "batches", "stock_movements", "sale_invoices", "sale_invoice_items"];
     const backupData = {};
     for (const t of tables) {
       const rows = await queryDb(`SELECT * FROM ${t}`);

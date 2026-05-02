@@ -258,7 +258,7 @@ export default function Products() {
 
   // ── Products state ──────────────────────────────────────────────────────────
   const [products, setProducts] = useState([]);
-  const [manufacturers, setManufacturers] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [prodSearchQuery, setProdSearchQuery] = useState('');
   const [prodTab, setProdTab] = useState('all');
@@ -266,7 +266,7 @@ export default function Products() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [noMfgWarning, setNoMfgWarning] = useState(false);
+  const [noSupplierWarning, setNoSupplierWarning] = useState(false);
 
   // ── Stock View state ────────────────────────────────────────────────────────
   const [stockSummary, setStockSummary] = useState([]);
@@ -293,25 +293,25 @@ export default function Products() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [prods, mfgs, cats, stock] = await Promise.all([
+      const [prods, sups, cats, stock] = await Promise.all([
         window.electronAPI.queryDb(
           `SELECT p.product_id, p.name, p.form, p.uom, p.quantity_in_uom,
                   p.hsn_code, p.gst_rate, p.drug_schedule, p.generic_formula,
                   p.default_sale_rate, p.default_purchase_rate,
                   p.shelf_no, p.is_active, p.requires_prescription,
                   p.manufacturer_id, p.category_id, p.created_at,
-                  m.name AS manufacturer_name, c.name AS category_name
+                  s.name AS manufacturer_name, c.name AS category_name
            FROM products p
-           LEFT JOIN manufacturers m ON m.manufacturer_id = p.manufacturer_id
-           LEFT JOIN categories    c ON c.category_id     = p.category_id
+           LEFT JOIN suppliers s ON s.supplier_id = p.manufacturer_id
+           LEFT JOIN categories c ON c.category_id = p.category_id
            ORDER BY p.name`
         ),
-        window.electronAPI.getManufacturers(),
+        window.electronAPI.getSuppliers(),
         window.electronAPI.getCategories(),
         window.electronAPI.getStockSummary(),
       ]);
       setProducts(Array.isArray(prods) ? prods : []);
-      setManufacturers(Array.isArray(mfgs) ? mfgs : []);
+      setSuppliers(Array.isArray(sups) ? sups : []);
       setCategories(Array.isArray(cats) ? cats : []);
       setStockSummary(Array.isArray(stock) ? stock : []);
     } catch (err) {
@@ -343,11 +343,11 @@ export default function Products() {
 
   // ── Products CRUD ───────────────────────────────────────────────────────────
   const handleOpenForm = () => {
-    if (manufacturers.length === 0) {
-      setNoMfgWarning(true);
+    if (suppliers.length === 0) {
+      setNoSupplierWarning(true);
       return;
     }
-    setNoMfgWarning(false);
+    setNoSupplierWarning(false);
     setForm(EMPTY_FORM);
     setFieldErrors({});
     setEditingId(null);
@@ -553,19 +553,19 @@ export default function Products() {
       {/* ════════════════════════════════════════════════════════════════════ */}
       {pageTab === 'products' && (
         <>
-          {/* No manufacturer warning */}
-          {noMfgWarning && (
+          {/* No company warning */}
+          {noSupplierWarning && (
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
               <AlertTriangle size={18} className="shrink-0 mt-0.5 text-amber-500" />
               <div>
-                <p className="font-medium">No manufacturers found</p>
+                <p className="font-medium">No companies found</p>
                 <p className="mt-0.5 text-amber-700">
-                  Please go to <span className="font-semibold">Manufacturers</span> and add at least
+                  Please go to <span className="font-semibold">Companies</span> and add at least
                   one first.
                 </p>
               </div>
               <button
-                onClick={() => setNoMfgWarning(false)}
+                onClick={() => setNoSupplierWarning(false)}
                 className="ml-auto shrink-0 opacity-60 hover:opacity-100"
               >
                 <X size={16} />
@@ -615,17 +615,17 @@ export default function Products() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Manufacturer <span className="text-red-500">*</span>
+                    Company / Manufacturer <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={form.manufacturer_id}
                     onChange={(e) => field('manufacturer_id', e.target.value)}
                     className={selectCls('manufacturer_id')}
                   >
-                    <option value="">Select Manufacturer</option>
-                    {manufacturers.map((m) => (
-                      <option key={m.manufacturer_id} value={m.manufacturer_id}>
-                        {m.name}
+                    <option value="">Select Company</option>
+                    {suppliers.map((s) => (
+                      <option key={s.supplier_id} value={s.supplier_id}>
+                        {s.name}
                       </option>
                     ))}
                   </select>
