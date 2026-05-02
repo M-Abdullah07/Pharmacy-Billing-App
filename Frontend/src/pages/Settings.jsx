@@ -20,30 +20,34 @@ import {
   VolumeX,
   FolderOpen,
   Moon,
-  Sun
+  Sun,
+  Layout,
+  HardDrive,
+  UserCog,
+  ChevronRight
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// --- Custom Toggle Component (Replacing Switch) ---
+// --- Custom Slick Toggle ---
 function Toggle({ checked, onCheckedChange }) {
   return (
     <button
       type="button"
       onClick={() => onCheckedChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ring-transparent focus:ring-blue-500 ${
-        checked ? 'bg-blue-600' : 'bg-zinc-200'
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none ring-2 ring-offset-2 ring-transparent focus:ring-blue-500/20 ${
+        checked ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-800'
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-all duration-300 ease-in-out ${
           checked ? 'translate-x-6' : 'translate-x-1'
         }`}
       />
     </button>
   );
 }
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// --- Toast Component (Pharmax Standard) ---
+// --- Desktop Toast ---
 function Toast({ message, type, onClose }) {
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
@@ -51,11 +55,13 @@ function Toast({ message, type, onClose }) {
   }, [onClose]);
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-in slide-in-from-bottom-5 duration-300
-      ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-      {type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 transition-opacity">
+    <div className={`fixed top-8 right-8 z-50 flex items-center gap-4 px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] text-sm font-bold animate-in fade-in slide-in-from-right-8 duration-500 border backdrop-blur-xl
+      ${type === 'success' ? 'bg-white/90 dark:bg-zinc-900/90 text-green-800 dark:text-green-400 border-green-100 dark:border-green-900/30' : 'bg-white/90 dark:bg-zinc-900/90 text-red-800 dark:text-red-400 border-red-100 dark:border-red-900/30'}`}>
+      <div className={`p-1.5 rounded-full ${type === 'success' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+        {type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+      </div>
+      <span className="flex-1 tracking-tight">{message}</span>
+      <button onClick={onClose} className="ml-2 text-zinc-400 hover:text-zinc-600 transition-colors">
         <X size={14} />
       </button>
     </div>
@@ -109,11 +115,11 @@ export default function Settings() {
   const handleSave = async (section) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800)); 
+      await new Promise(resolve => setTimeout(resolve, 600)); 
       localStorage.setItem("pharmax_app_settings", JSON.stringify(settings));
-      setMessage({ type: "success", text: `${section} updated successfully!` });
+      setMessage({ type: "success", text: `${section} configuration saved.` });
     } catch (error) {
-      setMessage({ type: "error", text: "Failed to save settings." });
+      setMessage({ type: "error", text: "Failed to sync settings." });
     } finally {
       setIsLoading(false);
     }
@@ -137,453 +143,397 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: "profile", label: "Pharmacy Profile", icon: Store },
-    { id: "system", label: "System & Preferences", icon: Bell },
-    { id: "invoicing", label: "Invoicing & Tax", icon: FileText },
-    { id: "printing", label: "Printing Setup", icon: Printer },
+    { id: "profile", label: "Business", icon: Store },
+    { id: "system", label: "System", icon: Bell },
+    { id: "invoicing", label: "Invoicing", icon: FileText },
+    { id: "printing", label: "Printing", icon: Printer },
     { id: "security", label: "Security", icon: ShieldCheck },
-    { id: "data", label: "System Data", icon: Database },
+    { id: "data", label: "Maintenance", icon: Database },
   ];
 
   return (
-    <div className="flex flex-col h-full w-full bg-zinc-50/50">
-      {/* Premium Header */}
-      <div className="px-8 py-6 border-b border-zinc-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-blue-200 shadow-xl border-4 border-blue-50">
-              <SettingsIcon size={24} />
+    <div className="flex flex-col h-full w-full bg-[#f8fafc] dark:bg-zinc-950 font-sans selection:bg-blue-100 overflow-hidden">
+      
+      {/* Slick Top Header */}
+      <header className="px-10 pt-10 pb-6 shrink-0">
+        <div className="max-w-6xl mx-auto flex items-end justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">
+              <SettingsIcon size={12} strokeWidth={3} />
+              Workstation Settings
             </div>
-            <div>
-              <h1 className="text-2xl font-black text-zinc-900 tracking-tight">System Configuration</h1>
-              <p className="text-sm text-zinc-500 font-medium">Manage your pharmacy identity, hardware, and operational rules.</p>
-            </div>
+            <h1 className="text-5xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
+              Control <span className="text-blue-600">Panel.</span>
+            </h1>
           </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-hidden">
-        <div className="flex h-full max-w-7xl mx-auto">
           
-          {/* Vertical Navigation Sidebar */}
-          <aside className="w-72 bg-white border-r border-zinc-200 p-6 space-y-2 hidden md:block">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-100 translate-x-1"
-                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
-                }`}
-              >
-                <tab.icon size={18} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                {tab.label}
-              </button>
-            ))}
-          </aside>
+          <Button 
+            onClick={() => handleSave(tabs.find(t => t.id === activeTab)?.label)} 
+            disabled={isLoading}
+            className="bg-zinc-900 hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-700 text-white h-12 px-10 rounded-2xl font-black shadow-2xl shadow-blue-500/10 transition-all active:scale-95 flex items-center gap-2"
+          >
+            {isLoading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Save size={18} />
+                <span>Sync Configuration</span>
+              </>
+            )}
+          </Button>
+        </div>
 
-          {/* Dynamic Content Area */}
-          <main className="flex-1 overflow-auto p-8 lg:p-12">
-            <div className="max-w-3xl">
-              
-              {/* PHARMACY PROFILE TAB */}
-              {activeTab === "profile" && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                      <h2 className="text-xl font-bold text-zinc-900">Pharmacy Profile</h2>
-                      <p className="text-sm text-zinc-500">Identity shown on patient bills and supplier reports.</p>
-                    </div>
-                    <Button 
-                      onClick={() => handleSave("Pharmacy Profile")} 
-                      disabled={isLoading}
-                      className="bg-blue-600 hover:bg-blue-700 shadow-md h-10 px-6 gap-2"
-                    >
-                      <Save size={18} /> {isLoading ? "Saving..." : "Save Profile"}
-                    </Button>
-                  </div>
+        {/* Slick Tab Navigation (Horizontal) */}
+        <div className="max-w-6xl mx-auto mt-12 flex items-center gap-1 p-1 bg-white dark:bg-zinc-900/50 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm backdrop-blur-xl">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl text-sm font-black transition-all duration-500 group relative ${
+                activeTab === tab.id
+                  ? "bg-zinc-900 text-white dark:bg-blue-600 shadow-lg"
+                  : "text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              }`}
+            >
+              <tab.icon size={16} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+              <span className="tracking-tight uppercase text-[11px] tracking-[0.05em]">{tab.label}</span>
+              {activeTab === tab.id && (
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white dark:bg-white rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      </header>
 
-                  <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Business Name</Label>
+      {/* Content Area */}
+      <main className="flex-1 overflow-y-auto px-10 pb-32 pt-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+            
+            {/* BUSINESS SECTION */}
+            {activeTab === "profile" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Business Identity</h3>
+                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                    Set your pharmacy credentials. This data will be synchronized across all generated bills and reports.
+                  </p>
+                </div>
+                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+                    {[
+                      { label: "Pharmacy Name", field: "name", cat: "profile" },
+                      { label: "Support Email", field: "email", cat: "profile" },
+                      { label: "Contact Phone", field: "phone", cat: "profile" },
+                      { label: "Drug License", field: "drugLicense", cat: "profile" },
+                      { label: "Physical Address", field: "address", cat: "profile", full: true },
+                      { label: "STRN (Sales Tax)", field: "strn", cat: "profile" },
+                      { label: "NTN (Income Tax)", field: "ntn", cat: "profile" }
+                    ].map((item) => (
+                      <div key={item.field} className={`space-y-2 ${item.full ? 'md:col-span-2' : ''}`}>
+                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">{item.label}</Label>
                         <Input 
-                          value={settings.profile.name} 
-                          onChange={e => updateField('profile', 'name', e.target.value)}
-                          className="h-12 border-zinc-200 focus:border-blue-500 bg-zinc-50/30" 
+                          value={settings[item.cat][item.field]} 
+                          onChange={e => updateField(item.cat, item.field, e.target.value)}
+                          className="h-14 bg-zinc-50 dark:bg-zinc-800 border-transparent focus:bg-white dark:focus:bg-zinc-900 focus:ring-0 focus:border-blue-600 rounded-2xl font-bold transition-all text-zinc-900 dark:text-zinc-100" 
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Email Address</Label>
-                        <Input 
-                          value={settings.profile.email} 
-                          onChange={e => updateField('profile', 'email', e.target.value)}
-                          className="h-12 border-zinc-200 focus:border-blue-500 bg-zinc-50/30" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Phone / Mobile</Label>
-                        <Input 
-                          value={settings.profile.phone} 
-                          onChange={e => updateField('profile', 'phone', e.target.value)}
-                          className="h-12 border-zinc-200 focus:border-blue-500 bg-zinc-50/30" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Pharmacy License No.</Label>
-                        <Input 
-                          value={settings.profile.drugLicense} 
-                          onChange={e => updateField('profile', 'drugLicense', e.target.value)}
-                          className="h-12 border-zinc-200 focus:border-blue-500 bg-zinc-50/30" 
-                        />
-                      </div>
-                      <div className="md:col-span-2 space-y-2">
-                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Full Shop Address</Label>
-                        <Input 
-                          value={settings.profile.address} 
-                          onChange={e => updateField('profile', 'address', e.target.value)}
-                          className="h-12 border-zinc-200 focus:border-blue-500 bg-zinc-50/30" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">STRN (Sales Tax ID)</Label>
-                        <Input 
-                          value={settings.profile.strn} 
-                          onChange={e => updateField('profile', 'strn', e.target.value)}
-                          className="h-12 border-zinc-200 focus:border-blue-500 bg-zinc-50/30" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">NTN (Income Tax ID)</Label>
-                        <Input 
-                          value={settings.profile.ntn} 
-                          onChange={e => updateField('profile', 'ntn', e.target.value)}
-                          className="h-12 border-zinc-200 focus:border-blue-500 bg-zinc-50/30" 
-                        />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* SYSTEM & PREFERENCES TAB */}
-              {activeTab === "system" && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
-                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                      <h2 className="text-xl font-bold text-zinc-900">System & Preferences</h2>
-                      <p className="text-sm text-zinc-500">Configure notifications, interface theme, and automation.</p>
+            {/* SYSTEM SECTION */}
+            {activeTab === "system" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">System Workflow</h3>
+                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                    Fine-tune how the workstation behaves, from visual themes to automated data protection routines.
+                  </p>
+                </div>
+                <div className="lg:col-span-2 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Toggles */}
+                    <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-8 space-y-8">
+                       <div className="flex items-center justify-between">
+                         <div className="space-y-0.5">
+                           <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Interface</p>
+                           <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">Dark Mode</p>
+                         </div>
+                         <Toggle
+                           checked={settings.system.darkMode}
+                           onCheckedChange={(checked) => {
+                             updateField('system', 'darkMode', checked);
+                             if (checked) document.documentElement.classList.add('dark');
+                             else document.documentElement.classList.remove('dark');
+                           }}
+                         />
+                       </div>
+                       <div className="flex items-center justify-between">
+                         <div className="space-y-0.5">
+                           <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Feedback</p>
+                           <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">Audio Alerts</p>
+                         </div>
+                         <Toggle
+                           checked={settings.system.notificationSound}
+                           onCheckedChange={(checked) => updateField('system', 'notificationSound', checked)}
+                         />
+                       </div>
                     </div>
-                    <Button onClick={() => handleSave("System")} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 h-10 px-6 gap-2">
-                      <Save size={18} /> Save Preferences
-                    </Button>
+
+                    <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-8 flex items-center justify-between">
+                       <div className="space-y-0.5">
+                         <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Security</p>
+                         <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">Desktop Notifications</p>
+                         <p className="text-[10px] text-zinc-500 font-medium">Critical stock & expiry alerts.</p>
+                       </div>
+                       <Toggle
+                         checked={settings.system.notifications}
+                         onCheckedChange={(checked) => updateField('system', 'notifications', checked)}
+                       />
+                    </div>
                   </div>
 
-                  <div className="space-y-6">
-                    {/* Notifications Section */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                      <div className="p-6 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-3">
-                        <Bell size={18} className="text-amber-500" />
-                        <h3 className="font-bold text-zinc-900">Notifications</h3>
-                      </div>
-                      <div className="p-6 space-y-6">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label className="text-sm font-bold text-zinc-700">Desktop Notifications</Label>
-                            <p className="text-xs text-zinc-500">Show system alerts for low stock and expiry events.</p>
-                          </div>
-                          <Toggle
-                            checked={settings.system.notifications}
-                            onCheckedChange={(checked) => updateField('system', 'notifications', checked)}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <Label className="text-sm font-bold text-zinc-700">Alert Sounds</Label>
-                              {settings.system.notificationSound ? <Volume2 size={14} className="text-zinc-400" /> : <VolumeX size={14} className="text-zinc-400" />}
-                            </div>
-                            <p className="text-xs text-zinc-500">Play a sound when a new notification arrives.</p>
-                          </div>
-                          <Toggle
-                            checked={settings.system.notificationSound}
-                            onCheckedChange={(checked) => updateField('system', 'notificationSound', checked)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Auto Backup Section */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                      <div className="p-6 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-3">
-                        <FolderOpen size={18} className="text-blue-500" />
-                        <h3 className="font-bold text-zinc-900">Automated Backup</h3>
-                      </div>
-                      <div className="p-6 space-y-6">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label className="text-sm font-bold text-zinc-700">Enable Auto-Backup</Label>
-                            <p className="text-xs text-zinc-500">Automatically backup your database to a local directory.</p>
-                          </div>
-                          <Toggle
-                            checked={settings.system.autoBackup}
-                            onCheckedChange={(checked) => updateField('system', 'autoBackup', checked)}
-                          />
-                        </div>
-
-                        {settings.system.autoBackup && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-zinc-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Backup Frequency</Label>
-                              <Select 
-                                value={settings.system.backupFrequency} 
-                                onValueChange={(val) => updateField('system', 'backupFrequency', val)}
-                              >
-                                <SelectTrigger className="w-full bg-zinc-50 border-zinc-200 rounded-xl h-11 font-medium">
-                                  <SelectValue placeholder="Select frequency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="daily">Every Day</SelectItem>
-                                  <SelectItem value="weekly">Once a Week</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Storage Folder</Label>
-                              <div className="flex gap-2">
-                                <div className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl h-11 px-4 flex items-center overflow-hidden">
-                                  <span className="text-[10px] text-zinc-500 truncate font-mono">
-                                    {settings.system.backupPath || 'No folder selected'}
-                                  </span>
-                                </div>
-                                <Button 
-                                  variant="outline" 
-                                  onClick={handleSelectDirectory}
-                                  className="border-zinc-200 hover:bg-zinc-100 rounded-xl px-3 h-11"
-                                >
-                                  <FolderOpen size={18} />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Theme Section */}
-                    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 flex items-center justify-between">
+                  {/* Backup Card */}
+                  <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-10 space-y-10">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-2xl transition-colors ${settings.system.darkMode ? 'bg-zinc-800 text-zinc-200' : 'bg-orange-50 text-orange-600'}`}>
-                          {settings.system.darkMode ? <Moon size={22} /> : <Sun size={22} />}
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/10 text-blue-600 rounded-2xl">
+                          <HardDrive size={24} />
                         </div>
                         <div>
-                          <Label className="text-sm font-bold text-zinc-900">Dark Mode Interface</Label>
-                          <p className="text-xs text-zinc-500">Enable high-contrast dark theme for the entire app.</p>
+                          <h4 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Automated Cloud-Local Backup</h4>
+                          <p className="text-sm text-zinc-500 font-medium italic">Your data is your most valuable asset.</p>
                         </div>
                       </div>
                       <Toggle
-                        checked={settings.system.darkMode}
-                        onCheckedChange={(checked) => {
-                          updateField('system', 'darkMode', checked);
-                          if (checked) document.documentElement.classList.add('dark');
-                          else document.documentElement.classList.remove('dark');
-                        }}
+                        checked={settings.system.autoBackup}
+                        onCheckedChange={(checked) => updateField('system', 'autoBackup', checked)}
+                      />
+                    </div>
+
+                    {settings.system.autoBackup && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-zinc-100 dark:border-zinc-800 animate-in fade-in slide-in-from-top-6 duration-500">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Archive Frequency</Label>
+                          <Select 
+                            value={settings.system.backupFrequency} 
+                            onValueChange={(val) => updateField('system', 'backupFrequency', val)}
+                          >
+                            <SelectTrigger className="h-14 bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl font-black px-6 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border-zinc-200 shadow-2xl">
+                              <SelectItem value="daily" className="font-bold py-3">Every Day (Recommended)</SelectItem>
+                              <SelectItem value="weekly" className="font-bold py-3">Once a Week</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Destination Directory</Label>
+                          <div className="flex gap-2">
+                            <div className="flex-1 bg-zinc-50 dark:bg-zinc-800 rounded-2xl h-14 px-6 flex items-center overflow-hidden">
+                              <span className="text-xs text-zinc-400 truncate font-mono font-bold">
+                                {settings.system.backupPath || 'SELECT_STORAGE_TARGET'}
+                              </span>
+                            </div>
+                            <Button 
+                              onClick={handleSelectDirectory}
+                              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 rounded-2xl px-5 h-14 shadow-sm"
+                            >
+                              <FolderOpen size={20} className="text-blue-600" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* INVOICING SECTION */}
+            {activeTab === "invoicing" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Bill Engineering</h3>
+                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                    Customize the professional appearance of your invoices, including tax labels and legal disclaimers.
+                  </p>
+                </div>
+                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-10 space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Invoice Prefix</Label>
+                      <Input 
+                        value={settings.invoicing.prefix} 
+                        onChange={e => updateField('invoicing', 'prefix', e.target.value)}
+                        className="h-14 bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl font-black text-center" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Tax Rate (%)</Label>
+                      <Input 
+                        type="number"
+                        value={settings.invoicing.defaultTax} 
+                        onChange={e => updateField('invoicing', 'defaultTax', e.target.value)}
+                        className="h-14 bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl font-black text-center" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Currency</Label>
+                      <Input 
+                        value={settings.invoicing.currency} 
+                        onChange={e => updateField('invoicing', 'currency', e.target.value)}
+                        className="h-14 bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl font-black text-center" 
+                      />
+                    </div>
+                    <div className="md:col-span-3 space-y-2">
+                      <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Invoice Footer Disclaimer</Label>
+                      <textarea 
+                        value={settings.invoicing.footerMsg} 
+                        onChange={e => updateField('invoicing', 'footerMsg', e.target.value)}
+                        className="w-full h-32 p-6 bg-zinc-50 dark:bg-zinc-800 rounded-[24px] border-none text-sm font-bold text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all resize-none"
                       />
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* INVOICING TAB */}
-              {activeTab === "invoicing" && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                      <h2 className="text-xl font-bold text-zinc-900">Invoicing & Taxation</h2>
-                      <p className="text-sm text-zinc-500">Control how your bills look and taxes are applied.</p>
-                    </div>
-                    <Button onClick={() => handleSave("Invoicing")} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 h-10 px-6 gap-2">
-                      <Save size={18} /> Save Config
-                    </Button>
-                  </div>
-
-                  <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Bill Prefix (e.g., INV-)</Label>
-                          <Input 
-                            value={settings.invoicing.prefix} 
-                            onChange={e => updateField('invoicing', 'prefix', e.target.value)}
-                            className="h-12 border-zinc-200" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Default GST (%)</Label>
-                          <Input 
-                            type="number"
-                            value={settings.invoicing.defaultTax} 
-                            onChange={e => updateField('invoicing', 'defaultTax', e.target.value)}
-                            className="h-12 border-zinc-200" 
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Currency Symbol</Label>
-                          <Input 
-                            value={settings.invoicing.currency} 
-                            onChange={e => updateField('invoicing', 'currency', e.target.value)}
-                            className="h-12 border-zinc-200" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Terms & Conditions (Footer)</Label>
-                          <textarea 
-                            value={settings.invoicing.footerMsg} 
-                            onChange={e => updateField('invoicing', 'footerMsg', e.target.value)}
-                            className="w-full h-32 p-4 rounded-xl border border-zinc-200 text-sm font-medium focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {/* HARDWARE SECTION */}
+            {activeTab === "printing" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Hardware Engine</h3>
+                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                    Connect and calibrate your POS hardware for instant, reliable thermal or standard printing.
+                  </p>
                 </div>
-              )}
-
-              {/* PRINTING SETUP TAB */}
-              {activeTab === "printing" && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                      <h2 className="text-xl font-bold text-zinc-900">Printing Setup</h2>
-                      <p className="text-sm text-zinc-500">Select your hardware and customize print layouts.</p>
-                    </div>
-                    <Button onClick={() => handleSave("Printing")} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 h-10 px-6 gap-2">
-                      <Save size={18} /> Save Printer
-                    </Button>
+                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-10 space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {[
+                      { id: 'thermal', label: 'POS Thermal', sub: 'Roll-fed paper', icon: Layout },
+                      { id: 'a4', label: 'Standard Desktop', sub: 'A4 / A5 Sheets', icon: FileText }
+                    ].map((p) => (
+                      <button 
+                        key={p.id}
+                        onClick={() => updateField('printing', 'type', p.id)}
+                        className={`p-8 rounded-[32px] border-2 transition-all flex items-center gap-6 group ${
+                          settings.printing.type === p.id 
+                            ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/10 shadow-2xl shadow-blue-500/10" 
+                            : "border-zinc-50 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-800/30"
+                        }`}
+                      >
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                          settings.printing.type === p.id ? "bg-blue-600 text-white scale-110" : "bg-white dark:bg-zinc-700 text-zinc-400 group-hover:text-zinc-900"
+                        }`}>
+                          <p.icon size={24} />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-black text-zinc-900 dark:text-zinc-100 uppercase text-xs tracking-widest">{p.label}</p>
+                          <p className="text-[10px] text-zinc-500 font-bold mt-0.5 italic">{p.sub}</p>
+                        </div>
+                      </button>
+                    ))}
                   </div>
 
-                  <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <button 
-                        onClick={() => updateField('printing', 'type', 'thermal')}
-                        className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-3 ${
-                          settings.printing.type === 'thermal' ? "border-blue-600 bg-blue-50" : "border-zinc-100 bg-zinc-50"
-                        }`}
-                      >
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          settings.printing.type === 'thermal' ? "bg-blue-600 text-white" : "bg-zinc-200 text-zinc-500"
-                        }`}>
-                          <Printer size={24} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-zinc-900">POS Thermal</p>
-                          <p className="text-[10px] text-zinc-500 uppercase font-black tracking-tighter">80mm / 58mm</p>
-                        </div>
-                      </button>
-                      
-                      <button 
-                        onClick={() => updateField('printing', 'type', 'a4')}
-                        className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-3 ${
-                          settings.printing.type === 'a4' ? "border-blue-600 bg-blue-50" : "border-zinc-100 bg-zinc-50 opacity-60"
-                        }`}
-                      >
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          settings.printing.type === 'a4' ? "bg-blue-600 text-white" : "bg-zinc-200 text-zinc-500"
-                        }`}>
-                          <FileText size={24} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-zinc-900">Standard A4/A5</p>
-                          <p className="text-[10px] text-zinc-500 uppercase font-black tracking-tighter">Office Printers</p>
-                        </div>
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 pt-4">
-                      <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">System Printer Name</Label>
-                      <Input 
+                  <div className="space-y-3 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+                    <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Assigned Device Name</Label>
+                    <div className="relative">
+                       <Printer size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                       <Input 
                         value={settings.printing.printerName} 
                         onChange={e => updateField('printing', 'printerName', e.target.value)}
-                        className="h-12 border-zinc-200" 
-                        placeholder="e.g. XP-80C Thermal Printer"
+                        className="h-16 pl-14 bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl font-black text-lg" 
+                        placeholder="e.g. POS-80-V2"
                       />
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* SECURITY TAB */}
-              {activeTab === "security" && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <h2 className="text-xl font-bold text-zinc-900 mb-8">Security & Access Control</h2>
-                  <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 space-y-6">
-                    <div className="flex items-center justify-between p-6 rounded-2xl border border-zinc-100 bg-zinc-50/50 hover:bg-white hover:border-zinc-200 transition-all cursor-pointer group">
-                      <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <ShieldCheck size={22} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-zinc-900">Administrator Password</h4>
-                          <p className="text-xs text-zinc-500">Update your primary login credentials.</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" className="border-zinc-200 font-bold px-6">Change</Button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-6 rounded-2xl border border-zinc-100 bg-zinc-50/50 opacity-60 grayscale cursor-not-allowed">
-                      <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 rounded-full bg-zinc-200 text-zinc-500 flex items-center justify-center">
-                          <CreditCard size={22} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-zinc-900">User Multi-Role</h4>
-                          <p className="text-xs text-zinc-500 italic">Available in Enterprise Edition</p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-black text-zinc-400 uppercase bg-zinc-200 px-3 py-1 rounded-full">Pro Only</span>
-                    </div>
-                  </div>
+            {/* SECURITY SECTION */}
+            {activeTab === "security" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Access Control</h3>
+                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                    Protect your workstation from unauthorized access. Change your PIN or manage team roles.
+                  </p>
                 </div>
-              )}
-
-              {/* DATA MANAGEMENT TAB */}
-              {activeTab === "data" && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <h2 className="text-xl font-bold text-red-600 mb-8">Critical Data Operations</h2>
-                  <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 space-y-4">
-                    <div className="p-6 rounded-2xl border border-red-100 bg-red-50/30 flex items-center justify-between">
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-8 flex items-center justify-between group hover:border-blue-300 transition-all cursor-pointer shadow-sm">
+                    <div className="flex items-center gap-6">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center transition-all group-hover:scale-110 duration-500 group-hover:bg-blue-600 group-hover:text-white">
+                        <UserCog size={28} />
+                      </div>
                       <div>
-                        <h4 className="font-bold text-red-900">Reset Local Configuration</h4>
-                        <p className="text-xs text-red-600/70 font-medium">This will clear your logo, printer settings, and local cache.</p>
+                        <h4 className="font-black text-zinc-900 dark:text-zinc-100 tracking-tight uppercase text-xs">Workstation Password</h4>
+                        <p className="text-[10px] text-zinc-500 font-bold mt-1">Update your primary admin login key.</p>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          if(window.confirm("Are you sure you want to reset all settings to default?")) {
-                            localStorage.removeItem("pharmax_app_settings");
-                            window.location.reload();
-                          }
-                        }}
-                        className="border-red-200 text-red-600 hover:bg-red-100 font-bold gap-2 px-6"
-                      >
-                        <Trash2 size={18} /> Wipe Cache
-                      </Button>
                     </div>
+                    <Button variant="outline" className="border-zinc-200 dark:border-zinc-800 font-black text-[10px] uppercase tracking-[0.2em] px-8 h-12 rounded-2xl">Modify PIN</Button>
+                  </div>
+
+                  <div className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-[32px] border border-transparent p-8 flex items-center justify-between opacity-50 grayscale cursor-not-allowed">
+                    <div className="flex items-center gap-6">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center">
+                        <ShieldCheck size={28} />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-zinc-400 tracking-tight uppercase text-xs">Multi-Role Licensing</h4>
+                        <p className="text-[10px] text-zinc-400 font-bold mt-1 tracking-tight">Advanced permission sets for cashiers & managers.</p>
+                      </div>
+                    </div>
+                    <span className="text-[8px] font-black text-zinc-400 border border-zinc-300 px-4 py-1.5 rounded-full uppercase tracking-widest">Enterprise Only</span>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-            </div>
-          </main>
+            {/* MAINTENANCE SECTION */}
+            {activeTab === "data" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className="text-2xl font-black text-red-600 tracking-tight">System Integrity</h3>
+                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                    Critical operations to reset your environment. This should only be used by technical personnel.
+                  </p>
+                </div>
+                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-[32px] border border-red-100 dark:border-red-900/20 p-10">
+                  <div className="p-8 rounded-[32px] bg-red-50/30 dark:bg-red-900/5 flex items-center justify-between border border-red-100/50">
+                    <div className="space-y-1">
+                      <h4 className="font-black text-red-900 dark:text-red-400 uppercase tracking-widest text-[10px]">Hard Factory Reset</h4>
+                      <p className="text-xs text-red-600/70 dark:text-red-400/50 font-bold max-w-sm leading-relaxed">
+                        Immediately wipe all local UI settings, themes, and printer links. Database records are unaffected.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        if(window.confirm("Perform hard reset? This cannot be undone.")) {
+                          localStorage.removeItem("pharmax_app_settings");
+                          window.location.reload();
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-14 rounded-2xl shadow-2xl shadow-red-500/20"
+                    >
+                      <Trash2 size={20} /> Wipe System Cache
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
-      </div>
+      </main>
 
-      {/* Notifications */}
+      {/* Persistence Notifications */}
       {message && (
         <Toast 
           message={message.text} 
