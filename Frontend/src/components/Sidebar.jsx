@@ -48,6 +48,7 @@ const navigation = {
     { title: "Purchase Invoice", icon: FileText },
     { title: "Purchase Returns", icon: RotateCcwIcon },
     { title: "Companies",        icon: HiOutlineBuildingOffice },
+    { title: "Manufacturers",    icon: Factory },
     { title: "Supplier Ledger",  icon: BookOpenIcon }
   ],
   reports: [
