@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ❌ insertSale → will be added in Iteration 2 (sale_invoices table)
   // ── Sales ─────────────────────────────────────────────────────────────────
   addSale: (data) => ipcRenderer.invoke('add-sale', data),
+  getSales: () => ipcRenderer.invoke('get-sales'),
+  getSaleDetails: (saleInvoiceId) => ipcRenderer.invoke('get-sale-details', saleInvoiceId),
 
   // ── Purchase Returns ──────────────────────────────────────────────────────
   getPurchaseReturns: () => ipcRenderer.invoke('get-purchase-returns'),

@@ -26,8 +26,8 @@ function Toast({ message, type, onClose }) {
 }
 
 const Login = ({ onLogin, setSignup }) => {
-  const [username, setUsername]         = useState("");
-  const [password, setPassword]         = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading]       = useState(false);
   const [message, setMessage]           = useState(null);
@@ -140,7 +140,7 @@ const Login = ({ onLogin, setSignup }) => {
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
-                    if (fieldErrors.username) setFieldErrors(p => ({ ...p, username: "" }));
+                    if (fieldErrors.username) setFieldErrors((p) => ({ ...p, username: '' }));
                   }}
                   className={`pl-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-all font-semibold ${fieldErrors.username ? "border-red-500" : ""}`}
                   placeholder="admin"
@@ -161,7 +161,7 @@ const Login = ({ onLogin, setSignup }) => {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: "" }));
+                    if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: '' }));
                   }}
                   className={`pl-11 pr-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-all font-semibold ${fieldErrors.password ? "border-red-500" : ""}`}
                   placeholder="••••••••"

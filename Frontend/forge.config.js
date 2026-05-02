@@ -7,7 +7,7 @@ module.exports = {
     asar: true,
   },
   rebuildConfig: {
-    onlyModules: []
+    onlyModules: [],
   },
   makers: [
     {

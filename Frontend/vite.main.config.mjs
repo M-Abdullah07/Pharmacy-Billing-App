@@ -10,12 +10,12 @@ export default defineConfig({
       entry: resolve(__dirname, '../Backend/app/main.js'),
       name: 'main',
       formats: ['cjs'],
-      fileName: () => 'main.js',  // ✅ forces output to be exactly "main.js"
+      fileName: () => 'main.js', // ✅ forces output to be exactly "main.js"
     },
-    outDir: '.vite/build',        // ✅ matches what package.json "main" expects
-    emptyOutDir: false,           // ✅ prevents wiping preload build
+    outDir: '.vite/build', // ✅ matches what package.json "main" expects
+    emptyOutDir: false, // ✅ prevents wiping preload build
     rollupOptions: {
-      external: ['electron', 'argon2', 'pg'],     // ✅ don't bundle native modules
-    }
-  }
+      external: ['electron', 'argon2', 'pg'], // ✅ don't bundle native modules
+    },
+  },
 });

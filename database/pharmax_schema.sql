@@ -1381,3 +1381,6 @@ SELECT
 --   Iter 3  : payments, expenses
 --   Always  : all views, all triggers, all indexes
 -- ============================================================
+
+-- US-202 Optimization: Fast FEFO lock acquisition
+CREATE INDEX IF NOT EXISTS idx_batches_product_expiry ON batches (product_id, expiry_date) WHERE quantity_available > 0 AND is_active = TRUE;

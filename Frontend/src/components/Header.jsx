@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { SidebarTrigger } from "./ui/sidebar";
-import { Button } from "./ui/button";
-import { Moon, Sun } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { SidebarTrigger } from './ui/sidebar';
+import { Button } from './ui/button';
+import { Moon, Sun } from 'lucide-react';
 
-export default function Header({currentPage}) {
+export default function Header({ currentPage }) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
+    setIsDark(document.documentElement.classList.contains('dark'));
   }, []);
 
   const toggleDark = () => {
-    document.documentElement.classList.toggle("dark");
+    document.documentElement.classList.toggle('dark');
     setIsDark((prev) => !prev);
   };
 
