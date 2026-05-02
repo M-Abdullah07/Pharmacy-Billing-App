@@ -1,7 +1,7 @@
-import React from "react";
-import StatsPanel from "@/components/StatsPanel";
-import ActivityList from "@/components/ActivityList";
-import AnalyticsChart from "@/components/AnalyticsChart";
+import React from 'react';
+import StatsPanel from '@/components/StatsPanel';
+import ActivityList from '@/components/ActivityList';
+import AnalyticsChart from '@/components/AnalyticsChart';
 
 export default function Dashboard() {
   return (

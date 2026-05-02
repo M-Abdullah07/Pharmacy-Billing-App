@@ -1,26 +1,31 @@
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
-import { ChartContainer, ChartTooltipContent, ChartTooltip, ChartLegendContent, ChartLegend } from "@/components/ui/chart"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltipContent,
+  ChartTooltip,
+  ChartLegendContent,
+  ChartLegend,
+} from '@/components/ui/chart';
 
 const chartData = [
-  { month: "January", antibiotics: 120, painkillers: 90 },
-  { month: "February", antibiotics: 160, painkillers: 130 },
-  { month: "March", antibiotics: 140, painkillers: 100 },
-  { month: "April", antibiotics: 110, painkillers: 150 },
-  { month: "May", antibiotics: 180, painkillers: 120 },
-  { month: "June", antibiotics: 170, painkillers: 140 },
+  { month: 'January', antibiotics: 120, painkillers: 90 },
+  { month: 'February', antibiotics: 160, painkillers: 130 },
+  { month: 'March', antibiotics: 140, painkillers: 100 },
+  { month: 'April', antibiotics: 110, painkillers: 150 },
+  { month: 'May', antibiotics: 180, painkillers: 120 },
+  { month: 'June', antibiotics: 170, painkillers: 140 },
 ];
 
 const chartConfig = {
   antibiotics: {
-    label: "Antibiotics",
-    color: "#2563eb",
+    label: 'Antibiotics',
+    color: '#2563eb',
   },
   painkillers: {
-    label: "Painkillers",
-    color: "#60a5fa",
+    label: 'Painkillers',
+    color: '#60a5fa',
   },
 };
-
 
 export default function AnalyticsChart() {
   return (

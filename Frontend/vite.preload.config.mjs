@@ -12,10 +12,10 @@ export default defineConfig({
       formats: ['cjs'],
       fileName: () => 'preload.js', // ✅ forces output to be exactly "preload.js"
     },
-    outDir: '.vite/build',          // ✅ same output dir as main
-    emptyOutDir: false,             // ✅ prevents wiping main build
+    outDir: '.vite/build', // ✅ same output dir as main
+    emptyOutDir: false, // ✅ prevents wiping main build
     rollupOptions: {
-      external: ['electron'],       // ✅ don't bundle electron itself
-    }
-  }
+      external: ['electron'], // ✅ don't bundle electron itself
+    },
+  },
 });

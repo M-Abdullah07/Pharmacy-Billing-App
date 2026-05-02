@@ -1,28 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from "@/components/ui/label";
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CalendarIcon } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { getUserId } from '../utilis/sessions';
 
-export default function AddSale() {
+export default function AddSale({ onSaleRecorded }) {
   // Core data states
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
-  const [batches, setBatches] = useState([]);
 
   // Selected values
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('');
 
   // Sale item inputs
-    const [quantity, setQuantity] = useState(1);
-  const [saleRate, setSaleRate] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [saleRate, setSaleRate] = useState('');
 
   // Sale items list
   const [saleItems, setSaleItems] = useState([]);
@@ -36,9 +54,8 @@ export default function AddSale() {
 
   // States to show add forms
   const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [newCustomerName, setNewCustomerName] = useState("");
-  const [newCustomerPhone, setNewCustomerPhone] = useState("");
-
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
 
   // Electron API shortcut
   const api = window.electronAPI;
@@ -50,7 +67,7 @@ export default function AddSale() {
       setCustomers(result || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      setErrors(prev => ({ ...prev, customers: 'Failed to load customers' }));
+      setErrors((prev) => ({ ...prev, customers: 'Failed to load customers' }));
     }
   };
 
@@ -61,18 +78,7 @@ export default function AddSale() {
       setProducts(result || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      setErrors(prev => ({ ...prev, products: 'Failed to load products' }));
-    }
-  };
-
-  // Fetch batches for selected product and with stock > 0
-  const refreshBatches = async (productId) => {
-    try {
-      const result = await api.getStockByProduct(productId);
-      setBatches(result || []);
-    } catch (error) {
-      console.error('Error fetching batches:', error);
-      setErrors(prev => ({ ...prev, batches: 'Failed to load batches' }));
+      setErrors((prev) => ({ ...prev, products: 'Failed to load products' }));
     }
   };
 
@@ -82,50 +88,29 @@ export default function AddSale() {
     refreshProducts();
   }, []);
 
-  // Load batches when product changes
-  useEffect(() => {
-    if (selectedProduct) {
-      refreshBatches(selectedProduct);
-      setSelectedBatch("");
-    } else {
-      setBatches([]);
-      setSelectedBatch("");
-    }
-  }, [selectedProduct]);
-
-  // Auto fill sale rate on batch change
-  useEffect(() => {
-    if (selectedBatch) {
-      const batch = batches.find(b => b.batch_id === selectedBatch);
-      if (batch && batch.mrp) {
-        setSaleRate(batch.mrp.toString());
-      }
-    }
-  }, [selectedBatch, batches]);
-
   // Handlers for adding new Customer
   const handleAddCustomer = async () => {
     if (!newCustomerName.trim()) {
-      alert("Customer name is required");
+      alert('Customer name is required');
       return;
     }
     try {
       setIsLoading(true);
       const result = await api.addCustomer({
         name: newCustomerName.trim(),
-        phone: newCustomerPhone.trim()
+        phone: newCustomerPhone.trim(),
       });
       if (result.success) {
         await refreshCustomers();
         setSelectedCustomer(result.customerId.toString());
         setShowAddCustomer(false);
-        setNewCustomerName("");
-        setNewCustomerPhone("");
+        setNewCustomerName('');
+        setNewCustomerPhone('');
       } else {
-        alert("Failed to add customer: " + (result.error || "Unknown Error"));
+        alert('Failed to add customer: ' + (result.error || 'Unknown Error'));
       }
     } catch (err) {
-      alert("Error: " + err.message);
+      alert('Error: ' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -134,81 +119,87 @@ export default function AddSale() {
   // Add an item to the sale list
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) {
-      alert("Please fill all fields");
+      alert('Please fill all fields');
       return;
     }
-    const product = products.find(p => p.product_id === selectedProduct);
+    const product = products.find((p) => p.product_id === selectedProduct);
 
     if (!product) {
-      alert("Invalid selection");
+      alert('Invalid selection');
       return;
     }
 
-    const existingItem = saleItems.find(item => item.productId === product.product_id);
+    const existingItem = saleItems.find((item) => item.productId === product.product_id);
     if (existingItem) {
-      alert("This product is already added. Remove it first to change quantity.");
+      alert('This product is already added. Remove it first to change quantity.');
       return;
     }
 
-    setSaleItems(prev => [
+    setSaleItems((prev) => [
       ...prev,
       {
         productId: product.product_id,
         productName: product.name,
         quantity: parseInt(quantity),
         saleRate: saleRate ? parseFloat(saleRate) : null,
-        discountPct: 0
-      }
+        discountPct: 0,
+      },
     ]);
 
     // Reset input controls
     setQuantity(1);
-    setSaleRate("");
-    setSelectedProduct("");
+    setSaleRate('');
+    setSelectedProduct('');
   };
 
   const handleRemoveItem = (index) => {
-    setSaleItems(prev => prev.filter((_, i) => i !== index));
+    setSaleItems((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Submit the sale & reduce stock in DB
   const handleSubmitSale = async () => {
     if (!selectedCustomer || saleItems.length === 0) {
-      alert("Please select a customer and add at least one item.");
+      alert('Please select a customer and add at least one item.');
+      return;
+    }
+    const userId = getUserId();
+    if (!userId) {
+      alert('Please login first.');
       return;
     }
 
     try {
       setIsLoading(true);
-            const result = await api.addSale({
+      const result = await api.addSale({
         customerId: selectedCustomer,
+        userId,
         isCredit,
-        items: saleItems
+        items: saleItems,
       });
       if (result.success) {
         alert(`Sale recorded successfully! Sale ID: ${result.saleId}`);
         // Reset form
         setSaleItems([]);
-        setSelectedCustomer("");
+        setSelectedCustomer('');
         setIsCredit(false);
-        setSelectedProduct("");
-        setSelectedBatch("");
+        setSelectedProduct('');
         setQuantity(1);
-        setSaleRate("");
+        setSaleRate('');
+        if (onSaleRecorded) {
+          onSaleRecorded(result.saleId);
+        }
       } else {
-        alert("Failed to record sale: " + (result.error || "Unknown error"));
+        alert('Failed to record sale: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
-      alert("Error submitting sale: " + error.message);
+      alert('Error submitting sale: ' + error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-
   return (
     <div className="grid grid-cols-1">
-
       {isLoading && <p>Loading...</p>}
 
       {/* Customer select */}
@@ -221,7 +212,7 @@ export default function AddSale() {
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Customers</SelectLabel>
-              {customers.map(c => (
+              {customers.map((c) => (
                 <SelectItem key={c.customer_id} value={c.customer_id}>
                   {c.name}
                 </SelectItem>
@@ -282,7 +273,7 @@ export default function AddSale() {
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Products</SelectLabel>
-              {products.map(p => (
+              {products.map((p) => (
                 <SelectItem key={p.product_id} value={p.product_id}>
                   {p.name}
                 </SelectItem>
@@ -292,12 +283,13 @@ export default function AddSale() {
         </Select>
       </div>
 
-
       {/* Quantity and Sale Rate Inputs */}
       <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 w-full max-w-xl space-y-4">
         <div className="space-y-1">
           <Label className="text-lg font-semibold">Add Items to Sale</Label>
-          <p className="text-sm text-muted-foreground">Enter quantity and sale rate, then add to sale.</p>
+          <p className="text-sm text-muted-foreground">
+            Enter quantity and sale rate, then add to sale.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -327,7 +319,6 @@ export default function AddSale() {
         </div>
       </div>
 
-
       {/* Sale items table */}
       <Table className="mt-4">
         <TableHeader>
@@ -341,34 +332,44 @@ export default function AddSale() {
         </TableHeader>
         <TableBody>
           {saleItems.length === 0 && (
-            <TableRow><TableCell colSpan="7" style={{ textAlign: 'center' }}>No items added</TableCell></TableRow>
+            <TableRow>
+              <TableCell colSpan="7" style={{ textAlign: 'center' }}>
+                No items added
+              </TableCell>
+            </TableRow>
           )}
           {saleItems.map((item, index) => (
             <TableRow key={index}>
               <TableCell>{item.productName}</TableCell>
               <TableCell>{item.quantity}</TableCell>
-              <TableCell>{item.saleRate ? `₹${item.saleRate.toFixed(2)}` : "Auto-calculated"}</TableCell>
-              <TableCell>{item.saleRate ? `₹${(item.quantity * item.saleRate).toFixed(2)}` : "Auto-calculated"}</TableCell>
               <TableCell>
-                <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(index)}>Remove</Button>
+                {item.saleRate ? `Rs. ${item.saleRate.toFixed(2)}` : 'Auto-calculated'}
+              </TableCell>
+              <TableCell>
+                {item.saleRate
+                  ? `Rs. ${(item.quantity * item.saleRate).toFixed(2)}`
+                  : 'Auto-calculated'}
+              </TableCell>
+              <TableCell>
+                <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(index)}>
+                  Remove
+                </Button>
               </TableCell>
             </TableRow>
           ))}
-
         </TableBody>
       </Table>
 
       {/* Credit sale */}
       <div className="flex items-center justify-between mt-8 border-t pt-4">
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="credit"
-            checked={isCredit}
-            onCheckedChange={setIsCredit}
-          />
+          <Checkbox id="credit" checked={isCredit} onCheckedChange={setIsCredit} />
           <Label htmlFor="credit">Credit Sale</Label>
         </div>
-        <Button onClick={handleSubmitSale} disabled={saleItems.length === 0 || !selectedCustomer}> Submit Sale </Button>
+        <Button onClick={handleSubmitSale} disabled={saleItems.length === 0 || !selectedCustomer}>
+          {' '}
+          Submit Sale{' '}
+        </Button>
       </div>
     </div>
   );

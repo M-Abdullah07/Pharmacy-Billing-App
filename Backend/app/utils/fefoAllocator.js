@@ -1,41 +1,59 @@
 /**
- * Pure function to calculate the FEFO (First-Expire-First-Out) batch allocation split.
- * @param {Array<{productId: string, quantity: number, discountPct: number}>} requestedItems
+ * Pure FEFO (First-Expire-First-Out) batch allocation.
+ *
+ * @param {Array<{productId: string, productName: string, quantity: number, saleRate: number|null, discountPct: number}>} requestedItems
  * @param {Array<{batch_id: string, product_id: string, quantity_available: number, sale_rate: number, gst_rate: number}>} lockedBatches
+ *   lockedBatches MUST arrive pre-sorted by (product_id, expiry_date ASC) — guaranteed by the
+ *   calling SQL: ORDER BY b.product_id, b.expiry_date ASC.
  * @returns {Array<{batch_id: string, product_id: string, quantity: number, sale_rate: number, gst_rate: number, discountPct: number}>}
+ * @throws {Error} When insufficient stock exists for any requested product.
  */
 function calculateFefoPlan(requestedItems, lockedBatches) {
+  // Mutable local copy so we can decrement availability without touching DB rows.
+  const mutableBatches = lockedBatches.map(b => ({
+    ...b,
+    quantity_available: Number(b.quantity_available),
+  }));
+
   const allocationPlan = [];
 
   for (const item of requestedItems) {
-    let remainingQuantity = item.quantity;
+    let remaining = item.quantity;
 
-    // Filter batches for this specific product
-    // Note: We assume lockedBatches are ALREADY ordered by expiry_date ASC from the database query.
-    const productBatches = lockedBatches.filter(b => b.product_id === item.productId);
+    // lockedBatches are already ordered by expiry_date ASC per product — FEFO is implicit.
+    const productBatches = mutableBatches.filter(b => b.product_id === item.productId);
 
     for (const batch of productBatches) {
-      if (remainingQuantity <= 0) break;
+      if (remaining <= 0) break;
       if (batch.quantity_available <= 0) continue;
 
-      const takeQty = Math.min(remainingQuantity, batch.quantity_available);
+      const take = Math.min(remaining, batch.quantity_available);
+
+      // Honour the per-item sale rate override; fall back to the batch MRP.
+      const effectiveSaleRate =
+        item.saleRate != null && item.saleRate > 0
+          ? item.saleRate
+          : batch.sale_rate;
 
       allocationPlan.push({
-        batch_id: batch.batch_id,
-        product_id: batch.product_id,
-        quantity: takeQty,
-        sale_rate: batch.sale_rate,
-        gst_rate: batch.gst_rate,
-        discountPct: item.discountPct || 0
+        batch_id:    batch.batch_id,
+        product_id:  batch.product_id,
+        quantity:    take,
+        sale_rate:   effectiveSaleRate,
+        gst_rate:    batch.gst_rate,
+        discountPct: item.discountPct ?? 0,
       });
 
-      remainingQuantity -= takeQty;
-      // Mutate local copy of available quantity to allow multiple items requesting same product (though UI should aggregate)
-      batch.quantity_available -= takeQty;
+      remaining                  -= take;
+      batch.quantity_available   -= take;
     }
 
-    if (remainingQuantity > 0) {
-      throw new Error(`Insufficient stock for product: ${item.productId}. Short by: ${remainingQuantity}`);
+    if (remaining > 0) {
+      // Use the human-readable product name (preferred) or fall back to the ID for debugging.
+      const label = item.productName || item.productId;
+      throw new Error(
+        `Insufficient stock for "${label}". Short by ${remaining} unit(s).`
+      );
     }
   }
 

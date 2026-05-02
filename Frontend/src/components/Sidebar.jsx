@@ -1,11 +1,16 @@
-import React from "react";
-import { MdOutlineBackup } from "react-icons/md";
-import { RxDashboard } from "react-icons/rx";
-import { TfiPackage } from "react-icons/tfi";
-import { HiOutlineBuildingOffice, HiOutlineCreditCard, HiOutlineUser } from "react-icons/hi2";
-import { HiOutlineDocumentReport } from "react-icons/hi";
-import { IoLayersOutline, IoLogOutOutline, IoPricetagOutline, IoSettingsOutline } from "react-icons/io5";
-import { Factory, FileText } from "lucide-react";
+import React from 'react';
+import { MdOutlineBackup } from 'react-icons/md';
+import { RxDashboard } from 'react-icons/rx';
+import { TfiPackage } from 'react-icons/tfi';
+import { HiOutlineBuildingOffice, HiOutlineCreditCard, HiOutlineUser } from 'react-icons/hi2';
+import { HiOutlineDocumentReport } from 'react-icons/hi';
+import {
+  IoLayersOutline,
+  IoLogOutOutline,
+  IoPricetagOutline,
+  IoSettingsOutline,
+} from 'react-icons/io5';
+import { Factory, FileText } from 'lucide-react';
 
 import {
   Sidebar,
@@ -19,38 +24,35 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
-} from "./ui/sidebar";
-import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+} from './ui/sidebar';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 
 // ── SALES ─────────────────────────────────────────────────────────────────────
 const salesItems = [
-  { title: "Dashboard",    icon: RxDashboard },
-  { title: "Add Sale",     icon: IoPricetagOutline },
-  { title: "Customers",    icon: HiOutlineUser },
-  { title: "Credit Dues",  icon: HiOutlineCreditCard },
-  { title: "Sales Reports",icon: HiOutlineDocumentReport },
+  { title: 'Dashboard', icon: RxDashboard },
+  { title: 'Add Sale', icon: IoPricetagOutline },
+  { title: 'Customers', icon: HiOutlineUser },
+  { title: 'Credit Dues', icon: HiOutlineCreditCard },
+  { title: 'Sales Reports', icon: HiOutlineDocumentReport },
 ];
 
 // ── INVENTORY ─────────────────────────────────────────────────────────────────
 const inventoryItems = [
-  { title: "Products",      icon: TfiPackage },
-  { title: "Manufacturers", icon: Factory },
-  { title: "Companies",     icon: HiOutlineBuildingOffice },
-  { title: "Batches",     icon: IoLayersOutline },
-  { title: "Purchase Invoice", icon: FileText }
+  { title: 'Products', icon: TfiPackage },
+  { title: 'Manufacturers', icon: Factory },
+  { title: 'Companies', icon: HiOutlineBuildingOffice },
+  { title: 'Batches', icon: IoLayersOutline },
+  { title: 'Purchase Invoice', icon: FileText },
 ];
 
 export default function AppSidebar({ onNavigate, onLogout, username }) {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="text-2xl font-bold px-2 py-3">
-          Pharmax.
-        </div>
+        <div className="text-2xl font-bold px-2 py-3">Pharmax.</div>
       </SidebarHeader>
 
       <SidebarContent>
-
         {/* ── Sales & Customers ─────────────────────────────────────────────── */}
         <SidebarGroup>
           <SidebarGroupLabel>Sales</SidebarGroupLabel>
@@ -88,21 +90,22 @@ export default function AppSidebar({ onNavigate, onLogout, username }) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
       </SidebarContent>
 
       <SidebarFooter>
         <SidebarMenu>
-
           <SidebarMenuItem>
-            <SidebarMenuButton className="cursor-pointer" onClick={() => onNavigate("Backup & Export")}>
+            <SidebarMenuButton
+              className="cursor-pointer"
+              onClick={() => onNavigate('Backup & Export')}
+            >
               <MdOutlineBackup />
               <span>Backup & Export</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <SidebarMenuButton className="cursor-pointer" onClick={() => onNavigate("Settings")}>
+            <SidebarMenuButton className="cursor-pointer" onClick={() => onNavigate('Settings')}>
               <IoSettingsOutline />
               <span>Settings</span>
             </SidebarMenuButton>
@@ -125,7 +128,6 @@ export default function AppSidebar({ onNavigate, onLogout, username }) {
               <span>{username}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
-
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

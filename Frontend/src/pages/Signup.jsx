@@ -1,26 +1,26 @@
-import React, { useState } from "react";
-import { Eye, EyeOff, User, RectangleEllipsis, SquarePen, AlertCircle} from "lucide-react";
-import "../index.css";
+import React, { useState } from 'react';
+import { Eye, EyeOff, User, RectangleEllipsis, SquarePen, AlertCircle } from 'lucide-react';
+import '../index.css';
 
 const Signup = ({ onSignup, setSignup }) => {
-  const [username, setUsername]         = useState("");
-  const [password, setPassword]         = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading]       = useState(false);
-  const [error, setError]               = useState("");
-  const [fieldErrors, setFieldErrors]   = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // ── Inline field validation (UC-101 E1) ────────────────────────────────────
   const validate = () => {
     const errors = {};
-    if (!username.trim()) errors.username = "This field is required.";
-    if (!password.trim()) errors.password = "This field is required.";
-    else if (password.length < 6) errors.password = "Password must be at least 6 characters.";
+    if (!username.trim()) errors.username = 'This field is required.';
+    if (!password.trim()) errors.password = 'This field is required.';
+    else if (password.length < 6) errors.password = 'Password must be at least 6 characters.';
     return errors;
   };
 
   const handleSubmit = async () => {
-    setError("");
+    setError('');
     setFieldErrors({});
 
     // Client-side validation first
@@ -39,11 +39,11 @@ const Signup = ({ onSignup, setSignup }) => {
         // Switch back to login screen
         setSignup(false);
       } else {
-        setError(response.error || "An error occurred during signup.");
+        setError(response.error || 'An error occurred during signup.');
       }
     } catch (err) {
       // UC-101 E2 — DB unavailable
-      setError("Service unavailable. Contact administrator.");
+      setError('Service unavailable. Contact administrator.');
     } finally {
       setIsLoading(false);
     }
@@ -52,10 +52,8 @@ const Signup = ({ onSignup, setSignup }) => {
   return (
     <div className="flex fixed w-screen h-screen items-center justify-center p-[16px] bg-gradient-to-br from-[#eff6ff] to-[#e0e7ff]">
       <div className="w-full max-w-[400px]">
-
         {/* Card */}
         <div className="bg-white rounded-[16px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-8 border border-[#f3f4f6]">
-
           {/* Header */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-[#3b82f6] to-[#4f46e5] rounded-full flex items-center justify-center mb-4 mx-auto">
@@ -67,15 +65,15 @@ const Signup = ({ onSignup, setSignup }) => {
 
           {/* Form */}
           <form
-            onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
             className="flex flex-col gap-[20px]"
           >
-
             {/* Username Field */}
             <div className="flex flex-col">
-              <label className="block text-[14px] font-medium text-[#374151] mb-2">
-                Username
-              </label>
+              <label className="block text-[14px] font-medium text-[#374151] mb-2">Username</label>
               <div className="relative">
                 <User
                   size={20}
@@ -86,10 +84,10 @@ const Signup = ({ onSignup, setSignup }) => {
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
-                    if (fieldErrors.username) setFieldErrors(p => ({ ...p, username: "" }));
+                    if (fieldErrors.username) setFieldErrors((p) => ({ ...p, username: '' }));
                   }}
                   className={`w-full pl-10 pr-4 py-3 border rounded-md text-sm bg-white transition-all
-                    ${fieldErrors.username ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                    ${fieldErrors.username ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                   placeholder="Enter your username"
                 />
               </div>
@@ -100,23 +98,21 @@ const Signup = ({ onSignup, setSignup }) => {
 
             {/* Password Field */}
             <div className="flex flex-col">
-              <label className="block text-[14px] font-medium text-[#374151] mb-2">
-                Password
-              </label>
+              <label className="block text-[14px] font-medium text-[#374151] mb-2">Password</label>
               <div className="relative">
                 <RectangleEllipsis
                   size={20}
                   className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
                 />
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: "" }));
+                    if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: '' }));
                   }}
                   className={`w-full pl-10 pr-10 py-3 border rounded-md text-sm bg-white transition-all
-                    ${fieldErrors.password ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                    ${fieldErrors.password ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -141,18 +137,14 @@ const Signup = ({ onSignup, setSignup }) => {
             )}
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn"
-            >
+            <button type="submit" disabled={isLoading} className="btn">
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span>Creating Account...</span>
                 </div>
               ) : (
-                "Create Account"
+                'Create Account'
               )}
             </button>
           </form>
@@ -160,7 +152,7 @@ const Signup = ({ onSignup, setSignup }) => {
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              Already have an account?{" "}
+              Already have an account?{' '}
               <button
                 onClick={() => setSignup(false)}
                 className="text-blue-500 font-medium hover:text-blue-600 hover:underline transition-colors cursor-pointer"
@@ -173,11 +165,8 @@ const Signup = ({ onSignup, setSignup }) => {
 
         {/* Bottom note */}
         <div className="text-center mt-6">
-          <p className="text-gray-400 text-sm">
-            Passwords secured with Argon2id encryption
-          </p>
+          <p className="text-gray-400 text-sm">Passwords secured with Argon2id encryption</p>
         </div>
-
       </div>
     </div>
   );

@@ -13,7 +13,8 @@ const pool = new Pool({
 });
 
 test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) => {
-  let customerId, productId, batchId1, batchId2, manufacturerId, supplierId;
+  let customerId, productId, batchId1, batchId2, manufacturerId, supplierId, userId;
+  const testUsername = `test_sale_confirmer_${Date.now()}`;
 
   // Setup Phase: Create dummy data
   await t.test('Setup Dummy Data', async () => {
@@ -27,6 +28,13 @@ test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) =>
         RETURNING customer_id
       `);
       customerId = custRes.rows[0].customer_id;
+
+      const userRes = await client.query(`
+        INSERT INTO users (username, password_hash, is_active)
+        VALUES ($1, '$argon2id$v=19$m=65536,t=3,p=4$dummy$dummy', TRUE)
+        RETURNING user_id
+      `, [testUsername]);
+      userId = userRes.rows[0].user_id;
 
       const manuRes = await client.query(`
         INSERT INTO manufacturers (name) VALUES ('Test Manufacturer') RETURNING manufacturer_id
@@ -78,6 +86,15 @@ test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) =>
   });
 
   // Execution Phase: Run the Axis 4 transaction
+  await t.test('Schema guard should block invalid confirmed sale header', async () => {
+    await assert.rejects(async () => {
+      await pool.query(`
+        INSERT INTO sale_invoices (customer_id, invoice_date, status)
+        VALUES ($1, CURRENT_DATE, 'confirmed')
+      `, [customerId]);
+    }, /chk_sale_invoice_confirmed/);
+  });
+
   await t.test('Execute Axis 4 Transaction Logic', async () => {
     const data = {
       customerId: customerId,
@@ -113,7 +130,6 @@ test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) =>
       assert.strictEqual(allocationPlan[1].quantity, 20); // takes remaining 20 from new batch
 
       // 3. Insert Invoice Parent
-      // For this script, we can just insert as 'draft'
       const invoiceRes = await client.query(`
         INSERT INTO sale_invoices
           (customer_id, invoice_date, status)
@@ -154,9 +170,12 @@ test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) =>
         SET subtotal = (SELECT COALESCE(SUM(quantity * sale_rate), 0) FROM sale_invoice_items WHERE sale_invoice_id = $1),
             tax_amount = (SELECT COALESCE(SUM(tax_amount), 0) FROM sale_invoice_items WHERE sale_invoice_id = $1),
             net_receivable = (SELECT COALESCE(SUM(line_total + tax_amount), 0) FROM sale_invoice_items WHERE sale_invoice_id = $1),
-            amount_paid = (SELECT COALESCE(SUM(line_total + tax_amount), 0) FROM sale_invoice_items WHERE sale_invoice_id = $1)
+            amount_paid = (SELECT COALESCE(SUM(line_total + tax_amount), 0) FROM sale_invoice_items WHERE sale_invoice_id = $1),
+            status = 'confirmed',
+            confirmed_by = $2,
+            confirmed_at = now()
         WHERE sale_invoice_id = $1
-      `, [saleInvoiceId]);
+      `, [saleInvoiceId, userId]);
 
       // 5. Insert into immutable ledger
       const movementValues = [
@@ -184,6 +203,48 @@ test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) =>
       const verifyStock2 = await pool.query('SELECT quantity_available FROM batches WHERE batch_id = $1', [batchId2]);
       assert.strictEqual(verifyStock2.rows[0].quantity_available, 80); // BATCH_NEW has 80 left
 
+      const verifyInvoice = await pool.query(`
+        SELECT status, confirmed_by, confirmed_at, net_receivable, amount_paid, balance_due
+        FROM sale_invoices
+        WHERE sale_invoice_id = $1
+      `, [saleInvoiceId]);
+      assert.strictEqual(verifyInvoice.rows[0].status, 'confirmed');
+      assert.strictEqual(verifyInvoice.rows[0].confirmed_by, userId);
+      assert.ok(verifyInvoice.rows[0].confirmed_at);
+      assert.ok(Number(verifyInvoice.rows[0].net_receivable) > 0);
+      assert.strictEqual(Number(verifyInvoice.rows[0].amount_paid), Number(verifyInvoice.rows[0].net_receivable));
+      assert.strictEqual(Number(verifyInvoice.rows[0].balance_due), 0);
+
+      // 6. Read-side verification used by Sales Report screen
+      const reportRows = await pool.query(`
+        SELECT
+          s.sale_invoice_id,
+          s.invoice_number,
+          s.status,
+          c.name AS customer_name
+        FROM sale_invoices s
+        JOIN customers c ON c.customer_id = s.customer_id
+        WHERE s.sale_invoice_id = $1
+      `, [saleInvoiceId]);
+      assert.strictEqual(reportRows.rows.length, 1);
+      assert.strictEqual(reportRows.rows[0].customer_name, 'Test Customer');
+      assert.ok(reportRows.rows[0].invoice_number.startsWith('INV-'));
+
+      const detailRows = await pool.query(`
+        SELECT
+          si.quantity,
+          p.name AS product_name,
+          b.batch_number
+        FROM sale_invoice_items si
+        JOIN products p ON p.product_id = si.product_id
+        JOIN batches b ON b.batch_id = si.batch_id
+        WHERE si.sale_invoice_id = $1
+        ORDER BY b.batch_number ASC
+      `, [saleInvoiceId]);
+      assert.strictEqual(detailRows.rows.length, 2);
+      assert.strictEqual(detailRows.rows[0].product_name, 'Test Product FEFO');
+      assert.strictEqual(detailRows.rows[1].product_name, 'Test Product FEFO');
+
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -201,6 +262,7 @@ test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) =>
     await pool.query('DELETE FROM products WHERE product_id = $1', [productId]);
     await pool.query('DELETE FROM manufacturers WHERE manufacturer_id = $1', [manufacturerId]);
     await pool.query('DELETE FROM suppliers WHERE supplier_id = $1', [supplierId]);
+    await pool.query('DELETE FROM users WHERE user_id = $1', [userId]);
     await pool.query('DELETE FROM customers WHERE customer_id = $1', [customerId]);
     await pool.end();
   });

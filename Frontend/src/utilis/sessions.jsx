@@ -1,5 +1,5 @@
 export const getSession = () => {
-  const raw = localStorage.getItem("pharmax_user");
+  const raw = localStorage.getItem('pharmax_user');
   return raw ? JSON.parse(raw) : null;
 };
 

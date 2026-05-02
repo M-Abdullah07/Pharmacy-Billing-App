@@ -91,4 +91,30 @@ test('FEFO Allocator Specifications', async (t) => {
     }, /Insufficient stock for product: p1/);
   });
 
+  await t.test('Should not mutate locked batches input array', () => {
+    const requestedItems = [
+      { productId: 'p1', quantity: 30, discountPct: 0 }
+    ];
+    const lockedBatches = [
+      { batch_id: 'b1', product_id: 'p1', quantity_available: 100, sale_rate: 10, gst_rate: 0 }
+    ];
+    const original = JSON.parse(JSON.stringify(lockedBatches));
+
+    calculateFefoPlan(requestedItems, lockedBatches);
+
+    assert.deepStrictEqual(lockedBatches, original);
+  });
+
+  await t.test('Should default discountPct to 0 when missing', () => {
+    const requestedItems = [
+      { productId: 'p1', quantity: 5 }
+    ];
+    const lockedBatches = [
+      { batch_id: 'b1', product_id: 'p1', quantity_available: 100, sale_rate: 10, gst_rate: 0 }
+    ];
+
+    const result = calculateFefoPlan(requestedItems, lockedBatches);
+    assert.strictEqual(result[0].discountPct, 0);
+  });
+
 });
