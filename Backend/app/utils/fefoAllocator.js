@@ -60,4 +60,4 @@ function calculateFefoPlan(requestedItems, lockedBatches) {
   return allocationPlan;
 }
 
-module.exports = { calculateFefoPlan };
+export { calculateFefoPlan };
