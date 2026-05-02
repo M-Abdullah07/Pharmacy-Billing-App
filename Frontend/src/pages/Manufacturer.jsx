@@ -73,6 +73,10 @@ export default function Manufacturers() {
     const errors = {};
     if (!form.name.trim())    errors.name    = 'This field is required.';
     if (!form.country.trim()) errors.country = 'This field is required.';
+    if (form.contact_number && !/^\+?(?:\d[ -]?|\(\d+\)[ -]?){7,20}$/.test(form.contact_number.trim()))
+      errors.contact_number = 'Invalid phone number format.';
+    if (form.drap_mfg_licence && !/^[A-Z0-9]+-\d{4}-\d{3}$/i.test(form.drap_mfg_licence.trim()))
+      errors.drap_mfg_licence = 'Invalid DRAP licence format. Use e.g. MFG-2024-001.';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errors.email = 'Please enter a valid email address.';
     return errors;
@@ -182,6 +186,7 @@ export default function Manufacturers() {
               <label className="block text-xs font-medium text-gray-700 mb-1">DRAP Mfg. Licence No.</label>
               <input type="text" value={form.drap_mfg_licence} onChange={e => field('drap_mfg_licence', e.target.value)}
                 placeholder="e.g. MFG-2024-001" className={inputCls('drap_mfg_licence')} />
+              {fieldErrors.drap_mfg_licence && <p className="text-red-500 text-xs mt-1">{fieldErrors.drap_mfg_licence}</p>}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Country <span className="text-red-500">*</span></label>
@@ -197,6 +202,7 @@ export default function Manufacturers() {
               <label className="block text-xs font-medium text-gray-700 mb-1">Contact Number</label>
               <input type="text" value={form.contact_number} onChange={e => field('contact_number', e.target.value)}
                 placeholder="e.g. 0300-1234567" className={inputCls('contact_number')} />
+              {fieldErrors.contact_number && <p className="text-red-500 text-xs mt-1">{fieldErrors.contact_number}</p>}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Email Address</label>

@@ -21,8 +21,6 @@ const EMPTY_HEADER = {
 
 const EMPTY_LINE = {
   product_id:             '',
-  batch_mode:             'new',      // 'new' | 'existing'
-  existing_batch_id:      '',
   batch_number:           '',
   manufacturing_date:     '',
   expiry_date:            '',
@@ -87,49 +85,8 @@ function StatusBadge({ status }) {
 }
 
 // ── Line Item Row ─────────────────────────────────────────────────────────────
-function LineItem({ line, idx, products, onUpdate, onRemove }) {
-  const [existingBatches, setExistingBatches] = useState([]);
+function LineItem({ line, idx, products, onUpdate, onRemove, error = {} }) {
   const { base, tax, total } = calcLine(line);
-
-  const loadBatches = async (productId) => {
-    if (!productId) return setExistingBatches([]);
-    const batches = await window.electronAPI.getBatchesByProduct(productId);
-    setExistingBatches(Array.isArray(batches) ? batches : []);
-  };
-
-  const handleProductChange = (productId) => {
-    onUpdate(idx, { product_id: productId, existing_batch_id: '', batch_number: '' });
-    loadBatches(productId);
-  };
-
-  const handleBatchModeChange = (mode) => {
-    onUpdate(idx, {
-      batch_mode: mode,
-      existing_batch_id: '',
-      batch_number: '', manufacturing_date: '',
-      expiry_date: '', mrp: '', purchase_cost_per_unit: '',
-    });
-  };
-
-  const handleExistingBatchSelect = (batchId) => {
-    const id = String(batchId); // ALWAYS string
-
-    const batch = existingBatches.find(
-        b => String(b.batch_id) === id
-    );
-
-    if (batch) {
-        onUpdate(idx, {
-        existing_batch_id: id,
-        batch_number: batch.batch_number,
-        expiry_date: batch.expiry_date
-            ? new Date(batch.expiry_date).toISOString().split('T')[0]
-            : '',
-        mrp: batch.mrp,
-        purchase_cost_per_unit: batch.purchase_cost_per_unit,
-        });
-    }
-    };
 
   const u = (field, value) => onUpdate(idx, { [field]: value });
 
@@ -146,82 +103,44 @@ function LineItem({ line, idx, products, onUpdate, onRemove }) {
 
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-semibold text-gray-500">Line {idx + 1}</span>
-        {/* Batch mode toggle */}
-        <div className="flex gap-1 bg-white border border-gray-200 rounded-md p-0.5 ml-2">
-          {['new', 'existing'].map(mode => (
-            <button key={mode} type="button"
-              onClick={() => handleBatchModeChange(mode)}
-              className={`px-2 py-1 text-xs font-medium rounded transition-colors
-                ${line.batch_mode === mode ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-              {mode === 'new' ? 'New Batch' : 'Existing Batch'}
-            </button>
-          ))}
-        </div>
         {/* Line total */}
         <div className="ml-auto text-xs font-semibold text-gray-700">
           Line Total: <span className="text-blue-600">{fmt(total)}</span>
         </div>
       </div>
 
-      {/* Row 1 — Product + Batch selection */}
+      {/* Row 1 — Product + Batch details */}
       <div className="grid grid-cols-4 gap-3 mb-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Product <span className="text-red-500">*</span></label>
-          <select value={line.product_id} onChange={e => handleProductChange(e.target.value)} className={selectCls}>
+          <select value={line.product_id} onChange={e => u('product_id', e.target.value)} className={selectCls}>
             <option value="">Select Product</option>
             {products.map(p => <option key={p.product_id} value={p.product_id}>{p.name}</option>)}
           </select>
+          {error.product_id && <p className="text-red-500 text-[10px] mt-1">{error.product_id}</p>}
         </div>
 
-        {line.batch_mode === 'existing' ? (
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Select Batch <span className="text-red-500">*</span></label>
-            <select  value={String(line.existing_batch_id || "")}
-              onChange={e => handleExistingBatchSelect(e.target.value)}
-              className={selectCls}
-              disabled={!line.product_id}>
-              <option value="">Select Batch</option>
-              {existingBatches.map(b => (
-                <option key={b.batch_id} value={b.batch_id}>
-                  {b.batch_number} — Exp: {new Date(b.expiry_date).toLocaleDateString('en-PK')} — Qty: {b.quantity_available}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Batch Number <span className="text-red-500">*</span></label>
-            <input type="text" value={line.batch_number}
-              onChange={e => u('batch_number', e.target.value)}
-              placeholder="e.g. AMX-2024-001" className={inputCls} />
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Batch Number <span className="text-red-500">*</span></label>
+          <input type="text" value={line.batch_number}
+            onChange={e => u('batch_number', e.target.value)}
+            placeholder="e.g. AMX-2024-001" className={inputCls} />
+          {error.batch_number && <p className="text-red-500 text-[10px] mt-1">{error.batch_number}</p>}
+        </div>
 
-        {line.batch_mode === 'new' && (
-          <>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Mfg. Date <span className="text-red-500">*</span></label>
-              <input type="date" value={line.manufacturing_date}
-                onChange={e => u('manufacturing_date', e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Expiry Date <span className="text-red-500">*</span></label>
-              <input type="date" value={line.expiry_date}
-                onChange={e => u('expiry_date', e.target.value)} className={inputCls} />
-            </div>
-          </>
-        )}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Mfg. Date <span className="text-red-500">*</span></label>
+          <input type="date" value={line.manufacturing_date}
+            onChange={e => u('manufacturing_date', e.target.value)} className={inputCls} />
+          {error.manufacturing_date && <p className="text-red-500 text-[10px] mt-1">{error.manufacturing_date}</p>}
+        </div>
 
-        {line.batch_mode === 'existing' && (
-          <div className="col-span-2 flex items-end">
-            {line.batch_number && (
-              <div className="text-xs text-gray-500 bg-white border border-gray-200 rounded-md px-3 py-1.5 w-full">
-                Batch: <span className="font-medium text-gray-700">{line.batch_number}</span>
-                {line.expiry_date && <> · Exp: <span className="font-medium">{new Date(line.expiry_date).toLocaleDateString('en-PK')}</span></>}
-              </div>
-            )}
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Expiry Date <span className="text-red-500">*</span></label>
+          <input type="date" value={line.expiry_date}
+            onChange={e => u('expiry_date', e.target.value)} className={inputCls} />
+          {error.expiry_date && <p className="text-red-500 text-[10px] mt-1">{error.expiry_date}</p>}
+        </div>
       </div>
 
       {/* Row 2 — MRP, Rate, Qty, Discount, GST */}
@@ -249,6 +168,7 @@ function LineItem({ line, idx, products, onUpdate, onRemove }) {
           <input type="number" min="0" max="100" step="0.01" value={line.discount_pct}
             onChange={e => u('discount_pct', e.target.value)}
             placeholder="0" className={inputCls} />
+          {error.discount_pct && <p className="text-red-500 text-[10px] mt-1">{error.discount_pct}</p>}
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">GST %</label>
@@ -411,24 +331,27 @@ export default function PurchaseInvoice() {
     if (!header.supplier_id)    hErrors.supplier_id    = 'Required.';
     if (!header.invoice_number.trim()) hErrors.invoice_number = 'Required.';
     if (!header.invoice_date)   hErrors.invoice_date   = 'Required.';
+    if (header.discount_amount && Number(header.discount_amount) < 0) {
+      hErrors.discount_amount = 'Cannot be negative.';
+    }
 
     const lErrors = lines.map(line => {
       const e = {};
       if (!line.product_id)             e.product_id             = 'Required.';
       if (!line.batch_number.trim())    e.batch_number           = 'Required.';
-      if (line.batch_mode === 'new') {
-        if (!line.manufacturing_date)   e.manufacturing_date     = 'Required.';
-        if (!line.expiry_date)          e.expiry_date            = 'Required.';
-        if (line.expiry_date && line.manufacturing_date &&
-            new Date(line.expiry_date) <= new Date(line.manufacturing_date))
-          e.expiry_date = 'Must be after manufacturing date.';
-      }
+      if (!line.manufacturing_date)     e.manufacturing_date     = 'Required.';
+      if (!line.expiry_date)            e.expiry_date            = 'Required.';
+      if (line.expiry_date && line.manufacturing_date &&
+          new Date(line.expiry_date) <= new Date(line.manufacturing_date))
+        e.expiry_date = 'Must be after manufacturing date.';
       if (!line.mrp || Number(line.mrp) <= 0)
         e.mrp = 'MRP must be > 0.';
       if (!line.purchase_cost_per_unit || Number(line.purchase_cost_per_unit) <= 0)
         e.purchase_cost_per_unit = 'Rate must be > 0.';
       if (!line.quantity || Number(line.quantity) <= 0)
         e.quantity = 'Qty must be a positive integer.';
+      if (line.discount_pct && Number(line.discount_pct) < 0)
+        e.discount_pct = 'Discount cannot be negative.';
       return e;
     });
 
@@ -458,14 +381,14 @@ export default function PurchaseInvoice() {
 
       const invoiceId = invoiceResult.purchaseInvoiceId;
 
-      // 2. Save all line items
+      // 2. Save all line items (all are new batches — no existing batch mode)
       for (const line of lines) {
         const lineCalc = calcLine(line);
         await window.electronAPI.addPurchaseInvoiceItem({
           purchase_invoice_id:    invoiceId,
           product_id:             line.product_id,
           batch_number:           line.batch_number,
-          manufacturing_date:     line.batch_mode === 'new' ? line.manufacturing_date : null,
+          manufacturing_date:     line.manufacturing_date,
           expiry_date:            line.expiry_date,
           mrp:                    Number(line.mrp),
           purchase_cost_per_unit: Number(line.purchase_cost_per_unit),
@@ -652,6 +575,7 @@ export default function PurchaseInvoice() {
                   products={products}
                   onUpdate={updateLine}
                   onRemove={removeLine}
+                  error={lineErrors[idx] || {}}
                 />
               ))}
             </div>
@@ -681,13 +605,16 @@ export default function PurchaseInvoice() {
                 </div>
                 <div className="flex justify-between items-center text-gray-600">
                   <span>Header Discount</span>
-                  <input
-                    type="number" min="0" step="0.01"
-                    value={header.discount_amount}
-                    onChange={e => hField('discount_amount', e.target.value)}
-                    className="w-28 px-2 py-1 text-xs text-right border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20"
-                    placeholder="0.00"
-                  />
+                  <div className="flex flex-col items-end">
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={header.discount_amount}
+                      onChange={e => hField('discount_amount', e.target.value)}
+                      className="w-28 px-2 py-1 text-xs text-right border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="0.00"
+                    />
+                    {headerErrors.discount_amount && <p className="text-red-500 text-[10px] mt-1">{headerErrors.discount_amount}</p>}
+                  </div>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Total GST</span>

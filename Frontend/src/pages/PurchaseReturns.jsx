@@ -9,7 +9,7 @@ export default function PurchaseReturns() {
   const [suppliers, setSuppliers] = useState([]);
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -59,39 +59,49 @@ export default function PurchaseReturns() {
       const data = await window.electronAPI.getPurchaseInvoice(invoiceId);
       if (data && data.header) {
         setSelectedInvoice(data.header);
-        
-        // Fetch actual remaining batches for this invoice
-        const batches = await window.electronAPI.queryDb(
-          `SELECT b.batch_id, b.product_id, b.batch_number, b.purchase_cost_per_unit, b.quantity_available, p.name AS product_name,
-                  COALESCE(pii.discount_pct, 0) as discount_pct, COALESCE(pii.gst_rate, 0) as gst_rate
-           FROM batches b
-           JOIN products p ON p.product_id = b.product_id
-           LEFT JOIN purchase_invoice_items pii ON pii.purchase_invoice_id = b.purchase_invoice_id 
-                                               AND pii.batch_number = b.batch_number 
-                                               AND pii.product_id = b.product_id
-           WHERE b.purchase_invoice_id = $1 AND b.quantity_available > 0`,
+
+        // Drive from purchase_invoice_items — this is guaranteed to have a row
+        // for every line on a confirmed invoice. Join batches for live stock qty.
+        const rows = await window.electronAPI.queryDb(
+          `SELECT b.batch_id,
+                  pii.product_id,
+                  pii.batch_number,
+                  pii.purchase_cost_per_unit,
+                  pii.quantity            AS invoiced_qty,
+                  b.quantity_available,
+                  COALESCE(pii.discount_pct, 0) AS discount_pct,
+                  COALESCE(pii.gst_rate,    0) AS gst_rate,
+                  p.name                  AS product_name
+           FROM purchase_invoice_items pii
+           JOIN products p ON p.product_id = pii.product_id
+           JOIN batches  b ON b.product_id  = pii.product_id
+                          AND b.batch_number = pii.batch_number
+           WHERE pii.purchase_invoice_id = $1
+             AND b.quantity_available > 0`,
           [invoiceId]
         );
-        
-        // Map batches to invoiceItems format so the UI works seamlessly
-        const mappedItems = batches.map(b => {
+
+        // Cap returnable qty: you can never return more than was invoiced,
+        // and never more than what is physically still in stock.
+        const mappedItems = rows.map(b => {
           const discountMultiplier = 1 - (b.discount_pct / 100);
-          const netCostPerUnit = b.purchase_cost_per_unit * discountMultiplier;
-          
+          const netCostPerUnit     = b.purchase_cost_per_unit * discountMultiplier;
+          const maxReturnable      = Math.min(Number(b.invoiced_qty), Number(b.quantity_available));
+
           return {
-            item_id: b.batch_id, // Use batch_id as unique key
-            batch_id: b.batch_id,
-            product_id: b.product_id,
-            product_name: b.product_name,
-            batch_number: b.batch_number,
-            quantity: b.quantity_available, // Only what's left!
+            item_id:                b.batch_id,
+            batch_id:               b.batch_id,
+            product_id:             b.product_id,
+            product_name:           b.product_name,
+            batch_number:           b.batch_number,
+            quantity:               maxReturnable,
             purchase_cost_per_unit: b.purchase_cost_per_unit,
-            net_unit_cost: netCostPerUnit,
-            discount_pct: b.discount_pct,
-            gst_rate: b.gst_rate
+            net_unit_cost:          netCostPerUnit,
+            discount_pct:           b.discount_pct,
+            gst_rate:               b.gst_rate,
           };
         });
-        
+
         setInvoiceItems(mappedItems);
         setReturnItems([]);
       }
@@ -102,7 +112,7 @@ export default function PurchaseReturns() {
 
   const handleAddReturnItem = (item) => {
     if (returnItems.find(i => i.item_id === item.item_id)) return;
-    
+
     setReturnItems([...returnItems, {
       ...item,
       return_quantity: 1,
@@ -115,15 +125,15 @@ export default function PurchaseReturns() {
   };
 
   const handleQuantityChange = (itemId, qty, maxQty, rate) => {
-    const parsedQty = parseInt(qty) || 0;
-    
+    const parsedQty = parseInt(qty, 10);
+    const validQty = isNaN(parsedQty) ? '' : Math.max(1, Math.min(parsedQty, maxQty));
+
     setReturnItems(returnItems.map(item => {
       if (item.item_id === itemId) {
-        const safeQty = Math.min(parsedQty, maxQty);
         return {
           ...item,
-          return_quantity: safeQty,
-          line_credit: safeQty * rate
+          return_quantity: validQty,
+          line_credit: (validQty || 0) * rate
         };
       }
       return item;
@@ -241,7 +251,7 @@ export default function PurchaseReturns() {
                         <p className="font-medium text-sm text-gray-900">{item.product_name}</p>
                         <p className="text-xs text-gray-500">Batch: {item.batch_number} | Qty: {item.quantity}</p>
                         <p className="text-xs font-semibold text-blue-600 mt-1">
-                          {formatCurrency(item.net_unit_cost)} / unit 
+                          {formatCurrency(item.net_unit_cost)} / unit
                           {item.discount_pct > 0 && <span className="text-gray-400 font-normal ml-1">(after {item.discount_pct}% discount, tax excluded)</span>}
                         </p>
                       </div>
@@ -263,7 +273,7 @@ export default function PurchaseReturns() {
                   <span>Return Items</span>
                   <span className="bg-blue-700 px-2 py-0.5 rounded text-xs">{returnItems.length} selected</span>
                 </div>
-                
+
                 <div className="overflow-y-auto flex-1 p-3">
                   {returnItems.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400">
@@ -322,8 +332,8 @@ export default function PurchaseReturns() {
                   <div className="flex gap-4 mb-4">
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-gray-700 mb-1">Reason for Return</label>
-                      <select 
-                        value={reason} 
+                      <select
+                        value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         className="w-full border rounded-lg px-3 py-1.5 text-sm bg-white"
                       >
@@ -337,16 +347,16 @@ export default function PurchaseReturns() {
                     </div>
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
-                      <input 
-                        type="text" 
-                        value={notes} 
+                      <input
+                        type="text"
+                        value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        className="w-full border rounded-lg px-3 py-1.5 text-sm bg-white" 
+                        className="w-full border rounded-lg px-3 py-1.5 text-sm bg-white"
                         placeholder="Optional remarks..."
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between pt-3 border-t">
                     <span className="text-gray-600 font-medium">Total Credit Note</span>
                     <span className="text-2xl font-bold text-gray-900">{formatCurrency(totalCredit)}</span>
@@ -403,7 +413,7 @@ export default function PurchaseReturns() {
               </tbody>
             </table>
           </div>
-          <Pagination 
+          <Pagination
             totalItems={returns.length}
             itemsPerPage={itemsPerPage}
             currentPage={currentPage}

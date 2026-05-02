@@ -34,6 +34,7 @@ export default function AddCustomer() {
   const [editingId, setEditingId]     = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [contactErrors, setContactErrors] = useState({});
   const [toast, setToast]             = useState(null);
   const [contacts, setContacts]       = useState([]);
   const [pendingContacts, setPendingContacts] = useState([]);
@@ -72,7 +73,7 @@ export default function AddCustomer() {
   }, [searchQuery, activeTab]);
 
   const handleOpenForm = () => {
-    setForm(EMPTY_FORM); setFieldErrors({}); setEditingId(null);
+    setForm(EMPTY_FORM); setFieldErrors({}); setContactErrors({}); setEditingId(null);
     setContacts([]); setPendingContacts([]); setNewContact(EMPTY_CONTACT);
     setShowContactForm(false); setShowForm(true);
   };
@@ -88,7 +89,7 @@ export default function AddCustomer() {
       payment_terms: customer.payment_terms || '',
     });
     setEditingId(customer.customer_id);
-    setFieldErrors({}); setNewContact(EMPTY_CONTACT);
+    setFieldErrors({}); setContactErrors({}); setNewContact(EMPTY_CONTACT);
     setShowContactForm(false); setPendingContacts([]);
     const existing = await window.electronAPI.getContactPersons('customer', customer.customer_id);
     setContacts(Array.isArray(existing) ? existing : []);
@@ -103,13 +104,34 @@ export default function AddCustomer() {
     if (Number(form.credit_limit) < 0) errors.credit_limit = 'Credit limit cannot be negative.';
     if (form.strn && !/^\d{13}$/.test(form.strn.replace(/-/g, '')))
       errors.strn = 'Invalid STRN format. Please enter a valid 13-digit Pakistani STRN.';
+    if (form.ntn && !/^\d{7}-\d{1}$/.test(form.ntn.trim()))
+      errors.ntn = 'Invalid NTN format. Use e.g. 1234567-8.';
+    if (form.drug_licence_no && !/^[A-Z0-9]+-\d{4}-\d{3}$/i.test(form.drug_licence_no.trim()))
+      errors.drug_licence_no = 'Invalid DRAP licence format. Use e.g. RTL-2024-001.';
+    return errors;
+  };
+
+  const validateContact = () => {
+    const errors = {};
+    if (!newContact.name.trim()) {
+      errors.name = 'Contact name is required.';
+    }
+    if (newContact.contact_number && !/^\+?(?:\d[ -]?|\(\d+\)[ -]?){7,20}$/.test(newContact.contact_number.trim())) {
+      errors.contact_number = 'Invalid phone number format.';
+    }
+    if (newContact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContact.email.trim())) {
+      errors.email = 'Invalid email address.';
+    }
+    if (!newContact.contact_number.trim() && !newContact.email.trim()) {
+      errors.contact_number = 'Provide a phone number or email for the contact.';
+    }
     return errors;
   };
 
   const handleSave = async () => {
     const errors = validate();
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
-    setFieldErrors({}); setLoading(true);
+    setFieldErrors({}); setContactErrors({}); setLoading(true);
     try {
       const payload = { ...form, credit_limit: Number(form.credit_limit) || 0 };
       let result;
@@ -138,13 +160,23 @@ export default function AddCustomer() {
   };
 
   const handleAddPendingContact = () => {
-    if (!newContact.name.trim()) return;
+    const errors = validateContact();
+    if (Object.keys(errors).length > 0) {
+      setContactErrors(errors);
+      return;
+    }
+    setContactErrors({});
     setPendingContacts(prev => [...prev, { ...newContact }]);
     setNewContact(EMPTY_CONTACT); setShowContactForm(false);
   };
 
   const handleSaveContact = async () => {
-    if (!newContact.name.trim()) return;
+    const errors = validateContact();
+    if (Object.keys(errors).length > 0) {
+      setContactErrors(errors);
+      return;
+    }
+    setContactErrors({});
     try {
       const result = await window.electronAPI.addContactPerson({
         ...newContact, entity_type: 'customer', entity_id: editingId,
@@ -284,11 +316,13 @@ export default function AddCustomer() {
               <label className="block text-xs font-medium text-gray-700 mb-1">NTN</label>
               <input type="text" value={form.ntn} onChange={e => field('ntn', e.target.value)}
                 placeholder="e.g. 1234567-8" className={inputCls('ntn')} />
+              {fieldErrors.ntn && <p className="text-red-500 text-xs mt-1">{fieldErrors.ntn}</p>}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">DRAP Drug Licence</label>
               <input type="text" value={form.drug_licence_no} onChange={e => field('drug_licence_no', e.target.value)}
                 placeholder="e.g. RTL-2024-001" className={inputCls('drug_licence_no')} />
+              {fieldErrors.drug_licence_no && <p className="text-red-500 text-xs mt-1">{fieldErrors.drug_licence_no}</p>}
             </div>
           </div>
 
@@ -367,9 +401,13 @@ export default function AddCustomer() {
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
                     <input type="text" value={newContact.name}
-                      onChange={e => setNewContact(p => ({ ...p, name: e.target.value }))}
+                      onChange={e => {
+                        setNewContact(p => ({ ...p, name: e.target.value }));
+                        if (contactErrors.name) setContactErrors(prev => ({ ...prev, name: '' }));
+                      }}
                       placeholder="Contact name"
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
+                    {contactErrors.name && <p className="text-red-500 text-xs mt-1">{contactErrors.name}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
@@ -382,16 +420,24 @@ export default function AddCustomer() {
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
                     <input type="text" value={newContact.contact_number}
-                      onChange={e => setNewContact(p => ({ ...p, contact_number: e.target.value }))}
+                      onChange={e => {
+                        setNewContact(p => ({ ...p, contact_number: e.target.value }));
+                        if (contactErrors.contact_number) setContactErrors(prev => ({ ...prev, contact_number: '' }));
+                      }}
                       placeholder="e.g. 0300-1234567"
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
+                    {contactErrors.contact_number && <p className="text-red-500 text-xs mt-1">{contactErrors.contact_number}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
                     <input type="email" value={newContact.email}
-                      onChange={e => setNewContact(p => ({ ...p, email: e.target.value }))}
+                      onChange={e => {
+                        setNewContact(p => ({ ...p, email: e.target.value }));
+                        if (contactErrors.email) setContactErrors(prev => ({ ...prev, email: '' }));
+                      }}
                       placeholder="e.g. contact@pharmacy.com"
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
+                    {contactErrors.email && <p className="text-red-500 text-xs mt-1">{contactErrors.email}</p>}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">

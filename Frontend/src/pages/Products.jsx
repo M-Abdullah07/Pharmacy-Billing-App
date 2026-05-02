@@ -302,6 +302,9 @@ export default function Products() {
     if (!form.hsn_code.trim())     errors.hsn_code        = 'This field is required.';
     if (!GST_SLABS.includes(Number(form.gst_rate))) errors.gst_rate = 'Please select a valid FBR GST rate.';
     if (!form.drug_schedule)       errors.drug_schedule   = 'This field is required.';
+    if (form.quantity_in_uom && Number(form.quantity_in_uom) < 1) errors.quantity_in_uom = 'Quantity must be at least 1.';
+    if (form.default_sale_rate && Number(form.default_sale_rate) < 0) errors.default_sale_rate = 'Sale rate cannot be negative.';
+    if (form.default_purchase_rate && Number(form.default_purchase_rate) < 0) errors.default_purchase_rate = 'Purchase rate cannot be negative.';
     return errors;
   };
 
@@ -515,6 +518,7 @@ export default function Products() {
                   <input type="number" min="1" value={form.quantity_in_uom}
                     onChange={e => field('quantity_in_uom', e.target.value)}
                     placeholder="e.g. 10" className={inputCls('quantity_in_uom')} />
+                  {fieldErrors.quantity_in_uom && <p className="text-red-500 text-xs mt-1">{fieldErrors.quantity_in_uom}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">HSN Code <span className="text-red-500">*</span></label>
@@ -545,12 +549,14 @@ export default function Products() {
                   <input type="number" min="0" step="0.01" value={form.default_sale_rate}
                     onChange={e => field('default_sale_rate', e.target.value)}
                     placeholder="0.00" className={inputCls('default_sale_rate')} />
+                  {fieldErrors.default_sale_rate && <p className="text-red-500 text-xs mt-1">{fieldErrors.default_sale_rate}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Default Purchase Rate (Rs)</label>
                   <input type="number" min="0" step="0.01" value={form.default_purchase_rate}
                     onChange={e => field('default_purchase_rate', e.target.value)}
                     placeholder="0.00" className={inputCls('default_purchase_rate')} />
+                  {fieldErrors.default_purchase_rate && <p className="text-red-500 text-xs mt-1">{fieldErrors.default_purchase_rate}</p>}
                 </div>
               </div>
 
