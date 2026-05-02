@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -40,15 +40,15 @@
   --sidebar-ring: oklch(0.708 0 0);
 
   /* ── Form surface tokens (light mode) ─────────────────────────── */
-  --form-bg:            oklch(1 0 0);          /* white */
-  --form-bg-subtle:     oklch(0.97 0 0);       /* gray-50 equivalent */
-  --form-border:        oklch(0.922 0 0);      /* gray-200 equivalent */
-  --form-text:          oklch(0.145 0 0);      /* near-black */
-  --form-text-muted:    oklch(0.556 0 0);      /* gray-500 equivalent */
-  --form-placeholder:   oklch(0.65 0 0);       /* gray-400 equivalent */
-  --form-focus-ring:    oklch(0.6 0.15 250);   /* blue-500 equivalent */
-  --form-error-bg:      oklch(0.97 0.02 20);   /* red-50 equivalent */
-  --form-error-border:  oklch(0.65 0.2 20);    /* red-400 equivalent */
+  --form-bg: oklch(1 0 0); /* white */
+  --form-bg-subtle: oklch(0.97 0 0); /* gray-50 equivalent */
+  --form-border: oklch(0.922 0 0); /* gray-200 equivalent */
+  --form-text: oklch(0.145 0 0); /* near-black */
+  --form-text-muted: oklch(0.556 0 0); /* gray-500 equivalent */
+  --form-placeholder: oklch(0.65 0 0); /* gray-400 equivalent */
+  --form-focus-ring: oklch(0.6 0.15 250); /* blue-500 equivalent */
+  --form-error-bg: oklch(0.97 0.02 20); /* red-50 equivalent */
+  --form-error-border: oklch(0.65 0.2 20); /* red-400 equivalent */
 }
 
 .dark {
@@ -86,15 +86,15 @@
   --sidebar-ring: oklch(0.439 0 0);
 
   /* ── Form surface tokens (dark mode) ──────────────────────────── */
-  --form-bg:            oklch(0.2 0 0);        /* dark input background */
-  --form-bg-subtle:     oklch(0.18 0 0);       /* slightly darker for sections */
-  --form-border:        oklch(0.32 0 0);       /* visible but subtle border */
-  --form-text:          oklch(0.95 0 0);       /* near-white text */
-  --form-text-muted:    oklch(0.65 0 0);       /* muted label text */
-  --form-placeholder:   oklch(0.5 0 0);        /* placeholder text */
-  --form-focus-ring:    oklch(0.6 0.15 250);   /* same blue focus ring */
-  --form-error-bg:      oklch(0.18 0.03 20);   /* dark red tint */
-  --form-error-border:  oklch(0.55 0.2 20);    /* red border in dark */
+  --form-bg: oklch(0.2 0 0); /* dark input background */
+  --form-bg-subtle: oklch(0.18 0 0); /* slightly darker for sections */
+  --form-border: oklch(0.32 0 0); /* visible but subtle border */
+  --form-text: oklch(0.95 0 0); /* near-white text */
+  --form-text-muted: oklch(0.65 0 0); /* muted label text */
+  --form-placeholder: oklch(0.5 0 0); /* placeholder text */
+  --form-focus-ring: oklch(0.6 0.15 250); /* same blue focus ring */
+  --form-error-bg: oklch(0.18 0.03 20); /* dark red tint */
+  --form-error-border: oklch(0.55 0.2 20); /* red border in dark */
 }
 
 @theme inline {
@@ -147,7 +147,7 @@
 
 @layer base {
   :root {
-    --font-segoe: "Segoe UI", sans-serif;
+    --font-segoe: 'Segoe UI', sans-serif;
   }
 }
 
@@ -158,7 +158,6 @@
    individual page files.
    ══════════════════════════════════════════════════════════════════ */
 @layer base {
-
   /* ── Form containers / cards ───────────────────────────────────── */
   .dark .bg-white {
     background-color: var(--form-bg) !important;
@@ -193,17 +192,17 @@
   }
 
   /* ── Inputs, selects, textareas ────────────────────────────────── */
-  .dark input[type="text"],
-  .dark input[type="email"],
-  .dark input[type="password"],
-  .dark input[type="number"],
-  .dark input[type="date"],
-  .dark input[type="search"],
+  .dark input[type='text'],
+  .dark input[type='email'],
+  .dark input[type='password'],
+  .dark input[type='number'],
+  .dark input[type='date'],
+  .dark input[type='search'],
   .dark select,
   .dark textarea {
-    background-color: var(--form-bg)      !important;
-    color:            var(--form-text)    !important;
-    border-color:     var(--form-border)  !important;
+    background-color: var(--form-bg) !important;
+    color: var(--form-text) !important;
+    border-color: var(--form-border) !important;
   }
 
   .dark input::placeholder,
@@ -213,8 +212,8 @@
 
   /* Select option text in dark mode */
   .dark select option {
-    background-color: var(--form-bg)   !important;
-    color:            var(--form-text) !important;
+    background-color: var(--form-bg) !important;
+    color: var(--form-text) !important;
   }
 
   /* ── Error states ──────────────────────────────────────────────── */

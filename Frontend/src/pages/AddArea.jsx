@@ -41,7 +41,6 @@ export default function AddArea() {
 
   return (
     <div className="grid grid-col">
-
       {/* Professional Form Container */}
       <div className="">
         <Label className="text-xl mb-4">Area Information</Label>
@@ -56,26 +55,20 @@ export default function AddArea() {
             disabled={loading}
             required
           />
-          <Button
-            className={loading ? 'loading' : ''}
-            disabled={loading || !areaName.trim()}
-          >
+          <Button className={loading ? 'loading' : ''} disabled={loading || !areaName.trim()}>
             {loading ? 'Adding Area...' : 'Add Area'}
           </Button>
         </form>
 
         {/* Professional Helper Text */}
         <p className="leading-7 [&:not(:first-child)]:mt-6 w-[600px] text-muted-foreground">
-          Areas help organize your business operations. Choose descriptive names that clearly identify the purpose or function.
+          Areas help organize your business operations. Choose descriptive names that clearly
+          identify the purpose or function.
         </p>
       </div>
 
       {/* Professional Message Display */}
-      {message && (
-        <div className="mt-4">
-          {message}
-        </div>
-      )}
+      {message && <div className="mt-4">{message}</div>}
     </div>
   );
 }
