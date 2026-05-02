@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -150,6 +150,9 @@ export default function SalesReport({ focusSaleId }) {
                 ? `- ${selectedSale.header.invoice_number}`
                 : ''}
             </DialogTitle>
+            <DialogDescription>
+              Review sale line items, amounts, and status for the selected invoice.
+            </DialogDescription>
           </DialogHeader>
           {selectedSale?.header && (
             <div className="space-y-3">
