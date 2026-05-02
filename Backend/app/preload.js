@@ -81,5 +81,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ── General Database Query ───────────────────────────────────────────────
   queryDb: (sql, params) => ipcRenderer.invoke('query-db', sql, params),
+  runDb: (sql, params) => ipcRenderer.invoke('run-db', sql, params),
+
+  // ── Backup & Export ───────────────────────────────────────────────────────
+  backupDatabase: () => ipcRenderer.invoke('backup-database'),
+  exportToCsv: (data) => ipcRenderer.invoke('export-to-csv', data),
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
 
 });

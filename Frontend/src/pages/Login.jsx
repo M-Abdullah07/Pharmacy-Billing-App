@@ -1,26 +1,48 @@
 import React, { useState } from "react";
-import { Lock, Eye, EyeOff, AlertCircle, RectangleEllipsis, User } from "lucide-react";
-import "../index.css";
+import { Lock, Eye, EyeOff, AlertCircle, ShieldCheck, User, CheckCircle2, X, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+// --- Desktop Toast Component ---
+function Toast({ message, type, onClose }) {
+  React.useEffect(() => {
+    const t = setTimeout(onClose, 3500);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-lg shadow-2xl text-sm font-semibold animate-in fade-in slide-in-from-right-5 duration-300 border
+      ${type === 'success' ? 'bg-white text-green-800 border-green-200' : 'bg-white text-red-800 border-red-200'}`}>
+      <div className={`p-1 rounded-full ${type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
+        {type === 'success' ? <CheckCircle2 size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-red-600" />}
+      </div>
+      <span className="flex-1">{message}</span>
+      <button onClick={onClose} className="ml-2 text-zinc-400 hover:text-zinc-600 transition-colors">
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
 
 const Login = ({ onLogin, setSignup }) => {
   const [username, setUsername]         = useState("");
   const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading]       = useState(false);
-  const [error, setError]               = useState("");
+  const [message, setMessage]           = useState(null);
   const [fieldErrors, setFieldErrors]   = useState({});
 
-  // ── Inline validation (UC-101 E1) ─────────────────────────────────────────
   const validate = () => {
     const errors = {};
-    if (!username.trim()) errors.username = "This field is required.";
-    if (!password.trim()) errors.password = "This field is required.";
+    if (!username.trim()) errors.username = "Required";
+    if (!password.trim()) errors.password = "Required";
     return errors;
   };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    setError("");
+    setMessage(null);
     setFieldErrors({});
 
     const errors = validate();
@@ -31,160 +53,168 @@ const Login = ({ onLogin, setSignup }) => {
 
     setIsLoading(true);
     try {
-      // All auth logic (Argon2id verify, is_active check) handled in main.js
       const result = await window.electronAPI.loginUser(username.trim(), password);
 
       if (result.success) {
-        // Store session in localStorage for duration of app session
         localStorage.setItem("pharmax_user", JSON.stringify({
           userId: result.userId,
           username: username.trim(),
         }));
         onLogin({ userId: result.userId, username: username.trim() });
       } else {
-        // UC-101 Alt Flow A — clear fields, show error without revealing which field
         setUsername("");
         setPassword("");
-        setError(result.error || "Invalid username or password.");
+        setMessage({ type: 'error', text: "Access denied. Please check your credentials." });
       }
     } catch (err) {
-      // UC-101 E2 — DB unavailable
-      setError("Service unavailable. Contact administrator.");
+      setMessage({ type: 'error', text: "System error. Database connection failed." });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex fixed w-screen h-screen items-center justify-center p-[16px] bg-gradient-to-br from-[#eff6ff] to-[#e0e7ff]">
-      <div className="w-full max-w-[400px]">
+    <div className="flex w-screen h-screen bg-white dark:bg-zinc-950 font-sans selection:bg-blue-100">
+      
+      {/* Left Side: Professional Branding / Hero */}
+      <div className="hidden lg:flex flex-col justify-between w-[45%] bg-zinc-900 p-16 relative overflow-hidden">
+        {/* Abstract Background Pattern */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent" />
+        </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-[16px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-8 border border-[#f3f4f6]">
-
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-[#3b82f6] to-[#4f46e5] rounded-full flex items-center justify-center mb-4 mx-auto">
-              <Lock size={32} color="white" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
+              <ShieldCheck size={24} />
             </div>
-            <h1 className="text-2xl font-bold text-[#111827]">Welcome Back</h1>
-            <p className="text-[#6b7280] text-sm mt-[8px]">Sign in to your PharmaX account</p>
+            <span className="text-2xl font-black text-white tracking-tighter uppercase">Pharmax</span>
           </div>
 
-          {/* Form */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-[20px]"
-          >
+          <div className="space-y-6 max-w-md">
+            <h1 className="text-5xl font-black text-white leading-[1.1] tracking-tight">
+              Modern Pharmacy <br />
+              <span className="text-blue-500">Management.</span>
+            </h1>
+            <p className="text-lg text-zinc-400 font-medium leading-relaxed">
+              Precision billing, real-time inventory, and professional reporting in one secure workstation.
+            </p>
+          </div>
+        </div>
 
-            {/* Username Field */}
-            <div className="flex flex-col">
-              <label className="block text-[14px] font-medium text-[#374151] mb-2">
-                Username
-              </label>
-              <div className="relative">
-                <User
-                  size={20}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
-                />
-                <input
-                  type="text"
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm max-w-sm">
+            <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-400">
+              <Lock size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Enterprise Security</p>
+              <p className="text-xs text-zinc-500">Argon2id hashing & local encryption.</p>
+            </div>
+          </div>
+          <p className="text-xs text-zinc-600 mt-8 font-bold tracking-widest uppercase">© 2026 Pharmax Suite</p>
+        </div>
+      </div>
+
+      {/* Right Side: Login Form */}
+      <div className="flex-1 flex flex-col justify-center items-center px-8 lg:px-20 relative bg-zinc-50/30">
+        
+        <div className="w-full max-w-[420px] space-y-10">
+          <div className="space-y-2">
+            <h2 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">Login.</h2>
+            <p className="text-zinc-500 font-medium">Enter your administrative credentials to continue.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center px-1">
+                 <Label htmlFor="username" className="text-xs font-black text-zinc-400 uppercase tracking-widest">Username</Label>
+                 {fieldErrors.username && <span className="text-[10px] font-bold text-red-500 uppercase">{fieldErrors.username}</span>}
+              </div>
+              <div className="relative group">
+                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-600 transition-colors" />
+                <Input
+                  id="username"
+                  autoFocus
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
                     if (fieldErrors.username) setFieldErrors(p => ({ ...p, username: "" }));
                   }}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-md text-sm bg-white transition-all
-                    ${fieldErrors.username ? "border-red-400 bg-red-50" : "border-gray-300"}`}
-                  placeholder="Enter your username"
+                  className={`pl-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-all font-semibold ${fieldErrors.username ? "border-red-500" : ""}`}
+                  placeholder="admin"
                 />
               </div>
-              {fieldErrors.username && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.username}</p>
-              )}
             </div>
 
-            {/* Password Field */}
-            <div className="flex flex-col">
-              <label className="block text-[14px] font-medium text-[#374151] mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <RectangleEllipsis
-                  size={20}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
-                />
-                <input
+            <div className="space-y-2">
+              <div className="flex justify-between items-center px-1">
+                 <Label htmlFor="password" className="text-xs font-black text-zinc-400 uppercase tracking-widest">Password</Label>
+                 {fieldErrors.password && <span className="text-[10px] font-bold text-red-500 uppercase">{fieldErrors.password}</span>}
+              </div>
+              <div className="relative group">
+                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-600 transition-colors" />
+                <Input
+                  id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: "" }));
                   }}
-                  className={`w-full pl-10 pr-10 py-3 border rounded-md text-sm bg-white transition-all
-                    ${fieldErrors.password ? "border-red-400 bg-red-50" : "border-gray-300"}`}
-                  placeholder="Enter your password"
+                  className={`pl-11 pr-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-all font-semibold ${fieldErrors.password ? "border-red-500" : ""}`}
+                  placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-400 p-1"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors p-1"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {fieldErrors.password && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
-              )}
             </div>
 
-            {/* Global Error (UC-101 Alt Flow A & B) */}
-            {error && (
-              <div className="flex items-center gap-3 text-red-600 bg-red-50 p-3 rounded-md border border-red-200 text-sm">
-                <AlertCircle size={20} className="shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn"
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Signing in...</span>
-                </div>
-              ) : (
-                "Sign In"
-              )}
-            </button>
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-13 bg-zinc-900 hover:bg-black text-white dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xl font-bold shadow-xl shadow-zinc-200 dark:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>Enter Workstation</span>
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Don't have an account?{" "}
+          <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800">
+            <p className="text-sm text-zinc-500 font-medium">
+              Need access for a new colleague?{" "}
               <button
                 onClick={() => setSignup(true)}
-                className="text-blue-500 font-medium hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+                className="text-blue-600 font-bold hover:text-blue-700 transition-colors"
               >
-                Sign up
+                Create Account
               </button>
             </p>
           </div>
         </div>
-
-        {/* Bottom note */}
-        <div className="text-center mt-6">
-          <p className="text-gray-400 text-sm">
-            Secure login protected by Argon2id encryption
-          </p>
-        </div>
-
       </div>
+
+      {message && (
+        <Toast 
+          message={message.text} 
+          type={message.type} 
+          onClose={() => setMessage(null)} 
+        />
+      )}
     </div>
   );
 };

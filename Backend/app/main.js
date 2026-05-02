@@ -1,7 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
-require('dotenv').config({ 
-  path: path.join(__dirname, '..', '..', '..', 'Backend', 'app', '.env') 
+require('dotenv').config({
+  path: path.join(__dirname, '..', '..', '..', 'Backend', 'app', '.env')
 });
 const argon2 = require('argon2');
 const { Pool } = require("pg");
@@ -14,12 +14,12 @@ if (!process.env.DB_PASSWORD && !process.env.DATABASE_URL) {
 const pool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : new Pool({
-      host:     process.env.DB_HOST     || "127.0.0.1",
-      port:     process.env.DB_PORT     || 5432,
-      database: process.env.DB_NAME     || "Pharmax",
-      user:     process.env.DB_USER     || "postgres",
-      password: process.env.DB_PASSWORD || "",
-    });
+    host: process.env.DB_HOST || "127.0.0.1",
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || "Pharmax",
+    user: process.env.DB_USER || "postgres",
+    password: process.env.DB_PASSWORD || "",
+  });
 console.log(process.env.DB_NAME);
 pool.on("error", (err) => {
   console.error("❌ Unexpected PostgreSQL pool error:", err.message);
@@ -31,9 +31,19 @@ async function testConnection() {
     const res = await pool.query("SELECT NOW() AS now");
     console.log("✅ PostgreSQL connected at:", res.rows[0].now);
 
-    // Schema sanity check — tells you immediately if tables are missing
+    // Schema sanity check
     const tables = ["users", "products", "manufacturers", "categories",
-                    "suppliers", "customers", "batches", "stock_movements"];
+      "suppliers", "customers", "batches", "stock_movements", "settings"];
+
+    // Ensure settings table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `);
+
     for (const t of tables) {
       const check = await pool.query(
         `SELECT to_regclass('public.${t}') AS tbl`
@@ -57,10 +67,10 @@ async function runDb(sql, params = []) {
   const result = await pool.query(sql, params);
   return {
     rowCount: result.rowCount,
-    lastID:   result.rows[0]?.id             ?? result.rows[0]?.user_id
-           ?? result.rows[0]?.product_id     ?? result.rows[0]?.customer_id
-           ?? result.rows[0]?.supplier_id    ?? result.rows[0]?.manufacturer_id
-           ?? result.rows[0]?.batch_id       ?? null,
+    lastID: result.rows[0]?.id ?? result.rows[0]?.user_id
+      ?? result.rows[0]?.product_id ?? result.rows[0]?.customer_id
+      ?? result.rows[0]?.supplier_id ?? result.rows[0]?.manufacturer_id
+      ?? result.rows[0]?.batch_id ?? null,
     row: result.rows[0] ?? null,
   };
 }
@@ -226,9 +236,9 @@ ipcMain.handle("add-manufacturer", async (event, data) => {
       [
         data.name,
         data.drap_mfg_licence || null,
-        data.country          || "Pakistan",
-        data.contact_number   || null,
-        data.email            || null,
+        data.country || "Pakistan",
+        data.contact_number || null,
+        data.email || null,
       ]
     );
     return { success: true, manufacturerId: result.row.manufacturer_id };
@@ -251,9 +261,9 @@ ipcMain.handle("update-manufacturer", async (event, id, data) => {
       [
         data.name,
         data.drap_mfg_licence || null,
-        data.country          || "Pakistan",
-        data.contact_number   || null,
-        data.email            || null,
+        data.country || "Pakistan",
+        data.contact_number || null,
+        data.email || null,
         id,
       ]
     );
@@ -357,18 +367,18 @@ ipcMain.handle("add-product", async (event, data) => {
        RETURNING product_id`,
       [
         data.name,
-        data.manufacturer_id       || null,
-        data.category_id           || null,
-        data.form                  || null,
-        data.uom                   || "Strip",
-        data.quantity_in_uom       || 1,
-        data.hsn_code              || null,
-        data.gst_rate              ?? 0,
-        data.drug_schedule         || "OTC",
-        data.generic_formula       || null,
-        data.default_sale_rate     ?? 0,
+        data.manufacturer_id || null,
+        data.category_id || null,
+        data.form || null,
+        data.uom || "Strip",
+        data.quantity_in_uom || 1,
+        data.hsn_code || null,
+        data.gst_rate ?? 0,
+        data.drug_schedule || "OTC",
+        data.generic_formula || null,
+        data.default_sale_rate ?? 0,
         data.default_purchase_rate ?? 0,
-        data.shelf_no              || null,
+        data.shelf_no || null,
       ]
     );
     return { success: true, productId: result.row.product_id };
@@ -393,18 +403,18 @@ ipcMain.handle("update-product", async (event, id, data) => {
        WHERE product_id = $14`,
       [
         data.name,
-        data.manufacturer_id       || null,
-        data.category_id           || null,
-        data.form                  || null,
-        data.uom                   || "Strip",
-        data.quantity_in_uom       || 1,
-        data.hsn_code              || null,
-        data.gst_rate              ?? 0,
-        data.drug_schedule         || "OTC",
-        data.generic_formula       || null,
-        data.default_sale_rate     ?? 0,
+        data.manufacturer_id || null,
+        data.category_id || null,
+        data.form || null,
+        data.uom || "Strip",
+        data.quantity_in_uom || 1,
+        data.hsn_code || null,
+        data.gst_rate ?? 0,
+        data.drug_schedule || "OTC",
+        data.generic_formula || null,
+        data.default_sale_rate ?? 0,
         data.default_purchase_rate ?? 0,
-        data.shelf_no              || null,
+        data.shelf_no || null,
         id,
       ]
     );
@@ -460,12 +470,12 @@ ipcMain.handle("add-supplier", async (event, data) => {
        RETURNING supplier_id`,
       [
         data.name,
-        data.strn               || null,
-        data.ntn                || null,
-        data.drug_licence_no    || null,
-        data.address            || null,
-        data.city               || null,
-        data.payment_terms      || null,
+        data.strn || null,
+        data.ntn || null,
+        data.drug_licence_no || null,
+        data.address || null,
+        data.city || null,
+        data.payment_terms || null,
         data.credit_period_days ?? 0,
       ]
     );
@@ -489,12 +499,12 @@ ipcMain.handle("update-supplier", async (event, id, data) => {
        WHERE supplier_id = $9`,
       [
         data.name,
-        data.strn               || null,
-        data.ntn                || null,
-        data.drug_licence_no    || null,
-        data.address            || null,
-        data.city               || null,
-        data.payment_terms      || null,
+        data.strn || null,
+        data.ntn || null,
+        data.drug_licence_no || null,
+        data.address || null,
+        data.city || null,
+        data.payment_terms || null,
         data.credit_period_days ?? 0,
         id,
       ]
@@ -558,15 +568,15 @@ ipcMain.handle("add-customer", async (event, data) => {
        RETURNING customer_id`,
       [
         data.name,
-        data.strn            || null,
-        data.ntn             || null,
+        data.strn || null,
+        data.ntn || null,
         data.drug_licence_no || null,
-        data.address         || null,
-        data.city            || null,
-        data.territory       || null,
-        data.customer_type   || "retailer",
-        data.credit_limit    ?? 0,
-        data.payment_terms   || null,
+        data.address || null,
+        data.city || null,
+        data.territory || null,
+        data.customer_type || "retailer",
+        data.credit_limit ?? 0,
+        data.payment_terms || null,
       ]
     );
     return { success: true, customerId: result.row.customer_id };
@@ -590,15 +600,15 @@ ipcMain.handle("update-customer", async (event, id, data) => {
        WHERE customer_id = $11`,
       [
         data.name,
-        data.strn            || null,
-        data.ntn             || null,
+        data.strn || null,
+        data.ntn || null,
         data.drug_licence_no || null,
-        data.address         || null,
-        data.city            || null,
-        data.territory       || null,
-        data.customer_type   || "retailer",
-        data.credit_limit    ?? 0,
-        data.payment_terms   || null,
+        data.address || null,
+        data.city || null,
+        data.territory || null,
+        data.customer_type || "retailer",
+        data.credit_limit ?? 0,
+        data.payment_terms || null,
         id,
       ]
     );
@@ -637,10 +647,10 @@ ipcMain.handle("add-contact-person", async (event, data) => {
         data.entity_type,
         data.entity_id,
         data.name,
-        data.role           || null,
+        data.role || null,
         data.contact_number || null,
-        data.email          || null,
-        data.is_primary     ?? false,
+        data.email || null,
+        data.is_primary ?? false,
       ]
     );
     return { success: true, contactId: result.row.contact_id };
@@ -788,7 +798,7 @@ ipcMain.handle("add-batch", async (event, data) => {
       [
         data.product_id,
         data.supplier_id,
-        data.purchase_invoice_id    || null,
+        data.purchase_invoice_id || null,
         data.batch_number,
         data.manufacturing_date,
         data.expiry_date,
@@ -869,11 +879,11 @@ ipcMain.handle("add-purchase-invoice", async (event, data) => {
         data.invoice_number,
         data.invoice_date,
         data.received_date || data.invoice_date,
-        data.subtotal        ?? 0,
+        data.subtotal ?? 0,
         data.discount_amount ?? 0,
-        data.tax_amount      ?? 0,
-        data.net_payable     ?? 0,
-        data.notes           || null,
+        data.tax_amount ?? 0,
+        data.net_payable ?? 0,
+        data.notes || null,
       ]
     );
     return { success: true, purchaseInvoiceId: result.row.purchase_invoice_id };
@@ -903,10 +913,10 @@ ipcMain.handle("add-purchase-invoice-item", async (event, data) => {
         data.mrp,
         data.purchase_cost_per_unit,
         data.quantity,
-        data.discount_pct  ?? 0,
-        data.gst_rate      ?? 0,
+        data.discount_pct ?? 0,
+        data.gst_rate ?? 0,
         data.line_total,
-        data.tax_amount    ?? 0,
+        data.tax_amount ?? 0,
       ]
     );
     return { success: true, itemId: result.row.item_id };
@@ -1343,6 +1353,69 @@ ipcMain.handle("get-supplier-ledger", async (event, supplierId, startDate, endDa
   }
 });
 
+ipcMain.handle("backup-database", async () => {
+  try {
+    const tables = ["users", "products", "manufacturers", "categories", "suppliers", "customers", "batches", "stock_movements", "sale_invoices", "sale_invoice_items"];
+    const backupData = {};
+    for (const t of tables) {
+      const rows = await queryDb(`SELECT * FROM ${t}`);
+      backupData[t] = rows;
+    }
+
+    const { filePath } = await dialog.showSaveDialog({
+      title: "Save Database Backup",
+      defaultPath: path.join(app.getPath("documents"), `pharmax_backup_${new Date().getTime()}.json`),
+      filters: [{ name: "JSON Data", extensions: ["json"] }]
+    });
+
+    if (filePath) {
+      const fs = require('fs');
+      fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2));
+      return { success: true, path: filePath };
+    }
+    return { success: false, error: "Backup cancelled" };
+  } catch (err) {
+    console.error("❌ backup-database error:", err.message);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("export-to-csv", async (event, { table, filename }) => {
+  try {
+    // Map internal table names if needed
+    let dbTable = table;
+    if (table === "sales") dbTable = "sale_invoices";
+
+    const rows = await queryDb(`SELECT * FROM ${dbTable}`);
+    if (rows.length === 0) return { success: false, error: "No data found to export" };
+
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => headers.map(h => {
+        const val = row[h] === null ? "" : row[h];
+        return `"${val.toString().replace(/"/g, '""')}"`;
+      }).join(","))
+    ].join("\n");
+
+    const { filePath } = await dialog.showSaveDialog({
+      title: `Export ${table} Data`,
+      defaultPath: path.join(app.getPath("downloads"), filename),
+      filters: [{ name: "CSV Files", extensions: ["csv"] }]
+    });
+
+    if (filePath) {
+      const fs = require('fs');
+      fs.writeFileSync(filePath, csvContent);
+      return { success: true, path: filePath };
+    }
+    return { success: false, error: "Export cancelled" };
+  } catch (err) {
+    console.error("❌ export-to-csv error:", err.message);
+    return { success: false, error: err.message };
+  }
+});
+
 ipcMain.handle("query-db", async (event, sql, params) => {
   try {
     return await queryDb(sql, params);
@@ -1350,6 +1423,14 @@ ipcMain.handle("query-db", async (event, sql, params) => {
     console.error("❌ query-db error:", err.message);
     throw err;
   }
+});
+
+ipcMain.handle("select-directory", async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openDirectory"]
+  });
+  if (result.canceled) return null;
+  return result.filePaths[0];
 });
 
 // ─── Window ───────────────────────────────────────────────────────────────────

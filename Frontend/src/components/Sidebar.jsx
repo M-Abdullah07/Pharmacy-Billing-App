@@ -33,26 +33,25 @@ import {
 // ── NAVIGATION GROUPS ────────────────────────────────────────────────────────
 const navigation = {
   overview: [
-    { title: "Dashboard",    icon: RxDashboard },
+    { title: "Dashboard", icon: RxDashboard },
   ],
   sales: [
-    { title: "Add Sale",     icon: IoPricetagOutline },
-    { title: "Customers",    icon: HiOutlineUser },
-    { title: "Credit Dues",  icon: HiOutlineCreditCard },
+    { title: "Add Sale", icon: IoPricetagOutline },
+    { title: "Customers", icon: HiOutlineUser },
+    { title: "Credit Dues", icon: HiOutlineCreditCard },
   ],
   inventory: [
-    { title: "Products",      icon: TfiPackage },
-    { title: "Batches",       icon: IoLayersOutline },
+    { title: "Products", icon: TfiPackage },
+    { title: "Batches", icon: IoLayersOutline },
   ],
   procurement: [
     { title: "Purchase Invoice", icon: FileText },
     { title: "Purchase Returns", icon: RotateCcwIcon },
-    { title: "Companies",        icon: HiOutlineBuildingOffice },
-    { title: "Manufacturers",    icon: Factory },
-    { title: "Supplier Ledger",  icon: BookOpenIcon }
+    { title: "Companies", icon: HiOutlineBuildingOffice },
+    { title: "Supplier Ledger", icon: BookOpenIcon }
   ],
   reports: [
-    { title: "Sales Reports",    icon: HiOutlineDocumentReport },
+    { title: "Sales Reports", icon: HiOutlineDocumentReport },
   ]
 };
 
