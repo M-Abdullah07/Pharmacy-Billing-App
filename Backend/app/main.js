@@ -1070,6 +1070,7 @@ ipcMain.handle("get-stock-by-product", async (event, productId) => {
     return await queryDb(
       `SELECT b.batch_id, b.batch_number, b.expiry_date,
               b.mrp, b.quantity_available,
+              (b.expiry_date - CURRENT_DATE) AS days_to_expiry,
               CASE
                 WHEN (b.expiry_date - CURRENT_DATE) <= 30 THEN 'critical'
                 WHEN (b.expiry_date - CURRENT_DATE) <= 60 THEN 'warning'
@@ -1077,7 +1078,10 @@ ipcMain.handle("get-stock-by-product", async (event, productId) => {
                 ELSE 'normal'
               END AS expiry_status
        FROM batches b
-       WHERE b.product_id = $1 AND b.is_active = TRUE AND b.quantity_available > 0
+       WHERE b.product_id = $1
+         AND b.is_active = TRUE
+         AND b.quantity_available > 0
+         AND b.expiry_date >= CURRENT_DATE
        ORDER BY b.expiry_date ASC`,
       [productId]
     );
@@ -1086,6 +1090,7 @@ ipcMain.handle("get-stock-by-product", async (event, productId) => {
     return [];
   }
 });
+
 
 ipcMain.handle("get-near-expiry", async () => {
   try {
