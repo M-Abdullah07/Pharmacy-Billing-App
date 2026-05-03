@@ -7,375 +7,15 @@ import {
   CheckCircle2,
   AlertCircle,
   FileText,
-  Trash2,
   ChevronDown,
   ChevronUp,
-  AlertTriangle,
 } from 'lucide-react';
 import { getUserId } from '@/utilis/sessions';
 import { Pagination } from '@/components/shared/Pagination';
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-const GST_SLABS = [0, 5, 12, 18, 28];
-
-const EMPTY_HEADER = {
-  supplier_id: '',
-  invoice_number: '',
-  invoice_date: new Date().toISOString().split('T')[0],
-  received_date: new Date().toISOString().split('T')[0],
-  notes: '',
-  discount_amount: 0,
-};
-
-const EMPTY_LINE = {
-  product_id: '',
-  batch_number: '',
-  manufacturing_date: '',
-  expiry_date: '',
-  mrp: '',
-  purchase_cost_per_unit: '',
-  quantity: '',
-  discount_pct: 0,
-  gst_rate: 0,
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const calcLine = (line) => {
-  const qty = Number(line.quantity) || 0;
-  const rate = Number(line.purchase_cost_per_unit) || 0;
-  const disc = Number(line.discount_pct) || 0;
-  const gst = Number(line.gst_rate) || 0;
-  const base = qty * rate * (1 - disc / 100);
-  const tax = (base * gst) / 100;
-  return { base: +base.toFixed(2), tax: +tax.toFixed(2), total: +(base + tax).toFixed(2) };
-};
-
-const calcTotals = (lines, headerDiscount) => {
-  const subtotal = lines.reduce((s, l) => s + calcLine(l).base, 0);
-  const taxAmount = lines.reduce((s, l) => s + calcLine(l).tax, 0);
-  const discAmt = Number(headerDiscount) || 0;
-  const netPayable = subtotal + taxAmount - discAmt;
-  return {
-    subtotal: +subtotal.toFixed(2),
-    tax_amount: +taxAmount.toFixed(2),
-    discount_amount: +discAmt.toFixed(2),
-    net_payable: +Math.max(0, netPayable).toFixed(2),
-  };
-};
-
-const fmt = (n) => `Rs ${Number(n || 0).toLocaleString('en-PK', { minimumFractionDigits: 2 })}`;
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-
-
-// ── Status Badge ──────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const map = {
-    draft: 'bg-amber-100 text-amber-700',
-    confirmed: 'bg-green-100 text-green-700',
-    cancelled: 'bg-gray-100 text-gray-500',
-  };
-  return (
-    <span
-      className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${map[status] || 'bg-gray-100 text-gray-500'}`}
-    >
-      {status?.charAt(0).toUpperCase() + status?.slice(1)}
-    </span>
-  );
-}
-
-// ── Line Item Row ─────────────────────────────────────────────────────────────
-function LineItem({ line, idx, products, onUpdate, onRemove, error = {} }) {
-  const { base, tax, total } = calcLine(line);
-
-  const u = (field, value) => onUpdate(idx, { [field]: value });
-
-  const inputCls =
-    'w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400';
-  const selectCls =
-    'w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer';
-
-  return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/50 relative">
-      {/* Remove button */}
-      <button
-        onClick={() => onRemove(idx)}
-        className="absolute top-3 right-3 text-gray-300 hover:text-red-400 transition-colors"
-      >
-        <Trash2 size={14} />
-      </button>
-
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-semibold text-gray-500">Line {idx + 1}</span>
-        {/* Line total */}
-        <div className="ml-auto text-xs font-semibold text-gray-700">
-          Line Total: <span className="text-blue-600">{fmt(total)}</span>
-        </div>
-      </div>
-
-      {/* Row 1 — Product + Batch details */}
-      <div className="grid grid-cols-4 gap-3 mb-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Product <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={line.product_id}
-            onChange={(e) => u('product_id', e.target.value)}
-            className={selectCls}
-          >
-            <option value="">Select Product</option>
-            {products.map((p) => (
-              <option key={p.product_id} value={p.product_id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          {error.product_id && <p className="text-red-500 text-[10px] mt-1">{error.product_id}</p>}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Batch Number <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={line.batch_number}
-            onChange={(e) => u('batch_number', e.target.value)}
-            placeholder="e.g. AMX-2024-001"
-            className={inputCls}
-          />
-          {error.batch_number && (
-            <p className="text-red-500 text-[10px] mt-1">{error.batch_number}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Mfg. Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={line.manufacturing_date}
-            onChange={(e) => u('manufacturing_date', e.target.value)}
-            className={inputCls}
-          />
-          {error.manufacturing_date && (
-            <p className="text-red-500 text-[10px] mt-1">{error.manufacturing_date}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Expiry Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={line.expiry_date}
-            onChange={(e) => u('expiry_date', e.target.value)}
-            className={inputCls}
-          />
-          {error.expiry_date && (
-            <p className="text-red-500 text-[10px] mt-1">{error.expiry_date}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Row 2 — MRP, Rate, Qty, Discount, GST */}
-      <div className="grid grid-cols-5 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            MRP (Rs) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={line.mrp}
-            onChange={(e) => u('mrp', e.target.value)}
-            placeholder="0.00"
-            className={inputCls}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Purchase Rate <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={line.purchase_cost_per_unit}
-            onChange={(e) => u('purchase_cost_per_unit', e.target.value)}
-            placeholder="0.00"
-            className={inputCls}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Quantity <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            value={line.quantity}
-            onChange={(e) => u('quantity', e.target.value)}
-            placeholder="0"
-            className={inputCls}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Discount %</label>
-          <input
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            value={line.discount_pct}
-            onChange={(e) => u('discount_pct', e.target.value)}
-            placeholder="0"
-            className={inputCls}
-          />
-          {error.discount_pct && (
-            <p className="text-red-500 text-[10px] mt-1">{error.discount_pct}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">GST %</label>
-          <select
-            value={line.gst_rate}
-            onChange={(e) => u('gst_rate', Number(e.target.value))}
-            className={selectCls}
-          >
-            {GST_SLABS.map((g) => (
-              <option key={g} value={g}>
-                {g}%
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Line breakdown */}
-      {line.quantity && line.purchase_cost_per_unit ? (
-        <div className="flex gap-4 mt-2 text-xs text-gray-400">
-          <span>Base: {fmt(base)}</span>
-          <span>Tax: {fmt(tax)}</span>
-          <span className="text-gray-600 font-medium">Total: {fmt(total)}</span>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-// ── GRN Detail Expand ─────────────────────────────────────────────────────────
-function GRNDetail({ invoiceId, onClose }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    window.electronAPI.getPurchaseInvoice(invoiceId).then((d) => {
-      setData(d);
-      setLoading(false);
-    });
-  }, [invoiceId]);
-
-  if (loading)
-    return (
-      <tr>
-        <td colSpan="7" className="px-4 py-6 text-center text-sm text-gray-400">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-            Loading details...
-          </div>
-        </td>
-      </tr>
-    );
-
-  if (!data?.header) return null;
-
-  return (
-    <tr>
-      <td colSpan="7" className="px-4 py-0">
-        <div className="mb-3 border border-blue-100 bg-blue-50/30 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-blue-100 flex items-center justify-between">
-            <p className="text-xs font-semibold text-gray-700">
-              GRN {data.header.invoice_number} — {data.items.length} line item(s)
-            </p>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X size={14} />
-            </button>
-          </div>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-blue-50/50">
-                {[
-                  'Product',
-                  'Batch',
-                  'Mfg Date',
-                  'Expiry',
-                  'MRP',
-                  'Rate',
-                  'Qty',
-                  'Disc%',
-                  'GST%',
-                  'Line Total',
-                ].map((h) => (
-                  <th key={h} className="text-left px-3 py-2 text-gray-500 font-semibold">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((item) => (
-                <tr key={item.item_id} className="border-t border-blue-100">
-                  <td className="px-3 py-2 font-medium text-gray-800">{item.product_name}</td>
-                  <td className="px-3 py-2 font-mono text-gray-600">{item.batch_number}</td>
-                  <td className="px-3 py-2 text-gray-600">
-                    {item.manufacturing_date
-                      ? new Date(item.manufacturing_date).toLocaleDateString('en-PK')
-                      : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-gray-600">
-                    {new Date(item.expiry_date).toLocaleDateString('en-PK')}
-                  </td>
-                  <td className="px-3 py-2 text-gray-600">{fmt(item.mrp)}</td>
-                  <td className="px-3 py-2 text-gray-600">{fmt(item.purchase_cost_per_unit)}</td>
-                  <td className="px-3 py-2 text-gray-600">{item.quantity}</td>
-                  <td className="px-3 py-2 text-gray-600">{item.discount_pct}%</td>
-                  <td className="px-3 py-2 text-gray-600">{item.gst_rate}%</td>
-                  <td className="px-3 py-2 font-semibold text-gray-800">{fmt(item.line_total)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-blue-200 bg-blue-50">
-                <td colSpan="7" />
-                <td
-                  colSpan="2"
-                  className="px-3 py-2 text-right text-xs font-semibold text-gray-600"
-                >
-                  <div>Subtotal</div>
-                  <div>Discount</div>
-                  <div>Tax</div>
-                  <div className="text-blue-700">Net Payable</div>
-                </td>
-                <td className="px-3 py-2 text-xs font-semibold text-gray-700">
-                  <div>{fmt(data.header.subtotal)}</div>
-                  <div>{fmt(data.header.discount_amount)}</div>
-                  <div>{fmt(data.header.tax_amount)}</div>
-                  <div className="text-blue-700">{fmt(data.header.net_payable)}</div>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </td>
-    </tr>
-  );
-}
+import { facade } from '@/core/facade/createFacade';
+import { calcLine, calcTotals } from '@/features/purchaseInvoice/purchaseInvoiceDto';
+import { EMPTY_HEADER, EMPTY_LINE, formatCurrencyPKR, validatePurchaseDraft } from './purchaseinvoice/model';
+import { GRNDetail, LineItem, StatusBadge } from './purchaseinvoice/components';
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function PurchaseInvoice() {
@@ -409,9 +49,9 @@ export default function PurchaseInvoice() {
     setLoading(true);
     try {
       const [invs, sups, prods] = await Promise.all([
-        window.electronAPI.getPurchaseInvoices(),
-        window.electronAPI.getSuppliers(),
-        window.electronAPI.getProducts(),
+        facade.route('getPurchaseInvoices'),
+        facade.route('getSuppliers'),
+        facade.route('getProducts'),
       ]);
       setInvoices(Array.isArray(invs) ? invs : []);
       setSuppliers(Array.isArray(sups) ? sups : []);
@@ -439,36 +79,7 @@ export default function PurchaseInvoice() {
 
   // ── Validation ──────────────────────────────────────────────────────────────
   const validate = () => {
-    const hErrors = {};
-    if (!header.supplier_id) hErrors.supplier_id = 'Required.';
-    if (!header.invoice_number.trim()) hErrors.invoice_number = 'Required.';
-    if (!header.invoice_date) hErrors.invoice_date = 'Required.';
-    if (header.discount_amount && Number(header.discount_amount) < 0) {
-      hErrors.discount_amount = 'Cannot be negative.';
-    }
-
-    const lErrors = lines.map((line) => {
-      const e = {};
-      if (!line.product_id) e.product_id = 'Required.';
-      if (!line.batch_number.trim()) e.batch_number = 'Required.';
-      if (!line.manufacturing_date) e.manufacturing_date = 'Required.';
-      if (!line.expiry_date) e.expiry_date = 'Required.';
-      if (
-        line.expiry_date &&
-        line.manufacturing_date &&
-        new Date(line.expiry_date) <= new Date(line.manufacturing_date)
-      )
-        e.expiry_date = 'Must be after manufacturing date.';
-      if (!line.mrp || Number(line.mrp) <= 0) e.mrp = 'MRP must be > 0.';
-      if (!line.purchase_cost_per_unit || Number(line.purchase_cost_per_unit) <= 0)
-        e.purchase_cost_per_unit = 'Rate must be > 0.';
-      if (!line.quantity || Number(line.quantity) <= 0)
-        e.quantity = 'Qty must be a positive integer.';
-      if (line.discount_pct && Number(line.discount_pct) < 0)
-        e.discount_pct = 'Discount cannot be negative.';
-      return e;
-    });
-
+    const { headerErrors: hErrors, lineErrors: lErrors } = validatePurchaseDraft(header, lines);
     setHeaderErrors(hErrors);
     setLineErrors(lErrors);
     return Object.keys(hErrors).length === 0 && lErrors.every((e) => Object.keys(e).length === 0);
@@ -480,11 +91,7 @@ export default function PurchaseInvoice() {
     setSaving(true);
     try {
       // 1. Create invoice header
-      const invoiceResult = await window.electronAPI.addPurchaseInvoice({
-        ...header,
-        ...totals,
-        status: 'draft',
-      });
+      const invoiceResult = await facade.route('addPurchaseInvoice', { header, lines });
 
       if (!invoiceResult.success) {
         if (invoiceResult.error?.includes('already exists'))
@@ -498,7 +105,7 @@ export default function PurchaseInvoice() {
       // 2. Save all line items (all are new batches — no existing batch mode)
       for (const line of lines) {
         const lineCalc = calcLine(line);
-        await window.electronAPI.addPurchaseInvoiceItem({
+        await facade.route('addPurchaseInvoiceItem', {
           purchase_invoice_id: invoiceId,
           product_id: line.product_id,
           batch_number: line.batch_number,
@@ -539,7 +146,7 @@ export default function PurchaseInvoice() {
         showToast('Please login first.', 'error');
         return;
       }
-      const result = await window.electronAPI.confirmPurchaseInvoice(invoiceId, userId);
+      const result = await facade.route('confirmPurchaseInvoice', invoiceId, userId);
       if (result.success) {
         showToast('GRN confirmed. Stock and supplier ledger updated.', 'success');
         await loadAll();
@@ -555,7 +162,7 @@ export default function PurchaseInvoice() {
   const handleCancel = async (invoiceId) => {
     if (!window.confirm('Cancel this GRN? This action cannot be undone.')) return;
     try {
-      const result = await window.electronAPI.cancelPurchaseInvoice(invoiceId);
+      const result = await facade.route('cancelPurchaseInvoice', invoiceId);
       if (result.success) {
         showToast('GRN cancelled.', 'success');
         await loadAll();
@@ -763,7 +370,7 @@ export default function PurchaseInvoice() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>{fmt(totals.subtotal)}</span>
+                  <span>{formatCurrencyPKR(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-gray-600">
                   <span>Header Discount</span>
@@ -786,11 +393,11 @@ export default function PurchaseInvoice() {
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Total GST</span>
-                  <span>{fmt(totals.tax_amount)}</span>
+                  <span>{formatCurrencyPKR(totals.tax_amount)}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-blue-700 border-t border-gray-200 pt-2 mt-2">
                   <span>Net Payable</span>
-                  <span>{fmt(totals.net_payable)}</span>
+                  <span>{formatCurrencyPKR(totals.net_payable)}</span>
                 </div>
               </div>
             </div>
@@ -910,7 +517,7 @@ export default function PurchaseInvoice() {
                           })}
                         </td>
                         <td className="px-4 py-3 font-semibold text-gray-800">
-                          {fmt(inv.net_payable)}
+                          {formatCurrencyPKR(inv.net_payable)}
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={inv.status} />

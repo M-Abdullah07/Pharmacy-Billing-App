@@ -12,24 +12,17 @@ import {
   Star,
 } from 'lucide-react';
 import { Pagination } from '@/components/shared/Pagination';
-
-const CUSTOMER_TYPES = ['retailer', 'wholesaler', 'hospital', 'clinic', 'government'];
-const PAYMENT_TERMS = ['Cash on Delivery', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60'];
-const CONTACT_ROLES = ['Owner', 'Manager', 'Salesman', 'Accounts', 'Other'];
-
-const EMPTY_FORM = {
-  name: '',
-  strn: '',
-  ntn: '',
-  drug_licence_no: '',
-  address: '',
-  city: '',
-  territory: '',
-  customer_type: 'retailer',
-  credit_limit: 0,
-  payment_terms: '',
-};
-const EMPTY_CONTACT = { name: '', role: '', contact_number: '', email: '', is_primary: false };
+import { facade } from '@/core/facade/createFacade';
+import {
+  CONTACT_ROLES,
+  CUSTOMER_TYPES,
+  EMPTY_CONTACT,
+  EMPTY_FORM,
+  PAYMENT_TERMS,
+  customerTypeBadge,
+  validateContactForm,
+  validateCustomerForm,
+} from './customers/customerFormModel';
 
 
 
@@ -60,7 +53,7 @@ export default function AddCustomer() {
   const loadCustomers = async () => {
     setLoading(true);
     try {
-      const all = await window.electronAPI.getCustomersWithContact();
+      const all = await facade.route('getCustomersWithContact');
       setCustomers(Array.isArray(all) ? all : []);
     } catch (err) {
       showToast('Failed to load customers.', 'error');
@@ -104,48 +97,14 @@ export default function AddCustomer() {
     setNewContact(EMPTY_CONTACT);
     setShowContactForm(false);
     setPendingContacts([]);
-    const existing = await window.electronAPI.getContactPersons('customer', customer.customer_id);
+    const existing = await facade.route('getContactPersons', 'customer', customer.customer_id);
     setContacts(Array.isArray(existing) ? existing : []);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const validate = () => {
-    const errors = {};
-    if (!form.name.trim()) errors.name = 'This field is required.';
-    if (!form.customer_type) errors.customer_type = 'This field is required.';
-    if (Number(form.credit_limit) < 0) errors.credit_limit = 'Credit limit cannot be negative.';
-    if (form.strn && !/^\d{13}$/.test(form.strn.replace(/-/g, '')))
-      errors.strn = 'Invalid STRN format. Please enter a valid 13-digit Pakistani STRN.';
-    if (form.ntn && !/^\d{7}-\d{1}$/.test(form.ntn.trim()))
-      errors.ntn = 'Invalid NTN format. Use e.g. 1234567-8.';
-    if (form.drug_licence_no && !/^[A-Z0-9]+-\d{4}-\d{3}$/i.test(form.drug_licence_no.trim()))
-      errors.drug_licence_no = 'Invalid DRAP licence format. Use e.g. RTL-2024-001.';
-    return errors;
-  };
-
-  const validateContact = () => {
-    const errors = {};
-    if (!newContact.name.trim()) {
-      errors.name = 'Contact name is required.';
-    }
-    if (
-      newContact.contact_number &&
-      !/^\+?(?:\d[ -]?|\(\d+\)[ -]?){7,20}$/.test(newContact.contact_number.trim())
-    ) {
-      errors.contact_number = 'Invalid phone number format.';
-    }
-    if (newContact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContact.email.trim())) {
-      errors.email = 'Invalid email address.';
-    }
-    if (!newContact.contact_number.trim() && !newContact.email.trim()) {
-      errors.contact_number = 'Provide a phone number or email for the contact.';
-    }
-    return errors;
-  };
-
   const handleSave = async () => {
-    const errors = validate();
+    const errors = validateCustomerForm(form);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -158,9 +117,9 @@ export default function AddCustomer() {
       let result;
       let customerId = editingId;
       if (editingId) {
-        result = await window.electronAPI.updateCustomer(editingId, payload);
+        result = await facade.route('updateCustomer', editingId, payload);
       } else {
-        result = await window.electronAPI.addCustomer(payload);
+        result = await facade.route('addCustomer', payload);
         customerId = result.lastID;
       }
       if (!result.success) {
@@ -170,7 +129,7 @@ export default function AddCustomer() {
         return;
       }
       for (const contact of pendingContacts) {
-        await window.electronAPI.addContactPerson({
+        await facade.route('addContactPerson', {
           ...contact,
           entity_type: 'customer',
           entity_id: customerId,
@@ -194,7 +153,7 @@ export default function AddCustomer() {
   };
 
   const handleAddPendingContact = () => {
-    const errors = validateContact();
+    const errors = validateContactForm(newContact);
     if (Object.keys(errors).length > 0) {
       setContactErrors(errors);
       return;
@@ -206,20 +165,20 @@ export default function AddCustomer() {
   };
 
   const handleSaveContact = async () => {
-    const errors = validateContact();
+    const errors = validateContactForm(newContact);
     if (Object.keys(errors).length > 0) {
       setContactErrors(errors);
       return;
     }
     setContactErrors({});
     try {
-      const result = await window.electronAPI.addContactPerson({
+      const result = await facade.route('addContactPerson', {
         ...newContact,
         entity_type: 'customer',
         entity_id: editingId,
       });
       if (result.success) {
-        const updated = await window.electronAPI.getContactPersons('customer', editingId);
+        const updated = await facade.route('getContactPersons', 'customer', editingId);
         setContacts(Array.isArray(updated) ? updated : []);
         setNewContact(EMPTY_CONTACT);
         setShowContactForm(false);
@@ -232,7 +191,7 @@ export default function AddCustomer() {
 
   const handleDeleteContact = async (contactId) => {
     try {
-      await window.electronAPI.deleteContactPerson(contactId);
+      await facade.route('deleteContactPerson', contactId);
       setContacts((prev) => prev.filter((c) => c.contact_id !== contactId));
       showToast('Contact removed.', 'success');
     } catch (err) {
@@ -243,7 +202,7 @@ export default function AddCustomer() {
   const handleDeactivate = async (id, name) => {
     if (!window.confirm(`Deactivate "${name}"? Historical records will be retained.`)) return;
     try {
-      const result = await window.electronAPI.deleteCustomer(id);
+      const result = await facade.route('deleteCustomer', id);
       if (result.success) {
         showToast(`"${name}" deactivated.`, 'success');
         await loadCustomers();
@@ -256,7 +215,7 @@ export default function AddCustomer() {
   const handleReactivate = async (id, name) => {
     if (!window.confirm(`Reactivate "${name}"?`)) return;
     try {
-      const result = await window.electronAPI.reactivateCustomer(id);
+      const result = await facade.route('reactivateCustomer', id);
       if (result.success) {
         showToast(`"${name}" reactivated.`, 'success');
         await loadCustomers();
@@ -298,15 +257,6 @@ export default function AddCustomer() {
     active: customers.filter((c) => c.is_active).length,
     deactivated: customers.filter((c) => !c.is_active).length,
   };
-
-  const typeBadge = (type) =>
-    ({
-      retailer: 'bg-blue-50 text-blue-700',
-      wholesaler: 'bg-purple-50 text-purple-700',
-      hospital: 'bg-red-50 text-red-700',
-      clinic: 'bg-orange-50 text-orange-700',
-      government: 'bg-green-50 text-green-700',
-    })[type] || 'bg-gray-100 text-gray-600';
 
   const allContacts = editingId ? contacts : pendingContacts;
 
@@ -764,7 +714,7 @@ export default function AddCustomer() {
                       <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${typeBadge(c.customer_type)}`}
+                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${customerTypeBadge(c.customer_type)}`}
                         >
                           {c.customer_type}
                         </span>

@@ -2,238 +2,10 @@ import Toast from '../components/shared/Toast';
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, X, CheckCircle2, AlertCircle, Package, AlertTriangle, ChevronRight, BarChart3 } from 'lucide-react';
 import { Pagination } from '@/components/shared/Pagination';
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-const GST_SLABS = [0, 5, 12, 18, 28];
-const DRUG_SCHEDULES = ['OTC', 'G', 'H', 'H1', 'X'];
-const UOM_OPTIONS = ['Strip', 'Bottle', 'Vial', 'Sachet', 'Piece', 'Box', 'Ampoule'];
-const FORM_OPTIONS = [
-  'Tablet',
-  'Capsule',
-  'Syrup',
-  'Injection',
-  'Cream',
-  'Drops',
-  'Inhaler',
-  'Powder',
-  'Gel',
-  'Patch',
-];
-
-const EMPTY_FORM = {
-  name: '',
-  manufacturer_id: '',
-  category_id: '',
-  form: '',
-  uom: 'Strip',
-  quantity_in_uom: 1,
-  hsn_code: '',
-  gst_rate: 0,
-  drug_schedule: 'OTC',
-  generic_formula: '',
-  default_sale_rate: '',
-  default_purchase_rate: '',
-  shelf_no: '',
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const stockStatusBadge = (status) =>
-  ({
-    out_of_stock: { label: 'Out of Stock', cls: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
-    expiry_critical: { label: 'Expiry Critical', cls: 'bg-red-50 text-red-600', dot: 'bg-red-400' },
-    expiry_warning: {
-      label: 'Expiry Warning',
-      cls: 'bg-amber-100 text-amber-700',
-      dot: 'bg-amber-500',
-    },
-    expiry_watch: {
-      label: 'Expiry Watch',
-      cls: 'bg-yellow-100 text-yellow-700',
-      dot: 'bg-yellow-500',
-    },
-    normal: { label: 'In Stock', cls: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
-  })[status] || { label: status, cls: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' };
-
-const expiryBadge = (days) => {
-  if (days === null || days === undefined) return { label: '—', cls: 'text-gray-400' };
-  if (days <= 30) return { label: `${days}d`, cls: 'text-red-600 font-semibold' };
-  if (days <= 60) return { label: `${days}d`, cls: 'text-amber-600 font-semibold' };
-  if (days <= 90) return { label: `${days}d`, cls: 'text-yellow-600 font-semibold' };
-  return { label: `${days}d`, cls: 'text-gray-500' };
-};
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-
-
-// ── Stock Side Panel ──────────────────────────────────────────────────────────
-function StockSidePanel({ product, batches, onClose, loading }) {
-  if (!product) return null;
-  const status = stockStatusBadge(product.stock_status);
-  return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-40 transition-opacity" onClick={onClose} />
-      {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-[420px] bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col">
-        {/* Panel Header */}
-        <div className="flex items-start justify-between p-5 border-b border-gray-100">
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">{product.product_name}</h2>
-            {product.generic_formula && (
-              <p className="text-xs text-gray-500 mt-0.5">{product.generic_formula}</p>
-            )}
-            <div className="flex items-center gap-2 mt-2">
-              <span
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full ${status.cls}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                {status.label}
-              </span>
-              <span className="text-xs text-gray-400">{product.manufacturer_name}</span>
-              {product.is_imported && (
-                <span className="text-xs text-blue-500 font-medium">Imported</span>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors mt-0.5"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Stock Summary */}
-        <div className="grid grid-cols-3 gap-3 p-5 border-b border-gray-100">
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">Total Qty</p>
-            <p
-              className={`text-lg font-bold ${product.total_quantity === 0 ? 'text-red-500' : 'text-gray-900'}`}
-            >
-              {Number(product.total_quantity).toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-400">{product.uom}</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">Stock Value</p>
-            <p className="text-sm font-bold text-gray-900">
-              Rs {Number(product.total_stock_value_at_mrp).toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-400">at MRP</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">Batches</p>
-            <p className="text-lg font-bold text-gray-900">{product.active_batch_count}</p>
-            <p className="text-xs text-gray-400">active</p>
-          </div>
-        </div>
-
-        {/* Product Details */}
-        <div className="px-5 py-4 border-b border-gray-100">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Product Details
-          </p>
-          <div className="grid grid-cols-2 gap-y-2 text-xs">
-            {[
-              ['Category', product.category_name || '—'],
-              ['Form', product.form || '—'],
-              ['UOM', product.uom || '—'],
-              ['Schedule', product.drug_schedule || '—'],
-              ['Shelf No.', product.shelf_no || '—'],
-              [
-                'Sale Rate',
-                product.default_sale_rate
-                  ? `Rs ${Number(product.default_sale_rate).toLocaleString()}`
-                  : '—',
-              ],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <span className="text-gray-400">{label}: </span>
-                <span className="text-gray-700 font-medium">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Batch Breakdown */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-5 pt-4 pb-2">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Batch Breakdown
-            </p>
-          </div>
-          {loading ? (
-            <div className="flex items-center justify-center h-24 text-sm text-gray-400">
-              <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-2" />
-              Loading batches...
-            </div>
-          ) : batches.length === 0 ? (
-            <div className="px-5 py-8 text-center text-gray-400 text-sm">
-              No active batches for this product.
-            </div>
-          ) : (
-            <div className="px-5 pb-5 space-y-2">
-              {batches.map((b) => {
-                const days = Math.floor(
-                  (new Date(b.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)
-                );
-                const exp = expiryBadge(days);
-                const expiryStatusCls =
-                  days <= 30
-                    ? 'border-red-200 bg-red-50/50'
-                    : days <= 60
-                      ? 'border-amber-200 bg-amber-50/50'
-                      : days <= 90
-                        ? 'border-yellow-200 bg-yellow-50/50'
-                        : 'border-gray-100 bg-white';
-                return (
-                  <div key={b.batch_id} className={`border rounded-lg p-3 ${expiryStatusCls}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-gray-800 font-mono">
-                        {b.batch_number}
-                      </span>
-                      <span className={`text-xs font-medium ${exp.cls}`}>
-                        {days <= 0 ? 'Expired' : `Expires in ${exp.label}`}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>
-                        <p className="text-gray-400">Expiry</p>
-                        <p className="text-gray-700 font-medium">
-                          {new Date(b.expiry_date).toLocaleDateString('en-PK', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400">MRP</p>
-                        <p className="text-gray-700 font-medium">
-                          Rs {Number(b.mrp).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400">Available</p>
-                        <p
-                          className={`font-semibold ${b.quantity_available === 0 ? 'text-red-500' : 'text-gray-900'}`}
-                        >
-                          {b.quantity_available === 0
-                            ? 'Out'
-                            : b.quantity_available.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
+import { facade } from '@/core/facade/createFacade';
+import StockSidePanel from './products/StockSidePanel';
+import { EMPTY_FORM, FORM_OPTIONS, GST_SLABS, DRUG_SCHEDULES, UOM_OPTIONS, validateProductForm } from './products/productModel';
+import { expiryBadge, stockStatusBadge } from './products/stockUi';
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Products() {
@@ -278,10 +50,10 @@ export default function Products() {
     setLoading(true);
     try {
       const [prods, sups, cats, stock] = await Promise.all([
-        window.electronAPI.getAllProducts(),
-        window.electronAPI.getSuppliers(),
-        window.electronAPI.getCategories(),
-        window.electronAPI.getStockSummary(),
+        facade.route('getAllProducts'),
+        facade.route('getSuppliers'),
+        facade.route('getCategories'),
+        facade.route('getStockSummary'),
       ]);
       setProducts(Array.isArray(prods) ? prods : []);
       setSuppliers(Array.isArray(sups) ? sups : []);
@@ -300,7 +72,7 @@ export default function Products() {
     setSidePanelBatches([]);
     setSidePanelLoading(true);
     try {
-      const batches = await window.electronAPI.getStockByProduct(product.product_id);
+      const batches = await facade.route('getStockByProduct', product.product_id);
       setSidePanelBatches(Array.isArray(batches) ? batches : []);
     } catch (err) {
       showToast('Failed to load batch details.', 'error');
@@ -349,22 +121,8 @@ export default function Products() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const validate = () => {
-    const errors = {};
-    if (!form.name.trim())         errors.name            = 'This field is required.';
-    if (!form.manufacturer_id)     errors.manufacturer_id = 'This field is required.';
-    if (!form.category_id)         errors.category_id     = 'This field is required.';
-    if (!form.hsn_code.trim())     errors.hsn_code        = 'This field is required.';
-    if (!GST_SLABS.includes(Number(form.gst_rate))) errors.gst_rate = 'Please select a valid FBR GST rate.';
-    if (!form.drug_schedule)       errors.drug_schedule   = 'This field is required.';
-    if (form.quantity_in_uom && Number(form.quantity_in_uom) < 1) errors.quantity_in_uom = 'Quantity must be at least 1.';
-    if (form.default_sale_rate && Number(form.default_sale_rate) < 0) errors.default_sale_rate = 'Sale rate cannot be negative.';
-    if (form.default_purchase_rate && Number(form.default_purchase_rate) < 0) errors.default_purchase_rate = 'Purchase rate cannot be negative.';
-    return errors;
-  };
-
   const handleSave = async () => {
-    const errors = validate();
+    const errors = validateProductForm(form);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -380,8 +138,8 @@ export default function Products() {
         default_purchase_rate: Number(form.default_purchase_rate) || 0,
       };
       const result = editingId
-        ? await window.electronAPI.updateProduct(editingId, payload)
-        : await window.electronAPI.addProduct(payload);
+        ? await facade.route('updateProduct', editingId, payload)
+        : await facade.route('addProduct', payload);
       if (result.success) {
         showToast(editingId ? 'Product updated.' : 'Product added.', 'success');
         setShowForm(false);
@@ -403,7 +161,7 @@ export default function Products() {
   const handleDeactivate = async (id, name) => {
     if (!window.confirm(`Deactivate "${name}"?`)) return;
     try {
-      const result = await window.electronAPI.deactivateProduct(id);
+      const result = await facade.route('deactivateProduct', id);
       if (result.success) {
         showToast(`"${name}" deactivated.`, 'success');
         await loadAll();
@@ -416,7 +174,7 @@ export default function Products() {
   const handleReactivate = async (id, name) => {
     if (!window.confirm(`Reactivate "${name}"?`)) return;
     try {
-      const result = await window.electronAPI.reactivateProduct(id);
+      const result = await facade.route('reactivateProduct', id);
       if (result.success) {
         showToast(`"${name}" reactivated.`, 'success');
         await loadAll();
