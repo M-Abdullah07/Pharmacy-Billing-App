@@ -1,0 +1,125 @@
+--- Slide ppt/slides/slide1.xml ---
+Software Testing  Zeeshan  Ali  Rana
+
+--- Slide ppt/slides/slide10.xml ---
+Testing Issues Views of the Test Objects Closed box or black box: functionality of the test objects	 Equivalence Class, Boundary Value Analysis,  Scenario-based, Decision Table based, State Machine based… Clear box or white box: structure of the test objects  Control Flow Basis Path, Branch, Statement, Decision… Data Flow Du Path, All-uses Path
+
+--- Slide ppt/slides/slide11.xml ---
+Test Cases for Triangle Problem  TC Id What to test A B C EO 1 EC1 of A -10 15 15 Value of A not in valid range 2 EC1 of B 15 -10 15 Value of B not in valid range 3 EC1 of C 15 15 -10 Value of C not in valid range 4 EC3 of A -205 15 15 Value of A not in valid range 5 EC3 of B 15 -205 15 Value of B not in valid range 6 EC3 of C 15 15 -205 Value of C not in valid range 7 EC2 of A, B, C 15 15 15 Equilateral Test cases based on input range Note that we have made only one test case instead of three separate test cases to check ABC in valid range. This one test could be any test cases with any valid combination of A, B,  C; for example see any of the valid range based test cases. TC Id What to test A B C EO 1 EC 1 15 15 15 Equilateral 2 EC 2 10 20 10 Isosceles 3 EC 3 5 6 7 Scalene 4 EC 4 1 2 10 Not a triangle Test cases based on  equivalence classes within valid range
+
+--- Slide ppt/slides/slide12.xml ---
+Whitebox Testing Control Flow Graph Cyclomatic Complexity = E – N + 2 = 9 – 9 + 2 = 2 Statement testing Branch testing Path testing …
+
+--- Slide ppt/slides/slide13.xml ---
+Boundary Value Analysis
+
+--- Slide ppt/slides/slide14.xml ---
+Example An  Address   text   box   which   allows   maximum   500   characters.   So,   writing  test   cases  for   each    character  once   will   be   very   difficult   so   that   will   choose  boundary   value   analysis .
+
+--- Slide ppt/slides/slide15.xml ---
+Example An  Address   text   box   which   allows   maximum   500   characters.   So,   writing  test   cases  for   each    character  once   will   be   very   difficult   so   that   will   choose  boundary   value   analysis . No character 1 character 2 characters 499 characters 500 characters 501 characters
+
+--- Slide ppt/slides/slide16.xml ---
+Equivalence and Boundary  Value Let's  consider  the  behavior of    Order   Pizza   Text   Box   Pizza   values    1  to  10  is considered valid.  A    success  message   is   shown. Here   is   the   test  condition Any  Number  greater  than 10  entered  in  the    Order Pizza  field (let  say  11) is  considered    invalid . Any  Number  less  than  1  that   is   0   or   below, then   it   is   considered   invalid . Numbers   1   to  10  are   considered   valid    Any   3   Digit   Number   say   -100   is   invalid.
+
+--- Slide ppt/slides/slide17.xml ---
+Equivalence and Boundary  Value
+
+--- Slide ppt/slides/slide18.xml ---
+Levels of Testing Module testing, component testing, or unit testing Integration testing System Testing Function testing Performance testing Acceptance testing Installation testing
+
+--- Slide ppt/slides/slide19.xml ---
+Levels of Testing Testing Organization Illustrated
+
+--- Slide ppt/slides/slide2.xml ---
+Software Faults and Failures Why Does Software Fail? Fault   (bug): Programming   or   design   error   whereby   the   delivered   system  does   not   conform   to   specification   (e.g.,   coding   error,   protocol error) Failure: Software   does   not   deliver   the   service   expected   by   the   user  (e.g.,   mistake   in   requirements,   confusing   user   interface)
+
+--- Slide ppt/slides/slide20.xml ---
+Unit Testing Code Review Code walkthrough In a  walkthrough , you present your code and accompanying documentation to the review team, and the team comments on their correctness. Code inspection In an  inspection , the review team checks the code and documentation against a prepared list of concerns. It is more formal.
+
+--- Slide ppt/slides/slide21.xml ---
+Unit Testing Steps in Testing   Determining test objectives Selecting test cases Executing test cases 
+
+--- Slide ppt/slides/slide22.xml ---
+Unit Testing Statement testing:  Every statement in the component is executed at least once in some test. Statement coverage (%)  =  𝑁𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑒𝑥𝑒𝑐𝑢𝑡𝑒𝑑   𝑠𝑡𝑎𝑡𝑒𝑚𝑒𝑛𝑡𝑠 𝑇𝑜𝑡𝑎𝑙   𝑛𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑠𝑡𝑎𝑡𝑒𝑚𝑒𝑛𝑡𝑠 x 100  Branch testing:  For every decision point in the code, each branch is chosen at least once in some test. Branch coverage (%)  =  𝑁𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑒𝑥𝑒𝑐𝑢𝑡𝑒𝑑   𝑏𝑟𝑎𝑛𝑐h𝑒𝑠 𝑇𝑜𝑡𝑎𝑙   𝑛𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑏𝑟𝑎𝑛𝑐h𝑒𝑠  x 100  Path testing:  Ensures that every possible path through the code is executed at least once in some test case. Path  coverage (%)  =  𝑁𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑒𝑥𝑒𝑐𝑢𝑡𝑖𝑜𝑛   𝑝𝑎𝑡h𝑠   𝑒𝑥𝑒𝑐𝑢𝑡𝑒𝑑 𝑇𝑜𝑡𝑎𝑙   𝑛𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑒𝑥𝑒𝑐𝑢𝑡𝑖𝑜𝑛   𝑝𝑎𝑡h𝑠  x  100 Basis Path testing:  It is a subset of path testing, where the goal is to identify and test a minimal set of independent paths that can cover all the possible decision points in the program. Basis Path coverage (%)  =  𝑁𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑖𝑛𝑑𝑒𝑝𝑒𝑛𝑑𝑒𝑛𝑡   𝑝𝑎𝑡h𝑠   𝑒𝑥𝑒𝑐𝑢𝑡𝑒𝑑   𝑇𝑜𝑡𝑎𝑙   𝑛𝑢𝑚𝑏𝑒𝑟   𝑜𝑓   𝑖𝑛𝑑𝑒𝑝𝑒𝑛𝑑𝑒𝑛𝑡   𝑝𝑎𝑡h𝑠  x 100     
+
+--- Slide ppt/slides/slide23.xml ---
+Integration Testing Big-bang  Bottom-up Top-down Sandwich testing
+
+--- Slide ppt/slides/slide24.xml ---
+Integration Testing Terminology Component Driver: a routine that calls a particular component and passes a test case to it Stub: a special-purpose program to simulate the activity of the missing component
+
+--- Slide ppt/slides/slide25.xml ---
+Integration Testing System viewed as a  hierarchy of components
+
+--- Slide ppt/slides/slide26.xml ---
+Integration Testing   Bing-Bang Integration Example All components integrated at once
+
+--- Slide ppt/slides/slide27.xml ---
+Integration Testing Top-Down Integration Example Only A is tested by itself Stubs of B, C and D are used at first level N-1 stubs required (N=Number of nodes) Locating faults?
+
+--- Slide ppt/slides/slide28.xml ---
+Integration Testing Top-Down Integration Example
+
+--- Slide ppt/slides/slide29.xml ---
+Integration Testing Bottom-Up Integration Example Drivers are used to call the child functions Drivers are relatively intelligent N - leaves drivers Locating faults?
+
+--- Slide ppt/slides/slide3.xml ---
+Software Faults and Failures Why Does Software Fail? Wrong requirement:  not what the customer wants Missing requirement Requirement impossible to implement Faulty design Faulty code Improperly implemented design
+
+--- Slide ppt/slides/slide30.xml ---
+Integration Testing Bottom-Up Integration Example
+
+--- Slide ppt/slides/slide31.xml ---
+Integration Testing   Sandwich Integration Example Viewed system as three layers Employ BU where  writing drivers is  not costly Employ TD where stubs are easier to Write Locating faults?
+
+--- Slide ppt/slides/slide32.xml ---
+System Testing System is tested as a whole Different types of testing considered during System Testing: - Functional Testing (GUI)		- Scalability - Performance Testing			- Sanity - Usability					- Smoke  - Load					- Regression - Volume					- Compatibility - Stress					- Installation - Security					- Ad hoc
+
+--- Slide ppt/slides/slide33.xml ---
+Steps to do System Testing The following steps are important to perform System Testing: Step 1: Create a System Test Plan Step 2: Create Test Cases Step 3: Carefully Build Data used as Input for System Testing Step 3: If applicable create scripts to - Build environment and - to automate Execution of test cases Step 4: Execute the test cases Step 5: Fix the bugs if any and re test the code Step 6: Repeat the test cycle as necessary
+
+--- Slide ppt/slides/slide34.xml ---
+Principles of System Testing Regression Testing Identifies new faults that may have been introduced as current one are being corrected Verifies a new version or release still performs the same functions in the same manner as an older version or release
+
+--- Slide ppt/slides/slide35.xml ---
+Principles of System Testing Regression Testing Steps Inserting the new code Testing functions known to be affected by the new code Testing essential function of  m  to verify that they still work properly Continuing function testing  m  + 1
+
+--- Slide ppt/slides/slide36.xml ---
+Acceptance Tests Purpose and Roles Enable the customers and users to determine if the built system meets their needs and expectations Written, conducted and evaluated by the customers
+
+--- Slide ppt/slides/slide37.xml ---
+Acceptance Tests Types of Acceptance Tests Pilot test:  install on experimental basis Alpha test:  in-house test Beta test:  customer pilot Parallel testing:  new system operates in parallel with old system
+
+--- Slide ppt/slides/slide38.xml ---
+Result of Acceptance Tests List of requirements that are not satisfied must be deleted must be revised must be added 
+
+--- Slide ppt/slides/slide39.xml ---
+Installation Testing Before the testing Configure the system Attach proper number and kind of devices Establish communication with other system The testing to verify that the system has been installed properly and works
+
+--- Slide ppt/slides/slide4.xml ---
+Objective of Testing Objective of testing: discover faults A test is successful only when a fault is discovered Fault identification is the process of determining what fault caused the failure Fault correction is the process of making changes to the system so that the faults are removed
+
+--- Slide ppt/slides/slide40.xml ---
+Software Testing Tools Automated Testing Tools Selenium , QTP, SilkTest, WinRunner ,  LoadRunner ,  Jmeter Testing Management Tools TestManager ,  TestDirector   Bug Tracking/Configuration Management Tools Bugzilla , Jitterbug,  SilkRadar
+
+--- Slide ppt/slides/slide41.xml ---
+When to Stop Testing No time left No money left Statistical Criteria Number of defects found per week becomes lower than a set threshold
+
+--- Slide ppt/slides/slide42.xml ---
+References UCF Slides Software Testing, A Craftsman’s Approach by Jorgensen
+
+--- Slide ppt/slides/slide5.xml ---
+Elements of a Test Case Purpose Input Expected Output Actual Output Sample Format: Test Case ID Purpose Input Data Expected Output Actual Output Result
+
+--- Slide ppt/slides/slide6.xml ---
+Types of Faults Algorithmic fault (logic) Computation and precision fault a formula’s implementation is wrong Capacity or boundary faults System’s performance not acceptable when certain limits are reached Timing or coordination faults Performance faults System does not perform at the speed prescribed
+
+--- Slide ppt/slides/slide7.xml ---
+Software Faults and Failures Typical Algorithmic Faults An algorithmic fault occurs when a component’s algorithm or logic does not produce proper output Branching too soon Branching too late Forgetting to initialize variable or set loop invariants Comparing variables of inappropriate data types
+
+--- Slide ppt/slides/slide8.xml ---
+Different Level of Failure Severity Catastrophic: causes death or system loss Critical: causes severe injury or major system damage Marginal: causes minor injury or minor system damage Minor: causes no injury or system damage
+
+--- Slide ppt/slides/slide9.xml ---
+Testing Issues Who Performs the Test? Independent test team avoid conflict  personal responsibility vs need to discover faults improve objectivity allow testing and coding concurrently
