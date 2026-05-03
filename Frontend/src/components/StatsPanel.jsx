@@ -79,21 +79,21 @@ export default function StatsPanel() {
         subColor="text-fuchsia-400"
       />
       <StatCard
-        title="⚠ Critical Batches"
+        title="Critical Batches"
         value={loading ? '—' : stats.critical}
         sub="Expire within 30 days"
         subColor={stats?.critical > 0 ? 'text-red-500' : 'text-zinc-400'}
         accent={stats?.critical > 0 ? 'border-red-200 bg-red-50/60' : 'border-white/10'}
       />
       <StatCard
-        title="⚠ Warning Batches"
+        title="Warning Batches"
         value={loading ? '—' : stats.warning}
         sub="Expire within 31–60 days"
         subColor={stats?.warning > 0 ? 'text-amber-500' : 'text-zinc-400'}
         accent={stats?.warning > 0 ? 'border-amber-200 bg-amber-50/60' : 'border-white/10'}
       />
       <StatCard
-        title="👁 Watch Batches"
+        title="Watch Batches"
         value={loading ? '—' : stats.watch}
         sub="Expire within 61–90 days"
         subColor={stats?.watch > 0 ? 'text-yellow-600' : 'text-zinc-400'}

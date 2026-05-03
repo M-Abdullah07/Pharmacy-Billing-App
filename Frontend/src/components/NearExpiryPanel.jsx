@@ -87,7 +87,6 @@ export default function NearExpiryPanel({ thresholds = DEFAULT_THRESHOLDS }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <AlertTriangle size={16} className="text-amber-500" />
           <h2 className="text-sm font-semibold text-gray-800">Near-Expiry Batch Alerts</h2>
         </div>
         <span className="text-xs text-gray-400">
@@ -116,9 +115,6 @@ export default function NearExpiryPanel({ thresholds = DEFAULT_THRESHOLDS }) {
                   className={`flex items-start gap-3 p-4 rounded-xl border transition-all
                   ${hasAlert ? bg : 'bg-gray-50 border-gray-100'}`}
                 >
-                  <div className={`mt-0.5 ${hasAlert ? iconColor : 'text-gray-300'}`}>
-                    <Icon size={18} />
-                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span

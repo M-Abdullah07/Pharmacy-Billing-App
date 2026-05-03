@@ -4,14 +4,15 @@
 
 ### 5.1 Chosen Architecture Pattern
 
-**Pattern**: Layered (N-Tier) Architecture with Repository Pattern (Current State) → **Recommended: Clean Layered Architecture with Dependency Inversion**
+**Pattern**: Layered (N-Tier) Architecture with Service Modules + Dependency Injection (CURRENT IMPLEMENTATION)
 
 **Justification**:
 - **Layered architecture** naturally separates concerns into presentation, business logic, and data access layers, making the desktop Electron application modular and testable.
-- **Repository pattern** abstracts database access, allowing the business logic to remain independent of PostgreSQL implementation details and enabling future data store migrations.
-- **Dependency Inversion** ensures high-level modules (business logic, services) depend on abstractions (interfaces), not concrete implementations (database drivers, Electron API), making the system resilient to technology changes.
-- **IPC Handler Layer** (Electron-specific) sits between presentation and business logic, enabling communication between React frontend and Node.js backend without tight coupling.
-- This pattern supports future expansion: adding REST API, switching databases, or implementing role-based access control without major refactoring.
+- **Service-oriented design** (already implemented) encapsulates business logic into domain-specific modules (authService, productService, saleService, purchaseService, stockService, ledgerService, partyService, systemService), enabling parallel development and easy maintenance.
+- **Dependency Injection** pattern used in main.js ensures services receive database context (`{ queryDb, runDb, pool }`) at initialization, reducing coupling and improving testability.
+- **IPC Handler Registration** (Electron-specific) sits in each service module, mapping backend logic directly to frontend-accessible channels without requiring a separate router layer.
+- **ES6 Module System** (import/export) provides clean, modern code organization compared to CommonJS.
+- This pattern enables future expansion: REST API layer can wrap services, database abstraction via repositories can replace direct queries, or role-based access control can be added at handler level without touching core logic.
 
 ---
 
@@ -31,151 +32,131 @@
 │  │ Purchaseinvoice  │  │ Dialogs, Tables  │  │ useElectronAPI   │          │
 │  └──────────────────┘  └──────────────────┘  └──────────────────┘          │
 │                                                                               │
-│                    ↓ IPC Events (Electron Bridge)                            │
+│                    ↓ IPC Events (window.electronAPI)                         │
 └─────────────────────────────────────────────────────────────────────────────┘
                                   ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│              APPLICATION / IPC HANDLER LAYER (Electron Main)                │
+│                   SERVICE LAYER (Electron Main Process)                     │
+│              Location: Backend/app/services/                                │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │ ipcHandlers.js (Router Layer)                                        │   │
+│  │ main.js (Bootstrap & Initialization)                                │   │
 │  ├──────────────────────────────────────────────────────────────────────┤   │
-│  │ • Maps IPC channel names to service methods                          │   │
-│  │ • Delegates business logic to appropriate service                   │   │
-│  │ • Converts Electron IPC responses to frontend-friendly format        │   │
-│  │                                                                       │   │
-│  │  ipcMain.handle("add-sale", (e, data) =>                           │   │
-│  │    saleService.processSale(data)                                    │   │
-│  │  );                                                                  │   │
+│  │ • Creates Electron app window                                       │   │
+│  │ • Loads environment variables                                       │   │
+│  │ • Initializes database connection pool                              │   │
+│  │ • Creates database context: { queryDb, runDb, pool }               │   │
+│  │ • Registers all service modules (dependency injection)              │   │
+│  │ • Shows splash screen while loading                                │   │
+│  │                                                                      │   │
+│  │ const db = { queryDb, runDb, pool };                               │   │
+│  │ authService(ipcMain, db);                                          │   │
+│  │ productService(ipcMain, db);                                       │   │
+│  │ saleService(ipcMain, db);                                          │   │
+│  │ purchaseService(ipcMain, db);                                      │   │
+│  │ // ... etc                                                          │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
-│                                  ↓                                            │
+│                                                                               │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │ DTOs & Validation Layer (Input Contracts)                           │   │
+│  │ SERVICE MODULES (Domain-Specific Business Logic)                    │   │
 │  ├──────────────────────────────────────────────────────────────────────┤   │
-│  │ • ProductDTO.validate()  (validates product creation)               │   │
-│  │ • SaleDTO.validate()     (validates sale invoice)                   │   │
-│  │ • CustomerDTO.validate() (validates customer creation)              │   │
-│  │ • Uses Zod for runtime schema validation                            │   │
+│  │                                                                      │   │
+│  │  Each service: export default function(ipcMain, db) { ... }        │   │
+│  │  • Receives ipcMain router and database context                     │   │
+│  │  • Registers IPC handlers for its domain                            │   │
+│  │  • Contains all business logic for that domain                      │   │
+│  │                                                                      │   │
+│  │  ┌──────────────────────┐  ┌──────────────────────┐               │   │
+│  │  │ authService.js       │  │ productService.js    │               │   │
+│  │  ├──────────────────────┤  ├──────────────────────┤               │   │
+│  │  │ • login handler      │  │ • getProducts        │               │   │
+│  │  │ • signup handler     │  │ • addProduct         │               │   │
+│  │  │ • password validation│  │ • updateProduct      │               │   │
+│  │  │ • token verification │  │ • searchProducts     │               │   │
+│  │  │ • session mgmt       │  │ • deactivateProduct  │               │   │
+│  │  └──────────────────────┘  └──────────────────────┘               │   │
+│  │                                                                      │   │
+│  │  ┌──────────────────────┐  ┌──────────────────────┐               │   │
+│  │  │ saleService.js       │  │ purchaseService.js   │               │   │
+│  │  ├──────────────────────┤  ├──────────────────────┤               │   │
+│  │  │ • add-sale (FEFO)    │  │ • createPurchaseOrder               │   │
+│  │  │ • validateCredit     │  │ • confirmReceipt(GRN)               │   │
+│  │  │ • confirmSale        │  │ • processReturn      │               │   │
+│  │  │ • getSaleInvoice     │  │ • getPurchaseOrders  │               │   │
+│  │  │ • allocateBatches()* │  │ • getGRNs            │               │   │
+│  │  └──────────────────────┘  └──────────────────────┘               │   │
+│  │                                                                      │   │
+│  │  ┌──────────────────────┐  ┌──────────────────────┐               │   │
+│  │  │ stockService.js      │  │ ledgerService.js     │               │   │
+│  │  ├──────────────────────┤  ├──────────────────────┤               │   │
+│  │  │ • getAvailability    │  │ • getSupplierLedger  │               │   │
+│  │  │ • getStockSummary    │  │ • getCustomerBalance │               │   │
+│  │  │ • getExpiryStatus    │  │ • exportLedger       │               │   │
+│  │  │ • getBatches         │  │ • getLedgerReport    │               │   │
+│  │  │ • getValuation       │  │ • reconcileLedger    │               │   │
+│  │  └──────────────────────┘  └──────────────────────┘               │   │
+│  │                                                                      │   │
+│  │  ┌──────────────────────┐  ┌──────────────────────┐               │   │
+│  │  │ partyService.js      │  │ systemService.js     │               │   │
+│  │  ├──────────────────────┤  ├──────────────────────┤               │   │
+│  │  │ (Suppliers & Customers)   (System Operations) │               │   │
+│  │  ├──────────────────────┤  ├──────────────────────┤               │   │
+│  │  │ • getSuppliers       │  │ • backup             │               │   │
+│  │  │ • addSupplier        │  │ • export             │               │   │
+│  │  │ • getCustomers       │  │ • restore            │               │   │
+│  │  │ • addCustomer        │  │ • getSysSettings     │               │   │
+│  │  │ • getContactPersons  │  │ • updateSettings     │               │   │
+│  │  │ • addContactPerson   │  │ • getDashboardData   │               │   │
+│  │  └──────────────────────┘  └──────────────────────┘               │   │
+│  │                                                                      │   │
+│  │  * FEFO allocation (calculateFefoPlan) called from saleService    │   │
+│  │                                                                      │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
-│                                  ↓                                            │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                  ↓
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    DOMAIN / BUSINESS LOGIC LAYER                            │
-├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
-│  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │ SERVICE MODULES (Core Business Logic)                             │     │
-│  ├────────────────────────────────────────────────────────────────────┤     │
-│  │                                                                     │     │
-│  │  ┌──────────────────────┐  ┌──────────────────────┐              │     │
-│  │  │ AuthService          │  │ ProductService       │              │     │
-│  │  ├──────────────────────┤  ├──────────────────────┤              │     │
-│  │  │ • login()            │  │ • listProducts()     │              │     │
-│  │  │ • signup()           │  │ • createProduct()    │              │     │
-│  │  │ • validatePassword() │  │ • updateProduct()    │              │     │
-│  │  │ • verifyToken()      │  │ • deactivateProduct()              │     │
-│  │  └──────────────────────┘  └──────────────────────┘              │     │
-│  │                                                                     │     │
-│  │  ┌──────────────────────┐  ┌──────────────────────┐              │     │
-│  │  │ SaleService          │  │ PurchaseService      │              │     │
-│  │  ├──────────────────────┤  ├──────────────────────┤              │     │
-│  │  │ • processSale()      │  │ • createPO()         │              │     │
-│  │  │ • validateCredit()   │  │ • confirmReceipt()   │              │     │
-│  │  │ • allocateBatches()* │  │ • processReturn()    │              │     │
-│  │  │ • confirmInvoice()   │  │ • generateGRN()      │              │     │
-│  │  └──────────────────────┘  └──────────────────────┘              │     │
-│  │                                                                     │     │
-│  │  ┌──────────────────────┐  ┌──────────────────────┐              │     │
-│  │  │ StockService         │  │ LedgerService        │              │     │
-│  │  ├──────────────────────┤  ├──────────────────────┤              │     │
-│  │  │ • getAvailability()  │  │ • getSupplierLedger()               │     │
-│  │  │ • checkExpiry()      │  │ • getCustomerBalance()              │     │
-│  │  │ • calculateValuation()   │ • exportLedger()     │              │     │
-│  │  └──────────────────────┘  └──────────────────────┘              │     │
-│  │                                                                     │     │
-│  │  ┌──────────────────────────────────────────────────────┐        │     │
-│  │  │ ALLOCATION STRATEGY PATTERN (Polymorphic)           │        │     │
-│  │  ├──────────────────────────────────────────────────────┤        │     │
-│  │  │ • AllocationStrategy (interface)                    │        │     │
-│  │  │   - FefoStrategy  (oldest expiry first)             │        │     │
-│  │  │   - FifoStrategy  (first in, first out)             │        │     │
-│  │  │   - WeightedAvgStrategy (cost-based)                │        │     │
-│  │  │                                                       │        │     │
-│  │  │ • SaleService depends on AllocationStrategy         │        │     │
-│  │  │   (injected, can swap implementations)              │        │     │
-│  │  └──────────────────────────────────────────────────────┘        │     │
-│  │                                                                     │     │
-│  │  * FEFO Logic (calculateFefoPlan) now integrated here             │     │
-│  │                                                                     │     │
-│  └────────────────────────────────────────────────────────────────────┘     │
-│                                  ↓                                            │
-│  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │ ENTITIES (Pure Domain Objects)                                    │     │
-│  ├────────────────────────────────────────────────────────────────────┤     │
-│  │ • Product, Batch, Customer, Supplier                              │     │
-│  │ • SaleInvoice, PurchaseInvoice, Payment                           │     │
-│  │ • StockMovement, Ledger Entry                                     │     │
-│  │ (Minimal logic, mostly data + validation)                         │     │
-│  └────────────────────────────────────────────────────────────────────┘     │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │ Shared Database Context (Dependency Injection)                      │   │
+│  ├──────────────────────────────────────────────────────────────────────┤   │
+│  │ • queryDb(sql, params): Execute SELECT queries                      │   │
+│  │ • runDb(sql, params): Execute INSERT/UPDATE/DELETE queries          │   │
+│  │ • pool: Full PostgreSQL connection pool for transactions            │   │
+│  │                                                                      │   │
+│  │ All services receive same context instance:                         │   │
+│  │ service(ipcMain, { queryDb, runDb, pool })                         │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
 │                                                                               │
 └─────────────────────────────────────────────────────────────────────────────┘
                                   ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      DATA ACCESS LAYER (Repositories)                       │
+│                      DATA ACCESS LAYER                                      │
+│              Location: Backend/app/services/db.js                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
-│  ┌──────────────────────────────────────────────────────────────────┐       │
-│  │ REPOSITORY PATTERN (Database Abstraction)                       │       │
-│  ├──────────────────────────────────────────────────────────────────┤       │
-│  │                                                                   │       │
-│  │  Repository Base Class:                                         │       │
-│  │  ├─ getById(id)                                                 │       │
-│  │  ├─ getAll()                                                    │       │
-│  │  ├─ create(entity)                                              │       │
-│  │  ├─ update(entity)                                              │       │
-│  │  └─ delete(id)                                                  │       │
-│  │                                                                   │       │
-│  │  Concrete Repositories:                                         │       │
-│  │  • ProductRepository                                            │       │
-│  │  • BatchRepository                                              │       │
-│  │  • CustomerRepository                                           │       │
-│  │  • SupplierRepository                                           │       │
-│  │  • SaleInvoiceRepository                                        │       │
-│  │  • PurchaseInvoiceRepository                                    │       │
-│  │  • StockMovementRepository                                      │       │
-│  │  • LedgerRepository                                             │       │
-│  │                                                                   │       │
-│  │  SPECIALIZED QUERIES:                                           │       │
-│  │  • BatchRepository.getActiveByProduct(productId)                │       │
-│  │  • BatchRepository.getByExpiry(expiryRange)                     │       │
-│  │  • StockMovementRepository.getByReference(refId, refType)       │       │
-│  │  • SaleInvoiceRepository.getByCustomer(customerId, status)      │       │
-│  │                                                                   │       │
-│  └──────────────────────────────────────────────────────────────────┘       │
-│                                  ↓                                            │
-│  ┌──────────────────────────────────────────────────────────────────┐       │
-│  │ DATABASE ADAPTER (PostgreSQL Abstraction)                       │       │
-│  ├──────────────────────────────────────────────────────────────────┤       │
-│  │ • query(sql, params)                                             │       │
-│  │ • transaction(callback) - Handle BEGIN/COMMIT/ROLLBACK          │       │
-│  │ • connect()    - Get client from pool                           │       │
-│  │ • withLock()   - FOR UPDATE queries (optimistic locking)        │       │
-│  │ • close()      - Drain pool                                      │       │
-│  └──────────────────────────────────────────────────────────────────┘       │
+│  PostgreSQL Connection Management:                                          │
+│  ├─ const pool = new Pool({ host, port, database, user, password })        │
+│  ├─ queryDb(sql, params) → pool.query() → Promise<QueryResult>            │
+│  ├─ runDb(sql, params) → pool.query() → Promise<QueryResult>              │
+│  ├─ Pool connection testing on app startup                                 │
+│  └─ Connection error event handlers                                        │
+│                                                                               │
+│  Direct SQL Execution Pattern:                                              │
+│  • Services write raw SQL with parameterized queries ($1, $2, etc.)       │
+│  • Uses PostgreSQL advisory locking: FOR UPDATE (pessimistic locking)      │
+│  • Transaction support: client.query('BEGIN'), COMMIT, ROLLBACK            │
+│  • Data access layer is THIN—mainly connection pooling                     │
 │                                                                               │
 └─────────────────────────────────────────────────────────────────────────────┘
                                   ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          DATABASE LAYER                                     │
+│              Location: database/pharmax_schema.sql                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  PostgreSQL 15+                                                              │
 │  ├─ Tables (BCNF normalized):                                               │
 │  │  ├─ users, manufacturers, categories, products                           │
-│  │  ├─ suppliers, customers, batches                                        │
-│  │  ├─ stock_movements (immutable ledger)                                   │
+│  │  ├─ suppliers, customers, contacts                                       │
+│  │  ├─ batches, stock_movements (immutable ledger)                          │
 │  │  ├─ purchase_invoices, purchase_invoice_items                            │
 │  │  ├─ sale_invoices, sale_invoice_items                                    │
 │  │  ├─ payments, expenses                                                    │
@@ -185,12 +166,12 @@
 │  │  ├─ CHECK constraints (quantity >= 0, status finality)                   │
 │  │  ├─ UNIQUE constraints (name, DRAP numbers)                              │
 │  │  ├─ FK constraints (cascade on update)                                   │
-│  │  ├─ Triggers: fn_sync_batch_quantity() - stock sync                      │
+│  │  ├─ Triggers: fn_sync_batch_quantity() - atomic stock sync              │
 │  │  ├─ Triggers: fn_check_credit_limit() - credit validation                │
-│  │  └─ Triggers: fn_rebuild_product_search_vector() - FTS                   │
+│  │  └─ Triggers: fn_rebuild_product_search_vector() - full-text search     │
 │  │                                                                           │
 │  └─ SEQUENCES:                                                              │
-│     └─ sale_invoice_num_seq (gapless-ready invoicing)                       │
+│     └─ sale_invoice_num_seq (gapless invoice numbering)                     │
 │                                                                               │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -202,248 +183,299 @@
 
 #### **Presentation Layer / UI**
 
-**Responsibility**: Render user interface and collect user input; delegate business logic to application layer.
+**Responsibility**: Render user interface and collect user input; delegate business logic to backend via Electron IPC.
 
 **Sub-Components**:
 
 1. **Pages** (`/src/pages/`)
-   - Top-level route components: `AddSale.jsx`, `Dashboard.jsx`, `Products.jsx`, etc.
-   - Each page handles one major workflow (e.g., "Create a Sale", "View Stock")
+   - Top-level route components: `AddSale.jsx`, `Dashboard.jsx`, `Products.jsx`, `Purchaseinvoice.jsx`, etc.
+   - Each page handles one major workflow (e.g., "Create a Sale", "View Stock", "Generate Report")
    - Orchestrates child components and custom hooks
-   - Does NOT contain business logic or raw Electron API calls
+   - Does NOT contain business logic or raw Electron API calls; delegates to backend services
 
 2. **Components** (`/src/components/`)
    - Reusable UI modules: `ActivityList`, `AnalyticsChart`, `Header`, `Sidebar`, `Dialogs`
-   - Shared UI library: `avatar`, `button`, `card`, `table`, `dialog`, etc. (shadcn/ui-style)
+   - Shared UI library: `avatar`, `button`, `card`, `table`, `dialog`, `select`, etc. (Shadcn-style)
    - Pure presentation logic; props-driven, no side effects
    - Example: `AnalyticsChart` receives data array, renders chart; doesn't fetch data
 
 3. **Custom Hooks** (`/src/hooks/`)
-   - **`useCustomerData.js`**: Fetches customer list, handles caching, refresh logic
-   - **`useProductData.js`**: Fetches products, manages product filters
-   - **`useSaleCart.js`**: Manages sale line items state (add, remove, update quantity)
-   - **`useFormValidation.js`**: Validates forms in real-time (NTN, DRAP license, phone, etc.)
-   - **`useElectronAPI.js`**: Abstracts Electron IPC calls (wraps `window.electronAPI`)
-   - All hooks delegate to `apiAdapter` for actual data fetching (enabling testability)
-
-4. **API Adapter** (`/src/services/apiAdapter.js`)
-   - Single abstraction point for all backend communication
-   - Exports interface: `{ customers, products, sales, purchases, ... }`
-   - Implementation swappable: `ElectronApiAdapter` (uses IPC) vs. `HttpApiAdapter` (future REST)
-   - Enables unit testing without Electron
-
----
-
-#### **Application / IPC Handler Layer**
-
-**Responsibility**: Route incoming IPC events from frontend to appropriate business services; validate input; format responses.
-
-**Sub-Components**:
-
-1. **IPC Handler Router** (`backend/handlers/ipcHandlers.js`)
-   - Maps IPC channel names to service methods
-   - ~100 lines total (vs. current 1500+ line monolith)
-   - Example:
+   - **`useElectronAPI.js`**: Abstraction layer for calling backend services via IPC
+   - **`use-mobile.js`**: Detect mobile/responsive layout
+   - Each page can extract data-fetching logic into custom hooks (future enhancement)
+   - Example pattern:
      ```javascript
-     ipcMain.handle("add-sale", async (event, data) => {
-       const validatedData = SaleDTO.validate(data);
-       return ServiceResponse.success(await saleService.processSale(validatedData));
-     });
+     const useCustomerData = () => {
+       const [customers, setCustomers] = useState([]);
+       const api = useElectronAPI();
+       useEffect(() => {
+         api.call('get-customers').then(setCustomers);
+       }, []);
+       return customers;
+     };
      ```
-   - Benefits: Easy to see all routes at a glance; isolated responsibility
 
-2. **DTO & Validation Layer** (`backend/services/dtos/`)
-   - **ProductDTO**: Validates product creation (name, manufacturer, GST rate, etc.)
-   - **SaleDTO**: Validates sale invoice creation (customer, items, payment mode)
-   - **CustomerDTO**: Validates customer creation (NTN, DRAP license, city, territory)
-   - Uses Zod for schema validation (runtime safety)
-   - Prevents invalid data from reaching business logic
-
-3. **Response Handler** (`backend/services/responseHandler.js`)
-   - Standardized response format across all handlers:
-     ```javascript
-     { success: true, data: {...}, error: null }
-     { success: false, data: null, error: { message: "...", code: "..." } }
-     ```
-   - Improves frontend error handling consistency
+4. **API Communication Pattern**:
+   - Pages call `window.electronAPI` methods (injected by preload.js)
+   - Example: `await window.electronAPI.invoke('add-sale', saleData)`
+   - Maps directly to backend IPC handlers registered in service modules
 
 ---
 
-#### **Domain / Business Logic Layer**
+#### **Service Layer / IPC Handlers**
 
-**Responsibility**: Implement core business rules, workflows, and calculations; orchestrate repositories; remain database-agnostic.
+**Responsibility**: Bridge between frontend (Electron IPC) and backend business logic; register handlers; manage state transitions.
 
-**Service Modules** (`/backend/services/`):
+**Current Structure** (`/backend/app/services/`):
 
-1. **`AuthService.js`**
-   - `login(username, password)`: Verify credentials, return auth token
-   - `signup(username, password, confirmPassword)`: Hash password, create user
-   - `verifyToken(token)`: Validate JWT/session token
-   - Does NOT touch database directly; uses `UserRepository`
+Each service module exports a default function that:
+1. Receives `ipcMain` (Electron router) and `db` (database context)
+2. Registers IPC handlers for its domain
+3. Contains ALL business logic for that domain
+4. Returns nothing (side-effect: handler registration)
 
-2. **`ProductService.js`**
-   - `listProducts(filters)`: Fetch active products, apply search/category filters
-   - `createProduct(data)`: Insert product, trigger search vector rebuild
-   - `updateProduct(id, data)`: Update product details
-   - `deactivateProduct(id)`: Mark inactive (soft delete)
-   - Depends on `ProductRepository` (interface, not concrete pool)
-
-3. **`SaleService.js`** (Core transaction workflow)
-   - `processSale(data)`: Main orchestrator
-     - Validate customer credit limit
-     - Lock batches (pessimistic locking)
-     - Run FEFO allocation (via `AllocationStrategy`)
-     - Insert invoice header + items
-     - Record stock movements
-     - Update aggregates
-   - `confirmInvoice(id, userId)`: Transition from draft → confirmed
-   - `validateCreditLimit(customerId, amount)`: Check customer balance
-   - **Depends on**:
-     - `SaleInvoiceRepository`
-     - `BatchRepository`
-     - `StockMovementRepository`
-     - `AllocationStrategy` (polymorphic)
-   - **Does NOT depend on**: PostgreSQL driver, IPC, Express—only on interfaces
-
-4. **`PurchaseService.js`**
-   - `createPurchaseOrder(data)`: Create PO (draft)
-   - `confirmReceipt(id, data)`: Confirm GRN, create batches, record stock movements
-   - `processReturn(invoiceId, items, reason)`: Handle purchase returns
-   - Transactions handled via `DatabaseAdapter.transaction()`
-
-5. **`StockService.js`**
-   - `getAvailability(productId)`: Sum available quantity across all batches
-   - `getExpiryStatus(productId)`: Alert on near-expiry stock
-   - `calculateValuation(productId)`: FIFO/weighted-avg cost
-   - Aggregation logic; uses `BatchRepository` and `StockMovementRepository`
-
-6. **`LedgerService.js`**
-   - `getSupplierLedger(supplierId, fromDate, toDate)`: All transactions with supplier
-   - `getCustomerBalance(customerId)`: Current AR balance
-   - `exportLedger(ledgerId, format)`: Export to CSV/PDF
-   - Read-side queries; joins invoices, payments, stock movements
-
-**Allocation Strategy Pattern** (Polymorphic):
-- **Interface**: `AllocationStrategy`
-  ```javascript
-  interface AllocationStrategy {
-    allocate(items, availableBatches): AllocationPlan[];
-  }
-  ```
-- **Implementations**:
-  - `FefoStrategy`: Expiry-first (current, via `calculateFefoPlan()`)
-  - `FifoStrategy`: Receipt order
-  - `WeightedAvgStrategy`: Cost-based allocation
-- **Usage**: `SaleService` receives strategy via dependency injection
-  ```javascript
-  constructor(saleRepository, batchRepository, allocationStrategy) {
-    this.strategy = allocationStrategy;  // Can be swapped
-  }
-  ```
-
-**Pure Entities** (`/backend/entities/`):
-- `Product`, `Batch`, `Customer`, `Supplier`
-- Lightweight domain objects; minimal logic; mostly data + validation
-
----
-
-#### **Data Access Layer (Repositories)**
-
-**Responsibility**: Encapsulate all database queries; provide domain-oriented interface; hide SQL details.
-
-**Repository Base Class** (`/backend/repositories/BaseRepository.js`):
+Example pattern:
 ```javascript
-class BaseRepository {
-  constructor(dbAdapter, tableName) {
-    this.db = dbAdapter;
-    this.tableName = tableName;
-  }
+// services/saleService.js
+export default function registerSaleHandlers(ipcMain, db) {
+  const { queryDb, runDb, pool } = db;
   
-  async getById(id) { /* SELECT ... WHERE id = $1 */ }
-  async getAll(filters) { /* SELECT ... WHERE ...(filters) */ }
-  async create(entity) { /* INSERT ... */ }
-  async update(id, entity) { /* UPDATE ... */ }
-  async delete(id) { /* DELETE ... (soft-delete) */ }
+  ipcMain.handle('add-sale', async (event, data) => {
+    try {
+      // Business logic here
+      const result = await processSaleTransaction(data, pool);
+      return { success: true, data: result };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
 }
 ```
 
-**Concrete Repositories**:
+**Concrete Services**:
 
-1. **`ProductRepository.js`**
-   - Inherits: `getById()`, `getAll()`, `create()`, `update()`, `delete()`
-   - Custom: `searchByName(term)`, `getByCategory(categoryId)`, `getActive()`, `rebuildSearchVector(productId)`
+1. **`authService.js`**
+   - Handlers: `login`, `signup`, `logout`, `verify-token`, `get-user`, `change-password`
+   - Validates credentials, manages session state, handles user authentication
+   - Direct SQL: queries `users` table, validates password hashes
 
-2. **`BatchRepository.js`**
-   - Custom: `getActiveByProduct(productId)`, `getByExpiry(expiryRange)`, `lockForUpdate(productIds)` (FOR UPDATE)
-   - Used in `SaleService` for FEFO calculations
+2. **`productService.js`**
+   - Handlers: `get-products`, `add-product`, `update-product`, `search-products`, `get-categories`, `deactivate-product`
+   - Product CRUD operations, filtering, searching, categorization
+   - Direct SQL: INSERT/UPDATE/SELECT on `products`, `categories`, rebuilds search vectors
 
-3. **`SaleInvoiceRepository.js`**
-   - Custom: `getByCustomer(customerId, status)`, `getByDateRange()`, `confirmInvoice(id, confirmData)`
-   - Complex queries handled here (joins, aggregations)
+3. **`partyService.js`** (Suppliers & Customers)
+   - Handlers: `get-suppliers`, `add-supplier`, `get-customers`, `add-customer`, `get-contact-persons`, `add-contact-person`
+   - Manages two party types: suppliers and customers
+   - Direct SQL: INSERT/UPDATE/SELECT on `suppliers`, `customers`, `contacts`
 
-4. **`StockMovementRepository.js`**
-   - Immutable ledger; only `insert()` allowed
-   - Custom: `getByBatch(batchId)`, `getByReference(referenceId, referenceType)`, `getMovementsSince(date)`
+4. **`saleService.js`** (Complex transaction logic)
+   - **Core Handler**: `add-sale`
+     - Receives sale data (customerId, items[], userId)
+     - Locks batches with pessimistic locking: `FOR UPDATE`
+     - Runs FEFO allocation via `calculateFefoPlan(data.items, lockedBatches)`
+     - Inserts invoice header + line items (bulk INSERT)
+     - Records stock movements to immutable ledger
+     - Updates customer balance
+   - **Other Handlers**: `get-sale-invoices`, `get-sale-details`, `confirm-sale`, `print-sale`
+   - Direct SQL: Complex multi-step transaction with batch locking
 
-5. **`LedgerRepository.js`**
-   - Aggregation queries:
-     - `getSupplierLedger()`: Joins invoices + payments + stock movements
-     - `getCustomerBalance()`: Running balance calculation
+5. **`purchaseService.js`**
+   - Handlers: `get-purchase-orders`, `add-purchase-order`, `confirm-receipt`, `get-grns`, `process-return`
+   - Manages purchase workflows: GRN (Goods Receipt Note), batch creation, return processing
+   - Direct SQL: Multi-step transactions on `purchase_invoices`, `batches`, `stock_movements`
 
-**Database Adapter** (`/backend/database/adapter.js`):
-- Wraps PostgreSQL `Pool`
-- Public interface:
+6. **`stockService.js`**
+   - Handlers: `get-stock-summary`, `get-availability`, `get-expiry-status`, `get-batches`, `get-valuation`
+   - Inventory queries: available quantity, expiry alerts, FIFO valuation
+   - Direct SQL: Aggregation queries joining `batches`, `stock_movements`, `products`
+
+7. **`ledgerService.js`**
+   - Handlers: `get-supplier-ledger`, `get-customer-ledger`, `get-balance`, `export-ledger`
+   - Running balance calculations, transaction history, AR/AP aging
+   - Direct SQL: Complex JOINs across `invoices`, `payments`, `stock_movements`
+
+8. **`systemService.js`**
+   - Handlers: `backup-database`, `export-data`, `import-data`, `get-dashboard-data`, `get-system-settings`
+   - Database backup, data export (CSV, PDF), dashboard aggregations
+   - Direct SQL: Full-table scans, aggregations for dashboard metrics
+
+9. **`db.js`** (Database Adapter)
+   - Exports: `queryDb(sql, params)`, `runDb(sql, params)`, `pool`, `testConnection()`
+   - Creates and manages PostgreSQL connection pool
+   - `queryDb()`: Wrapper for `pool.query()`, used for SELECT statements
+   - `runDb()`: Wrapper for `pool.query()`, used for INSERT/UPDATE/DELETE
+   - Tests connection on app startup, logs connection status
+
+---
+
+#### **Dependency Injection Pattern (Current Implementation)**
+
+**Bootstrap in main.js**:
+```javascript
+// main.js
+const db = { queryDb, runDb, pool };
+
+// Each service receives ipcMain and db context
+authService(ipcMain, db);
+productService(ipcMain, db);
+saleService(ipcMain, db);
+purchaseService(ipcMain, db);
+stockService(ipcMain, db);
+ledgerService(ipcMain, db);
+partyService(ipcMain, db);
+systemService(ipcMain, db);
+```
+
+**Benefits**:
+- ✅ All services can be tested with mock `db` object
+- ✅ Easy to swap database implementation (PostgreSQL → MongoDB)
+- ✅ Centralized error handling and logging
+- ✅ Services remain pure functions (no singletons or global state)
+
+---
+
+#### **Data Access Layer**
+
+**Responsibility**: Execute database queries; manage connection pool; provide query execution interface.
+
+**Current Implementation** (`/backend/app/services/db.js`):
+
+```javascript
+const pool = new Pool({
+  host: process.env.DB_HOST || "127.0.0.1",
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || "Pharmax",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "",
+});
+
+export async function queryDb(sql, params = []) {
+  return await pool.query(sql, params);
+}
+
+export async function runDb(sql, params = []) {
+  return await pool.query(sql, params);
+}
+
+export async function testConnection() {
+  const res = await pool.query("SELECT NOW()");
+  console.log("✅ PostgreSQL connected:", res.rows[0].now);
+}
+```
+
+**Design Notes**:
+- **Direct SQL Pattern**: Services write parameterized SQL queries directly
+- **Connection Pool**: PostgreSQL connection pooling for concurrent requests
+- **No ORM/Query Builder**: Raw SQL provides:
+  - ✅ Full control over query optimization
+  - ✅ Access to PostgreSQL-specific features (arrays, JSON, advisory locks, triggers)
+  - ✅ Explicit locking: `FOR UPDATE` (pessimistic locking in `add-sale`)
+- **Transaction Support**: Services can use `pool.connect()` for multi-statement transactions
   ```javascript
-  async query(sql, params)          // Raw query
-  async transaction(callback)       // Handle BEGIN/COMMIT/ROLLBACK
-  async withLock(callback)          // FOR UPDATE wrapper
-  async close()                      // Drain pool
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Multiple queries here
+    await client.query('COMMIT');
+  } catch {
+    await client.query('ROLLBACK');
+  } finally {
+    client.release();
+  }
   ```
-- **Benefit**: Swap PostgreSQL for MongoDB/SQLite by creating new adapter; services unchanged
+
+**Future Enhancement** (Phase 1 of refactoring):
+- Extract REPOSITORY pattern layer:
+  - `ProductRepository`, `BatchRepository`, `CustomerRepository`, etc.
+  - Encapsulate SQL queries per entity
+  - Hide database details from services
+  - Enable database swaps without changing service code
 
 ---
 
 #### **Database Layer**
 
-**Responsibility**: Persistent data storage; enforce constraints; maintain data integrity via triggers and checks.
+**Responsibility**: Persistent data storage; enforce constraints; maintain data integrity via triggers.
 
-**PostgreSQL 15+ Schema** (see [pharmax_schema.sql](database/pharmax_schema.sql)):
+**PostgreSQL 15+ Schema** (see [database/pharmax_schema.sql](database/pharmax_schema.sql)):
 
 1. **Core Tables** (BCNF normalized):
-   - `users` (authentication)
-   - `manufacturers`, `categories`, `products` (master data)
-   - `suppliers`, `customers`, `contacts` (parties)
-   - `batches` (inventory units)
-   - `stock_movements` (immutable ledger—source of truth for quantity)
-   - `purchase_invoices`, `purchase_invoice_items` (GRN)
-   - `sale_invoices`, `sale_invoice_items` (invoicing)
-   - `payments`, `expenses` (financials)
+   - **Authentication**: `users` (username, password_hash, is_active)
+   - **Master Data**: `manufacturers`, `categories`, `products`
+   - **Parties**: `suppliers`, `customers`, `contacts` (contact_entity enum)
+   - **Inventory**: `batches` (product_id, supplier_id, expiry_date, quantity_received, quantity_available)
+   - **Audit Trail**: `stock_movements` (immutable, append-only ledger)
+   - **Sales**: `sale_invoices`, `sale_invoice_items` (draft/confirmed status)
+   - **Purchases**: `purchase_invoices`, `purchase_invoice_items`
+   - **Financials**: `payments`, `expenses`, `supplier_ledger` (view), `customer_ledger` (view)
 
 2. **Constraint Strategy**:
-   - **CHECK constraints**: `quantity_available >= 0`, `status = 'confirmed' → deactivated_at NOT NULL`
+   - **CHECK constraints**: 
+     - `quantity_available >= 0` (no negative stock)
+     - `is_active = FALSE → deactivated_at NOT NULL` (deactivation integrity)
+     - `status = 'confirmed' → deactivated_at IS NOT NULL` (status finality)
    - **UNIQUE constraints**: Product name, Manufacturer name, DRAP numbers
-   - **FK constraints**: CASCADE on UPDATE, RESTRICT on DELETE (preserve audit trail)
+   - **FK constraints**: CASCADE on UPDATE (preserve referential integrity)
 
-3. **Trigger Functions**:
-   - **`fn_sync_batch_quantity()`**: After each `stock_movement` INSERT, atomically update `batches.quantity_available`
-     - Moves logic from application to database → race condition immunity
-   - **`fn_check_credit_limit()`**: Before `sale_invoices` UPDATE to 'confirmed', validate customer AR balance
-   - **`fn_rebuild_product_search_vector()`**: On product/manufacturer name update, regenerate full-text search vector
+3. **Trigger Functions** (Database-level business logic):
+   - **`fn_sync_batch_quantity()`**: 
+     - After `stock_movements` INSERT, atomically updates `batches.quantity_available`
+     - Ensures stock sync at database layer (race-condition immune)
+   - **`fn_check_credit_limit()`**: 
+     - Before `sale_invoices` UPDATE to 'confirmed', validates customer AR balance
+     - Prevents sales exceeding credit limit
+   - **`fn_rebuild_product_search_vector()`**: 
+     - On product/manufacturer name update, regenerates full-text search vector
+     - Enables fast ILIKE searching
 
 4. **Sequences**:
    - **`sale_invoice_num_seq`**: Gapless invoice numbering (format: `INV-2026-000001`)
-   - Pre-seeded to prevent duplicates on restart
+   - Pre-seeded to prevent duplicates on app restart
 
-5. **Performance Features**:
-   - Indexes on FK columns (product_id, customer_id, supplier_id, batch_id)
-   - GiST index on `search_vector` (full-text search)
-   - Partial indexes on `is_active = TRUE` (fast queries for active entities)
-
-6. **Data Integrity Guarantees**:
+5. **Data Integrity Guarantees**:
    - All monetary values: `NUMERIC(15,2)` (never FLOAT → prevents rounding errors)
-   - All timestamps: `TIMESTAMPTZ` (audit trail)
-   - Soft deletes everywhere: `is_active + deactivated_at` (preserves history)
-   - Append-only for financial records (no UPDATE/DELETE on ledger entries)
+   - All timestamps: `TIMESTAMPTZ` (audit trail + timezone safety)
+   - Soft deletes everywhere: `is_active + deactivated_at` (preserves history, enables undelete)
+   - Append-only for financial records: Only INSERT on `stock_movements`, no UPDATE/DELETE (audit trail)
+
+---
+
+## Current Implementation Status
+
+| Layer | Status | Location | Notes |
+|-------|--------|----------|-------|
+| **Presentation** | ✅ Complete | `/src/pages`, `/src/components` | React-based, uses IPC bridge |
+| **Service Layer** | ✅ Complete | `/app/services/` | 9 domain-specific service modules |
+| **IPC Router** | ✅ Embedded | Within each service | Handlers registered in service functions |
+| **Data Access** | 🟡 Direct SQL | `/app/services/db.js` | No repository layer yet (future enhancement) |
+| **Database** | ✅ Production | PostgreSQL 15+ | BCNF normalized, triggers, constraints |
+| **Validation** | 🟡 Partial | Inline in handlers | No DTO layer yet (future enhancement) |
+| **Testing** | ✅ Partial | `/tests/` | Integration tests for sales & manufacturer |
+
+---
+
+## Architecture Maturity
+
+**Current**: Semi-refactored service-oriented + direct SQL
+- ✅ Concerns separated into service modules
+- ✅ Dependency injection pattern in place
+- ✅ ES6 modules for clean code organization
+- 🟡 Direct SQL (no repository abstraction)
+- 🟡 No DTO/validation layer
+- 🟡 Fat service modules (business logic + SQL mixed)
+
+**Future (Recommended Refactoring Phases)**:
+
+| Phase | Task | Impact | Timeline |
+|-------|------|--------|----------|
+| 1 | Extract repositories (ProductRepository, BatchRepository, etc.) | DIP compliant, testable, database-agnostic | 1-2 weeks |
+| 2 | Add DTO validation layer (Zod schemas) | Input safety, consistent error handling | 1 week |
+| 3 | Extract custom hooks (useCustomerData, useSaleCart, etc.) | Testable React components, code reuse | 1 week |
+| 4 | Build API adapter layer (swap Electron ↔ HTTP) | REST API ready, web version possible | 1-2 weeks |
+| 5 | Add integration tests for all services | Regression protection, documentation | 1-2 weeks |
+
+**Result**: Enterprise-grade, fully SOLID-compliant, testable architecture.
 
 ---
 
@@ -461,27 +493,156 @@ class BaseRepository {
 
 ---
 
-## Migration Path (Current → Recommended)
+## Refactoring Progress
 
-**Phase 1** (Week 1-2): Extract services from `main.js`
-- Create `services/authService.js`, `productService.js`, `saleService.js`, etc.
-- Move business logic from handlers into services
+### ✅ COMPLETED
 
-**Phase 2** (Week 2-3): Implement repository pattern
-- Create `repositories/ProductRepository.js`, `BatchRepository.js`, etc.
-- Replace direct `pool.query()` with repository methods
+**Phase 1: Service Extraction** (✅ DONE)
+- Extracted 9 domain-specific service modules from monolithic main.js
+- Services: authService, productService, partyService, saleService, purchaseService, stockService, ledgerService, systemService, db
+- Each service registers its own IPC handlers via dependency injection
+- main.js reduced to bootstrap & window management (~150 lines vs. 1500+)
+- ES6 modules (import/export) for clean code organization
 
-**Phase 3** (Week 3-4): Build API adapter for frontend
-- Create `frontend/src/services/apiAdapter.js`
-- Extract custom hooks from pages
+**Test Coverage**:
+- ✅ Integration test for `add-sale` transaction (FEFO allocation)
+- ✅ Integration test for manufacturer lifecycle
 
-**Phase 4** (Week 4-5): Refactor React components
-- Extract logic into custom hooks
-- Move state management to hooks
+---
 
-**Phase 5** (Week 5-6): Add DTO validation
-- Implement Zod schemas for all input types
-- Validate in IPC handlers before passing to services
+### 🟡 IN PROGRESS / RECOMMENDED
 
-**Result**: Testable, maintainable, enterprise-grade architecture.
+**Phase 2: Repository Pattern Implementation** (🔲 TODO)
+- **Goal**: Decouple business logic from SQL; enable database swaps
+- **Impact**: DIP-compliant, fully testable services without database
+- **Effort**: 1-2 weeks
+- **Files to Create**:
+  - `/backend/app/repositories/BaseRepository.js`
+  - `/backend/app/repositories/ProductRepository.js`
+  - `/backend/app/repositories/BatchRepository.js`
+  - `/backend/app/repositories/InvoiceRepository.js`
+  - `/backend/app/repositories/LedgerRepository.js`
+  - (etc. for each entity)
+- **Changes**:
+  - Services call `this.productRepo.findById(id)` instead of `queryDb(...)`
+  - Repositories handle SQL details
+  - Easy to mock repositories in tests
+
+**Phase 3: DTO & Validation Layer** (🔲 TODO)
+- **Goal**: Validate input at handler boundary; consistent error handling
+- **Impact**: Security, type safety, frontend error handling consistency
+- **Effort**: 1 week
+- **Files to Create**:
+  - `/backend/app/dtos/ProductDTO.js` (with Zod schema)
+  - `/backend/app/dtos/SaleDTO.js`
+  - `/backend/app/dtos/CustomerDTO.js`
+  - (etc. for each input type)
+  - `/backend/app/services/responseHandler.js` (standardized responses)
+- **Changes**:
+  ```javascript
+  ipcMain.handle('add-sale', async (event, data) => {
+    try {
+      const validatedData = SaleDTO.validate(data);
+      const result = await saleService.processSale(validatedData);
+      return ServiceResponse.success(result);
+    } catch (err) {
+      return ServiceResponse.error(err.message);
+    }
+  });
+  ```
+
+**Phase 4: Frontend API Abstraction** (🔲 TODO)
+- **Goal**: Testable React components; easy to swap IPC ↔ HTTP
+- **Impact**: Unit testable components, future REST API support
+- **Effort**: 1 week
+- **Files to Create**:
+  - `/frontend/src/services/apiAdapter.js` (interface)
+  - `/frontend/src/services/ElectronApiAdapter.js` (IPC implementation)
+  - `/frontend/src/services/HttpApiAdapter.js` (future REST)
+  - `/frontend/src/hooks/useCustomerData.js`
+  - `/frontend/src/hooks/useSaleCart.js`
+  - `/frontend/src/hooks/useFormValidation.js`
+- **Changes**:
+  ```javascript
+  // Old: Direct IPC in components
+  const customers = await window.electronAPI.invoke('get-customers');
+  
+  // New: Abstracted hook
+  const customers = useCustomerData();
+  ```
+
+**Phase 5: Integration Test Suite** (🔲 TODO)
+- **Goal**: Full regression protection for all workflows
+- **Effort**: 1-2 weeks
+- **Tests to Add**:
+  - `integration_purchase.js` - Complete PO → GRN → returns flow
+  - `integration_ledger.js` - Ledger balance calculations
+  - `integration_stock.js` - Inventory tracking across transactions
+  - `integration_auth.js` - Login, signup, token validation
+  - `integration_reports.js` - Dashboard & ledger exports
+
+---
+
+## Architecture Benefits (Current State)
+
+| Principle | Benefit | Example |
+|-----------|---------|---------|
+| **Service-oriented** | Parallel development | Frontend team builds pages while backend develops services |
+| **Dependency Injection** | Testable | Services receive `db` context; easy to mock in tests |
+| **ES6 Modules** | Clean code | Clear imports; easier to track dependencies |
+| **Direct SQL** | Flexibility | Access PostgreSQL-specific features (arrays, JSON, locking) |
+| **Database Triggers** | Atomic operations | Stock reconciliation happens at DB layer; race-condition immune |
+| **Soft Deletes** | Data preservation | Never lose data; enable undelete; historical audit trail |
+
+---
+
+## Architecture Maturity
+
+**Current State**:
+- ✅ Services separated into 9 modules
+- ✅ Dependency injection pattern
+- ✅ ES6 modules
+- ✅ Database triggers for atomicity
+- 🟡 Direct SQL (no repository abstraction)
+- 🟡 No DTO/validation layer
+- 🟡 Handlers scattered across services (no central router)
+
+**After Phase 2-5 Completion**:
+- ✅ Full SOLID compliance
+- ✅ Fully testable (unit + integration)
+- ✅ Database-agnostic (PostgreSQL → MongoDB swap possible)
+- ✅ REST API-ready (Electron IPC → HTTP transparent)
+- ✅ Production-grade architecture
+
+---
+
+## Recommended Quick Wins (High Impact, Low Effort)
+
+| Task | Impact | Time | Difficulty |
+|------|--------|------|-----------|
+| Add DTO validation layer (Phase 3) | 🔴 High | 1 week | 🟡 Medium |
+| Create repository pattern (Phase 2) | 🔴 High | 2 weeks | 🟡 Medium |
+| Extract React custom hooks (Phase 4) | 🟡 Medium | 1 week | 🟢 Easy |
+| Write integration tests (Phase 5) | 🔴 High | 2 weeks | 🟡 Medium |
+| Add response standardization | 🟡 Medium | 2 days | 🟢 Easy |
+
+---
+
+## How to Continue Development
+
+**For New Features**:
+1. Create new service module in `/backend/app/services/`
+2. Register IPC handlers in that service
+3. Follow existing patterns (dependency injection, parameterized queries)
+4. Add integration test in `/backend/tests/`
+
+**For Refactoring**:
+1. Start with Phase 2 (repositories) — blocks Phase 3-5
+2. Work on most-used services first (saleService, purchaseService)
+3. Write tests before and after refactoring
+
+**For Maintenance**:
+- Keep services domain-focused (max 200-300 lines per service)
+- Add business logic to database triggers (fn_* functions)
+- Use soft deletes everywhere (maintain history)
 
