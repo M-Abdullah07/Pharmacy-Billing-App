@@ -32,15 +32,29 @@ export default function register(ipcMain, db) {
     }
   });
 
+  // ─── Security: strict allow-list prevents SQL injection via table name ────
+  const EXPORTABLE_TABLES = new Set([
+    "products", "categories", "suppliers", "customers",
+    "batches", "sale_invoices", "purchase_invoices",
+    "stock_movements", "sale_invoice_items", "purchase_invoice_items",
+  ]);
+
   ipcMain.handle("export-to-csv", async (event, { table, filename }) => {
     try {
-      // Map internal table names if needed
-      let dbTable = table;
-      if (table === "sales") dbTable = "sale_invoices";
-  
+      // Map public-facing names to actual table names
+      const tableAliases = { sales: "sale_invoices", purchases: "purchase_invoices" };
+      const dbTable = tableAliases[table] ?? table;
+
+      // ✅ Allow-list guard — reject any table name not explicitly permitted
+      if (!EXPORTABLE_TABLES.has(dbTable)) {
+        console.error(`❌ export-to-csv: rejected disallowed table '${dbTable}'`);
+        return { success: false, error: `Export of '${table}' is not permitted.` };
+      }
+
+      // Safe to interpolate — dbTable is guaranteed to be a known identifier
       const rows = await queryDb(`SELECT * FROM ${dbTable}`);
       if (rows.length === 0) return { success: false, error: "No data found to export" };
-  
+
       const headers = Object.keys(rows[0]);
       const csvContent = [
         headers.join(","),
@@ -49,15 +63,14 @@ export default function register(ipcMain, db) {
           return `"${val.toString().replace(/"/g, '""')}"`;
         }).join(","))
       ].join("\n");
-  
+
       const { filePath } = await dialog.showSaveDialog({
-        title: `Export ${table} Data`,
+        title: `Export ${dbTable} Data`,
         defaultPath: path.join(app.getPath("downloads"), filename),
         filters: [{ name: "CSV Files", extensions: ["csv"] }]
       });
-  
+
       if (filePath) {
-        const fs = require('fs');
         fs.writeFileSync(filePath, csvContent);
         return { success: true, path: filePath };
       }
@@ -68,14 +81,9 @@ export default function register(ipcMain, db) {
     }
   });
 
-  ipcMain.handle("query-db", async (event, sql, params) => {
-    try {
-      return await queryDb(sql, params);
-    } catch (err) {
-      console.error("❌ query-db error:", err.message);
-      throw err;
-    }
-  });
+  // ❌ REMOVED: 'query-db' open handler deleted — arbitrary SQL execution from
+  //    the renderer is a critical SQL-injection vector. Use typed service
+  //    handlers (get-products, add-sale, etc.) instead.
 
   ipcMain.handle("select-directory", async () => {
     const result = await dialog.showOpenDialog({
