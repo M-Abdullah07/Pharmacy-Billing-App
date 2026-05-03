@@ -8,26 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getUserId } from '../utilis/sessions';
+import { facade } from '@/core/facade/createFacade';
+import { AddCustomerDialog, SaleItemsTable } from './sales/components';
 
 export default function AddSale({ onSaleRecorded }) {
   // Core data states
@@ -57,13 +44,10 @@ export default function AddSale({ onSaleRecorded }) {
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerPhone, setNewCustomerPhone] = useState('');
 
-  // Electron API shortcut
-  const api = window.electronAPI;
-
   // Fetch customers from DB
   const refreshCustomers = async () => {
     try {
-      const result = await api.getCustomers();
+      const result = await facade.route('getCustomers');
       setCustomers(result || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -74,7 +58,7 @@ export default function AddSale({ onSaleRecorded }) {
   // Fetch products from DB
   const refreshProducts = async () => {
     try {
-      const result = await api.getProducts();
+      const result = await facade.route('getProducts');
       setProducts(result || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -96,7 +80,7 @@ export default function AddSale({ onSaleRecorded }) {
     }
     try {
       setIsLoading(true);
-      const result = await api.addCustomer({
+      const result = await facade.route('addCustomer', {
         name: newCustomerName.trim(),
         phone: newCustomerPhone.trim(),
       });
@@ -170,7 +154,7 @@ export default function AddSale({ onSaleRecorded }) {
 
     try {
       setIsLoading(true);
-      const result = await api.addSale({
+      const result = await facade.route('addSale', {
         customerId: selectedCustomer,
         userId,
         isCredit,
@@ -226,42 +210,15 @@ export default function AddSale({ onSaleRecorded }) {
         </Button>
       </div>
 
-      <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Customer</DialogTitle>
-            <DialogDescription>
-              Fill in the details and click save to add a new customer.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-4 mt-4">
-            <Label>Customer Name:</Label>
-            <Input
-              type="text"
-              placeholder="Name"
-              value={newCustomerName}
-              onChange={(e) => setNewCustomerName(e.target.value)}
-              required
-            />
-            <Label>Customer Phone Number:</Label>
-            <Input
-              type="text"
-              placeholder="Phone (optional)"
-              value={newCustomerPhone}
-              onChange={(e) => setNewCustomerPhone(e.target.value)}
-              className="input-class"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={handleAddCustomer}>Save</Button>
-            <Button variant="outline" onClick={() => setShowAddCustomer(false)}>
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddCustomerDialog
+        open={showAddCustomer}
+        onOpenChange={setShowAddCustomer}
+        newCustomerName={newCustomerName}
+        newCustomerPhone={newCustomerPhone}
+        setNewCustomerName={setNewCustomerName}
+        setNewCustomerPhone={setNewCustomerPhone}
+        onSave={handleAddCustomer}
+      />
 
       {/* Product select */}
       <Label className="mb-2">Product:</Label>
@@ -319,46 +276,7 @@ export default function AddSale({ onSaleRecorded }) {
         </div>
       </div>
 
-      {/* Sale items table */}
-      <Table className="mt-4">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Product</TableHead>
-            <TableHead>Qty</TableHead>
-            <TableHead>Rate (FEFO)</TableHead>
-            <TableHead>Total (FEFO)</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {saleItems.length === 0 && (
-            <TableRow>
-              <TableCell colSpan="7" style={{ textAlign: 'center' }}>
-                No items added
-              </TableCell>
-            </TableRow>
-          )}
-          {saleItems.map((item, index) => (
-            <TableRow key={index}>
-              <TableCell>{item.productName}</TableCell>
-              <TableCell>{item.quantity}</TableCell>
-              <TableCell>
-                {item.saleRate ? `Rs. ${item.saleRate.toFixed(2)}` : 'Auto-calculated'}
-              </TableCell>
-              <TableCell>
-                {item.saleRate
-                  ? `Rs. ${(item.quantity * item.saleRate).toFixed(2)}`
-                  : 'Auto-calculated'}
-              </TableCell>
-              <TableCell>
-                <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(index)}>
-                  Remove
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <SaleItemsTable items={saleItems} onRemove={handleRemoveItem} />
 
       {/* Credit sale */}
       <div className="flex items-center justify-between mt-8 border-t pt-4">

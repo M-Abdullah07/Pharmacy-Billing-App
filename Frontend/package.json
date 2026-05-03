@@ -9,6 +9,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -28,7 +30,7 @@
     "@electron-forge/plugin-vite": "^7.8.1",
     "@electron/fuses": "^1.8.0",
     "@electron/rebuild": "^4.0.3",
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.0.0",
     "@tailwindcss/postcss": "^4.1.11",
     "autoprefixer": "^10.4.21",
     "electron": "37.2.4",
@@ -43,7 +45,9 @@
     "postcss-loader": "^8.1.1",
     "prettier": "^3.8.3",
     "tailwindcss": "^4.1.11",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "vitest": "^3.2.4",
+    "jsdom": "^26.1.0"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",

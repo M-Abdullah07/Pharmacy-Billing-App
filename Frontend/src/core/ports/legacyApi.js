@@ -1,0 +1,31 @@
+export const legacyApi = {
+  getAllProducts: (...args) => window.electronAPI.getAllProducts(...args),
+  getSuppliers: (...args) => window.electronAPI.getSuppliers(...args),
+  getCategories: (...args) => window.electronAPI.getCategories(...args),
+  getStockSummary: (...args) => window.electronAPI.getStockSummary(...args),
+  getStockByProduct: (...args) => window.electronAPI.getStockByProduct(...args),
+  addProduct: (...args) => window.electronAPI.addProduct(...args),
+  updateProduct: (...args) => window.electronAPI.updateProduct(...args),
+  deactivateProduct: (...args) => window.electronAPI.deactivateProduct(...args),
+  reactivateProduct: (...args) => window.electronAPI.reactivateProduct(...args),
+
+  getPurchaseInvoices: (...args) => window.electronAPI.getPurchaseInvoices(...args),
+  getPurchaseInvoice: (...args) => window.electronAPI.getPurchaseInvoice(...args),
+  addPurchaseInvoice: (...args) => window.electronAPI.addPurchaseInvoice(...args),
+  addPurchaseInvoiceItem: (...args) => window.electronAPI.addPurchaseInvoiceItem(...args),
+  confirmPurchaseInvoice: (...args) => window.electronAPI.confirmPurchaseInvoice(...args),
+  cancelPurchaseInvoice: (...args) => window.electronAPI.cancelPurchaseInvoice(...args),
+
+  getCustomersWithContact: (...args) => window.electronAPI.getCustomersWithContact(...args),
+  getContactPersons: (...args) => window.electronAPI.getContactPersons(...args),
+  addCustomer: (...args) => window.electronAPI.addCustomer(...args),
+  updateCustomer: (...args) => window.electronAPI.updateCustomer(...args),
+  addContactPerson: (...args) => window.electronAPI.addContactPerson(...args),
+  deleteContactPerson: (...args) => window.electronAPI.deleteContactPerson(...args),
+  deleteCustomer: (...args) => window.electronAPI.deleteCustomer(...args),
+  reactivateCustomer: (...args) => window.electronAPI.reactivateCustomer(...args),
+
+  getCustomers: (...args) => window.electronAPI.getCustomers(...args),
+  getProducts: (...args) => window.electronAPI.getProducts(...args),
+  addSale: (...args) => window.electronAPI.addSale(...args),
+};
