@@ -25,6 +25,7 @@ function getPool() {
 // losing `this` context that a Proxy getter would cause.
 const pool = {
   query: (...args) => getPool().query(...args),
+  connect: (...args) => getPool().connect(...args),
   end:   (...args) => getPool().end(...args),
   on:    (...args) => getPool().on(...args),
 };
