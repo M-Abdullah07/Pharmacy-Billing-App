@@ -1,0 +1,998 @@
+National University of Computer and Emerging Sciences
+CS 3009 — Software Engineering
+PharmaX
+Pharmaceutical Distribution Management System
+Project Deliverable #4 — Iteration 3 / Sprint 3
+Delivered To: Ms. Ansa Liaqat
+Name
+Roll No
+M Abdullah
+23L-0505
+Sheraz Malik
+23L-0572
+Ali Hassan
+23L-0690
+Department of Computer Science
+FAST-NU, Lahore, Pakistan
+Date: May, 2026
+1. Project Introduction
+PharmaX is a desktop-based, centralised application engineered for Pakistani pharmaceutical wholesale distributors. It eliminates reliance on fragmented tools — spreadsheets, paper registers, and disconnected billing software — by providing a fully integrated platform for master data management, inventory tracking, purchase and sales processing, financial ledgering, and data export, all within a single, role-based desktop application.
+The system is designed in compliance with Pakistan's pharmaceutical regulatory framework: DRAP (Drug Regulatory Authority of Pakistan) for drug scheduling and batch-level tracking, and FBR (Federal Board of Revenue) for GST-compliant invoicing. Key Pakistan-specific features include STRN/NTN identification for suppliers and customers, DRAP drug schedule classification (OTC / G / H / H1 / X), batch-level MRP as mandated by DRAP, and support for local payment modes including JazzCash and EasyPaisa.
+Target users are medium to large pharmaceutical wholesale and distribution businesses operating across Pakistan. The system is designed to reduce compliance exposure, eliminate manual reconciliation, and provide real-time visibility into stock, receivables, and payables — enabling distributors to operate with greater accuracy, speed, and regulatory confidence.
+2. Sprint Backlog — Sprint 3
+2a. Module for Sprint 3
+Module Name: 
+Operations Intelligence & Workstation Control 
+This module delivers:
+A live Dashboard with KPI stat cards, near-expiry batch alerts, activity feed, and analytics chart
+A Backup & Data Export module for full PostgreSQL database snapshots and CSV exports (Sales, Customers, Products)
+A Settings / Control Panel for managing Business Identity, System preferences, Invoicing rules, Printing hardware, Security, and Maintenance
+2b. Sprint 3 Backlog Table
+Story ID
+User Story
+Priority
+SP
+Status
+US-301
+Dashboard — Live KPI Panel
+High
+5
+Done
+US-301a
+As a distributor, I want to see Total Sales revenue (all confirmed invoices) on the dashboard so I can track performance at a glance
+High
+2
+Done
+US-301b
+As a distributor, I want to see Total Profit (sale rate − purchase cost × qty) on the dashboard so I understand margins
+High
+2
+Done
+US-301c
+As a distributor, I want to see the count of Out-of-Stock products on the dashboard so I know what to reorder immediately
+High
+1
+Done
+US-302
+Dashboard — Near-Expiry Batch Alert Panel (UC-205)
+Critical
+8
+Done
+US-302a
+As a distributor, I want the dashboard to show a count of Critical batches (expiring ≤ 30 days) with a red accent card so I can act immediately
+Critical
+3
+Done
+US-302b
+As a distributor, I want the dashboard to show a count of Warning batches (31–60 days) with an amber accent card so I can plan proactively
+Critical
+2
+Done
+US-302c
+As a distributor, I want the dashboard to show a count of Watch batches (61–90 days) with a yellow accent card for early awareness
+High
+2
+Done
+US-302d
+As a distributor, I want to see an "All Clear" confirmation message when no batches are near expiry so I have peace of mind
+Medium
+1
+Done
+US-303
+Dashboard — Activity Feed & Analytics Chart
+Medium
+5
+Done
+US-303a
+As a distributor, I want to see a recent activity list (latest stock movements / sales) on the dashboard
+Medium
+3
+Done
+US-303b
+As a distributor, I want an analytics chart on the dashboard to visualise sales trends over time
+Medium
+2
+Done
+US-304
+Backup & Export — Database Snapshot
+High
+5
+Done
+US-304a
+As an admin, I want to trigger a full PostgreSQL database backup from within the app and be shown the saved file path so I can confirm success
+High
+3
+Done
+US-304b
+As an admin, I want the backup action to show an in-app toast on success or failure so I know the result without leaving the screen
+Medium
+1
+Done
+US-304c
+As an admin, I want backup cancellation (e.g. closing the save dialog) to be handled gracefully with an "Operation cancelled" message
+Low
+1
+Done
+US-305
+Backup & Export — CSV Data Exports
+High
+6
+Done
+US-305a
+As an admin, I want to export the full Sales Ledger to a date-stamped CSV file so I can analyse revenue in Excel
+High
+2
+Done
+US-305b
+As an admin, I want to export the Customer List to CSV so I can maintain an offline directory of accounts
+Medium
+2
+Done
+US-305c
+As an admin, I want to export the Product Catalog to CSV so I can audit inventory and pricing offline
+Medium
+2
+Done
+US-306
+Settings — Business Identity
+High
+4
+Done
+US-306a
+As an admin, I want to set and save Pharmacy Name, Email, Phone, Drug Licence, STRN, NTN, and Address so they appear on generated invoices and reports
+High
+3
+Done
+US-306b
+As an admin, I want settings to be persisted in localStorage so they survive app restarts without a database round-trip
+Medium
+1
+Done
+US-307
+Settings — System & Automation
+High
+5
+Done
+US-307a
+As an admin, I want to toggle Dark Mode on/off and have it apply immediately to the entire app so the UI matches the workstation environment
+Medium
+2
+Done
+US-308
+Settings — Invoicing & Printing
+Medium
+4
+Done
+US-308a
+As an admin, I want to set the Invoice Number Prefix, Default Tax Rate, Currency symbol, and Footer Disclaimer so all bills are consistently formatted
+Medium
+2
+Done
+US-308b
+As an admin, I want to choose between POS Thermal (80mm roll) and Standard Desktop (A4/A5) printing modes and enter the assigned device name
+Medium
+2
+Done
+US-309
+Settings — Security & Maintenance
+Medium
+3
+Done
+US-309a
+As an admin, I want a "Hard Factory Reset" option that wipes all local UI settings and reloads the app without affecting database records
+Low
+1
+Done
+2c. Rework / Leftover Stories from Sprint 1 & 2
+Story ID
+User Story
+Priority
+SP
+Status
+US-202
+Generate Sales Invoice with GST  [Rework from Sprint 2]
+Critical
+—
+Done
+US-203
+Record Purchase Returns  [Leftover from Sprint 2]
+High
+—
+Done
+US-204
+Process Sales Returns  [Leftover from Sprint 2]
+High
+—
+Done
+US-205
+Near-Expiry Batch Alerts  [Leftover from Sprint 2]
+High
+—
+Done
+US-206
+View Customer Ledger & Outstanding Dues  [Leftover from Sprint 2]
+High
+—
+Done
+US-207
+View Supplier Ledger & Outstanding Payables  [Leftover from Sprint 2]
+High
+—
+Done
+3. User Stories
+This section contains the full user story specifications across all three sprints.
+3.1 Sprint 1 User Stories
+US-101 — System Authentication
+Use Case ID
+UC-101
+Use Case Name
+User Login and Registration
+Actor(s)
+Distributor, Admin
+Preconditions
+1. The PharmaX desktop application is running. 2. The user has a registered account in the system. 3. The user is on the Login screen.
+Postconditions
+1. A session token is created for the duration of the session. 2. Failed login attempts are logged for security auditing.
+User Story
+As an admin, I want to register and securely log in to the system so that I can access PharmaX with my role-appropriate permissions and keep unauthorised users out.
+Sub User Stories
+• As a new user, I want to sign up by entering my username and password so that I can create my account. • As a registered user, I want to log in with my username and password so that I can access the system; invalid credentials should show a clear error. • As an Admin user, I want to be redirected to the Admin Dashboard upon login so that I see management-level options.
+Acceptance Criteria
+• Sign-up form must capture username and password fields. • Login must validate credentials and show a clear error for invalid inputs without revealing which field is wrong. • After 5 consecutive failed login attempts, the account is temporarily locked for 15 minutes.
+Alt Flow A: Invalid Credentials
+At step 7, password hash does not match. System displays: 'Invalid username or password. Please try again.' Login fields are cleared.
+Alt Flow B: Account Locked
+After 5 consecutive failures, account is locked for 15 minutes. System displays: 'Account temporarily locked. Please try again after 15 minutes.'
+Exceptions
+E1 – Empty Fields: If either field is empty on submit, display inline validation: 'This field is required.' E2 – Database Unavailable: Display 'Service unavailable. Contact administrator.' and prevent login.
+ 
+US-102 — Add / Manage Products
+Use Case ID
+UC-102
+Use Case Name
+Add New Product
+Actor(s)
+Admin
+Preconditions
+1. Admin is logged in and on the Products module. 2. At least one manufacturer and one category exist in the system.
+Postconditions
+1. A new product record is saved to the products master table. 2. The product appears in the Products List with status Active. 3. The product is immediately available for batch and invoice creation.
+User Story
+As an admin, I want to add new medicines and manage the product master so that the system has accurate, complete product information for invoicing and inventory tracking.
+Sub User Stories
+• Add a product with name, category, manufacturer, pack size (UOM), HSN code, FBR GST rate, DRAP drug schedule, default sale rate, and default purchase rate. • Edit any product's details to correct errors or update pricing over time. • Deactivate a product so it no longer appears in sales/purchase screens without deleting historical records. • Search products by name, category, or manufacturer in real time.
+Acceptance Criteria
+• Add Product form must include all mandatory fields: name, manufacturer, category, HSN code, FBR GST rate, and DRAP drug schedule. • GST rate must be one of the FBR-approved slabs: 0 / 5 / 12 / 18 / 28. • Deactivated products must not appear in sales or purchase screens but historical records must be retained. • System must block saving a product with a duplicate name and display a clear error message.
+Alt Flow A: Duplicate Name
+At step 8, a product with the same name already exists. System highlights the name field and displays: 'A product with this name already exists.'
+Exceptions
+E1 – Mandatory Field Empty: Any mandatory field left blank triggers inline validation: 'This field is required.' E2 – Invalid GST Rate: If GST rate is not one of 0 / 5 / 12 / 18 / 28, system warns: 'Please select a valid FBR GST rate.'
+ 
+US-103 — Add / Manage Suppliers
+Use Case ID
+UC-103
+Use Case Name
+Add / Manage Suppliers
+Actor(s)
+Admin
+Preconditions
+1. Admin is logged in and on the Suppliers module.
+Postconditions
+1. A new supplier record is stored in the suppliers table. 2. The supplier is available for use in GRNs (purchase invoices).
+User Story
+As an admin, I want to register and manage supplier profiles so that I can maintain reliable supplier records for purchasing and DRAP/FBR compliance.
+Sub User Stories
+• Add a supplier with name, contact number, email, STRN (Sales Tax Registration Number), NTN (National Tax Number), DRAP wholesale drug licence number, address, city, payment terms, and credit period. • Edit supplier details when contact information or terms change. • Search/filter suppliers by name, STRN, or NTN. • Deactivate a supplier while retaining all historical GRN and payment records.
+Acceptance Criteria
+• Supplier registration form must capture all required fields including STRN and DRAP drug licence number. • STRN format must be validated (13-digit numeric for Pakistani STRN) before saving. • Deactivated suppliers must not appear in GRN creation screens but historical data must be retained.
+Alt Flow A: Duplicate STRN
+At duplicate STRN check, system displays: 'This STRN is already registered for another supplier.'
+Alt Flow B: Invalid STRN Format
+System displays: 'Invalid STRN format. Please enter a valid 13-digit Pakistani Sales Tax Registration Number.'
+Exceptions
+E1 – Mandatory Fields Missing: System prevents save and highlights all empty required fields. E2 – Invalid NTN: System validates NTN format before saving.
+ 
+US-104 — Add / Manage Customers
+Use Case ID
+UC-104
+Use Case Name
+Register New Customer
+Actor(s)
+Admin
+Preconditions
+1. Admin is logged in and on the Customers module.
+Postconditions
+1. A new customer record is stored in the customers table. 2. The customer is available for use in sales invoices and the customer ledger.
+User Story
+As an admin, I want to register customers with credit terms and contact details so that I can manage customer relationships, enforce credit policies, and ensure accurate billing.
+Sub User Stories
+• Add a customer with name, address, STRN, NTN, DRAP drug licence, credit limit, payment terms, city, territory, and customer type (retailer / wholesaler / hospital / clinic / government). • Edit customer details including credit limits. • Deactivate a customer without losing historical transaction records. • Search/filter customers by name, territory, city, or STRN.
+Acceptance Criteria
+• Customer registration form must capture all required fields including credit limit and territory. • STRN uniqueness must be enforced; duplicate STRN triggers a clear error. • Credit limit field must reject negative values. • Customer type selection is mandatory; defaults to 'retailer'.
+Alt Flow A: Duplicate STRN
+System highlights STRN field and shows: 'This STRN is already registered for another customer.'
+Alt Flow B: Invalid STRN Format
+System displays: 'Invalid STRN format. Please enter a valid 13-digit Pakistani STRN.'
+Exceptions
+E1 – Mandatory Fields Missing: System prevents save and highlights empty required fields. E2 – Negative Credit Limit: System rejects with: 'Credit limit cannot be negative.'
+ 
+US-105 — Add / Manage Batches
+Use Case ID
+UC-105
+Use Case Name
+Add New Batch
+Actor(s)
+Distributor
+Preconditions
+1. Distributor is logged in and at least one product and one supplier exist. 2. A purchase invoice (GRN) can be associated optionally.
+Postconditions
+1. A new batch record is saved and linked to the selected product and supplier. 2. An opening stock movement is auto-created in the stock_movements ledger. 3. The batch quantity is reflected in the real-time stock view. 4. The batch becomes available for FEFO selection during sales invoice creation.
+User Story
+As a distributor, I want to add new stock batches with MRP, manufacturing and expiry date information so that I can track inventory accurately at the batch level in compliance with DRAP requirements.
+Sub User Stories
+• Add a batch by selecting product and supplier, entering batch number, manufacturing date, expiry date, MRP (DRAP-mandated), purchase cost per unit, and quantity. • View all batches for a product with quantities and expiry status (Critical / Warning / Watch). • System highlights batches expiring within 30 days in red (Critical), 31–60 days in amber (Warning), 61–90 days in yellow (Watch). • Search batches by product name or batch number.
+Acceptance Criteria
+• Add Batch form must include: product dropdown, supplier dropdown, batch number, manufacturing date, expiry date, MRP, purchase cost, and quantity. • System must reject any batch where expiry date is on or before manufacturing date. • Batch number must be unique per product; duplicates blocked with a clear error. • MRP field is mandatory and must be greater than 0 (DRAP mandate). • Expiry warning: set expiry date at least 90 days from today for receivable stock (DRAP guideline).
+Alt Flow A: Expiry Before Manufacturing
+System shows: 'Expiry date must be after manufacturing date.'
+Alt Flow B: Duplicate Batch Number
+System shows: 'This batch number already exists for this product. Please verify.'
+Exceptions
+E1 – Zero or Negative Quantity: 'Quantity must be a positive number.' E2 – Product/Supplier Not Found: 'Please add at least one product and supplier before creating a batch.'
+ 
+US-106 — View Current Stock Levels
+Use Case ID
+UC-106
+Use Case Name
+View Current Stock Levels
+Actor(s)
+Distributor, Admin
+Preconditions
+1. At least one batch has been added to the system.
+Postconditions
+1. Distributor has an accurate real-time view of stock levels per product.
+User Story
+As a distributor, I want to view a consolidated real-time view of current stock levels across all products so that I know exactly what inventory is available at any time.
+Sub User Stories
+• View stock summary screen listing each product with total available quantity and stock value at MRP. • Click a product to expand batch-level details: batch number, expiry date, expiry status, and quantity. • Filter/search by product name, category, or manufacturer. • Zero-stock products visually highlighted (out-of-stock indicator).
+Acceptance Criteria
+• Stock summary screen must show each product with total available quantity and nearest expiry date. • Clicking a product must expand to show batch-level details. • Search/filter must work by product name or category in real time. • Zero-stock products must be visually highlighted. • Stock view must load within 2 seconds for up to 20,000 batch records.
+3.2 Sprint 2 User Stories
+US-201 — Create Purchase Invoice (GRN)
+Use Case ID
+UC-201
+Use Case Name
+Create Purchase Invoice / Goods Receipt Note (GRN)
+Actor(s)
+Distributor, Admin
+Preconditions
+1. Distributor is logged in. 2. At least one supplier, one product, and one batch exist in the system. 3. Distributor is on the Purchase Invoice screen.
+Postconditions
+1. A GRN record is saved and linked to the selected supplier. 2. Batch-level stock is updated in real time. 3. Supplier payable ledger reflects the new outstanding amount.
+User Story
+As a distributor, I want to create purchase invoices from suppliers and record incoming batches so that I can accurately track stock arrivals and supplier liabilities.
+Sub User Stories
+• As a distributor, I want to create a GRN by selecting a supplier and adding product lines with batch, quantity, and purchase rate so that incoming stock is recorded precisely.• As a distributor, I want stock levels to update automatically when a GRN is saved so that inventory is always current without manual adjustment.
+Acceptance Criteria
+• GRN form must capture: supplier, invoice date, invoice number, and one or more product lines (product, batch, quantity, purchase rate, GST rate).• Stock must be updated in real time upon GRN save.• Supplier payable must increase by the GRN total on save.• Duplicate supplier invoice numbers must be blocked with a clear error.
+Alt Flow A: Duplicate Invoice Number
+System displays: 'A GRN with this supplier invoice number already exists. Please verify before saving.'
+Alt Flow B: Insufficient Batch Stock
+If a product line references a batch with zero or insufficient stock for editing purposes, system warns: 'Batch quantity cannot be negative.'
+Exceptions
+E1 — Mandatory Fields Empty: All required fields must be filled; system shows inline validation errors.E2 — Invalid Quantity: Quantity must be a positive integer; system rejects zero or negative values with a clear error.
+US-202 — Generate Sales Invoice with GST
+Use Case ID
+UC-202
+Use Case Name
+Generate Sales Invoice with Automatic GST
+Actor(s)
+Distributor
+Preconditions
+1. Distributor is logged in. 2. At least one customer and one product batch with available stock exist. 3. Distributor is on the Sales Invoice screen.
+Postconditions
+1. A sales invoice is saved and linked to the selected customer. 2. Batch stock is deducted using FEFO logic. 3. Customer receivable ledger reflects the new outstanding amount. 4. A GST-compliant invoice is generated.
+User Story
+As a distributor, I want to generate sales invoices to customers with automatic GST calculation and FEFO batch selection so that customers are billed correctly and stock is reduced from the earliest expiry batch first.
+Sub User Stories
+• As a distributor, I want to add product lines to a sales invoice where the system automatically selects the earliest-expiry batch (FEFO) so that near-expiry stock is cleared first.• As a distributor, I want the system to apply any scheme or trade discount and compute the applicable GST automatically so that the invoice is accurate and FBR-compliant.
+Acceptance Criteria
+• Sales invoice form must capture: customer, invoice date, and one or more product lines (product, batch, quantity, sale rate, scheme/discount, GST rate).• FEFO batch selection must be the default; distributor may override manually.• GST must be computed per FBR slab linked to each product.• Stock deduction must occur immediately on invoice save.• System must block saving an invoice if stock is insufficient for any line item.
+Alt Flow A: Insufficient Stock
+System highlights the affected line and displays: 'Insufficient stock for [Product Name] — Batch [X]. Available: [Y] units.'
+Alt Flow B: Expired Batch Selected
+System blocks the selection and displays: 'Batch [X] has expired and cannot be sold.'
+Exceptions
+E1 — Customer Credit Limit Exceeded: System warns: 'This invoice will exceed the customer’s credit limit of PKR [X]. Proceed?' Admin override required.E2 — Mandatory Fields Empty: Inline validation triggers for any empty required field.
+US-203 — Record Purchase Returns
+Use Case ID
+UC-203
+Use Case Name
+Record Purchase Return to Supplier
+Actor(s)
+Distributor, Admin
+Preconditions
+1. Distributor is logged in. 2. A purchase invoice (GRN) exists against which the return will be recorded.
+Postconditions
+1. A purchase return record is saved and linked to the original GRN. 2. Batch stock is reduced by the returned quantity. 3. Supplier payable is reduced by the return value.
+User Story
+As a distributor, I want to record purchase returns against supplier GRNs and automatically adjust inventory and payables so that stock and financial records remain accurate after returns.
+Sub User Stories
+• As a distributor, I want to select an existing GRN and specify the batch and quantity to return so that the return is traceable to its original purchase.• As a distributor, I want inventory and the supplier payable to update automatically on return save so that no manual reconciliation is needed.
+Acceptance Criteria
+• Purchase return form must reference an original GRN; open GRN lookup by supplier invoice number or GRN ID.• Returned quantity must not exceed the original purchased quantity for that batch.• Batch stock must decrease and supplier payable must decrease on save.• Return record must be auditable with GRN reference and timestamp.
+Alt Flow A: Quantity Exceeds Purchased
+System displays: 'Return quantity exceeds the purchased quantity for this batch. Maximum returnable: [X] units.'
+Exceptions
+E1 — GRN Not Found: System displays a search dialog to locate the GRN by supplier or invoice number.E2 — Zero Quantity: System rejects with 'Return quantity must be greater than zero.'
+US-204 — Process Sales Returns
+Use Case ID
+UC-204
+Use Case Name
+Process Sales Return from Customer
+Actor(s)
+Distributor
+Preconditions
+1. Distributor is logged in. 2. A sales invoice exists against which the return will be processed.
+Postconditions
+1. A sales return (credit note) record is saved and linked to the original invoice. 2. Batch stock is restored. 3. Customer receivable is reduced by the return value.
+User Story
+As a distributor, I want to process sales returns from customers, restore stock, and adjust the customer’s outstanding balance so that inventory and receivables are always accurate.
+Sub User Stories
+• As a distributor, I want to select an original sales invoice and specify the batch and quantity being returned by the customer so that the return is fully traceable.• As a distributor, I want the returned batch stock to be restored and the customer’s ledger to be credited automatically on return save.
+Acceptance Criteria
+• Sales return form must reference an original sales invoice; lookup by invoice number or customer.• Returned quantity must not exceed the sold quantity on the original invoice line.• Batch stock must be restored and customer ledger credited on save.• Expired batch stock returned must be flagged for manual review before being added back to available stock.
+Alt Flow A: Quantity Exceeds Sold
+System displays: 'Return quantity exceeds the sold quantity on the original invoice. Maximum: [X] units.'
+Alt Flow B: Returned Batch Expired
+System flags the returned batch with a warning: 'This batch has expired. Returned stock will be quarantined pending review.'
+Exceptions
+E1 — Invoice Not Found: System provides a search dialog by customer name or invoice number.E2 — Zero Quantity: System rejects with 'Return quantity must be greater than zero.'
+US-205 — Near-Expiry Batch Alerts
+Use Case ID
+UC-205
+Use Case Name
+Near-Expiry Batch Alert System
+Actor(s)
+Distributor, Admin
+Preconditions
+1. At least one batch exists in the system with a future expiry date.
+Postconditions
+1. Distributor is notified of near-expiry batches on login and from the dashboard. 2. Expired batches are blocked from appearing in sales invoice batch selection.
+User Story
+As a distributor, I want to receive automatic alerts for batches nearing expiry and be prevented from selling expired stock so that I can take timely action and avoid compliance violations.
+Sub User Stories
+• As a distributor, I want the dashboard to display a count of Critical (0–30 days), Warning (31–60 days), and Watch (61–90 days) batches upon login so that I can prioritise action.• As a distributor, I want the system to block selection of expired batches during sales invoice creation and display a clear error so that no expired medicine is inadvertently sold.
+Acceptance Criteria
+• Dashboard must display near-expiry summary: Critical (≤30 days), Warning (31–60 days), Watch (61–90 days).• Batch list must colour-code rows: red for Critical, amber for Warning, yellow for Watch.• Expired batches must not appear in the sales invoice batch dropdown.• Alert thresholds must be configurable by Admin (default: 30 / 60 / 90 days).
+Alt Flow: All Batches Safe
+If no batches fall within the alert thresholds, the dashboard displays: 'No near-expiry alerts at this time.'
+Exceptions
+E1 — Batch Data Unavailable: System logs the error and displays 'Unable to load expiry data. Contact administrator.'
+US-206 — View Customer Ledger & Outstanding Dues
+Use Case ID
+UC-206
+Use Case Name
+Customer Ledger and Receivables View
+Actor(s)
+Distributor, Admin
+Preconditions
+1. At least one customer with at least one sales transaction exists.
+Postconditions
+1. Distributor has a complete view of a customer’s transaction history, current balance, ageing, and credit limit status.
+User Story
+As a distributor, I want to view each customer’s ledger showing all sales, returns, payments received, outstanding dues, and ageing analysis so that I can manage credit control effectively.
+Sub User Stories
+• As a distributor, I want to open a customer’s ledger and see a running account of all invoices, returns, and payments with a current outstanding balance.• As a distributor, I want to view an ageing analysis table showing how much of the customer’s balance falls in each ageing bucket (0–30, 31–60, 61–90, 90+ days) so that I can prioritise collection.
+Acceptance Criteria
+• Customer ledger must show: date, transaction type (invoice / return / payment), reference number, debit, credit, and running balance.• Ageing analysis must be displayed as a summary table: 0–30 days, 31–60 days, 61–90 days, 90+ days.• Credit limit utilisation must be shown as: Used / Total Limit and flagged if exceeded.• Ledger must load within 2 seconds for up to 5,000 transactions.
+Alt Flow: No Transactions
+If the customer has no transactions, the ledger screen displays: 'No transactions found for this customer.'
+Exceptions
+E1 — Customer Not Found: System provides a search dialog.E2 — Data Load Failure: System displays a retry prompt.
+US-207 — View Supplier Ledger & Outstanding Payables
+Use Case ID
+UC-207
+Use Case Name
+Supplier Ledger and Payables View
+Actor(s)
+Distributor, Admin
+Preconditions
+1. At least one supplier with at least one purchase transaction exists.
+Postconditions
+1. Distributor has a full view of each supplier’s payable balance, transaction history, and payment status.
+User Story
+As a distributor, I want to view each supplier’s ledger showing purchases, returns, payments made, and outstanding payables so that I can manage cash flow and supplier relationships responsibly.
+Sub User Stories
+• As a distributor, I want to open a supplier’s ledger and see all GRNs, purchase returns, and payments with a running outstanding balance.• As a distributor, I want to filter the supplier ledger by date range so that I can view payables for any specific period.
+Acceptance Criteria
+• Supplier ledger must show: date, transaction type (GRN / return / payment), reference number, debit, credit, and running balance.• Date range filter must allow any custom from/to date selection.• Total outstanding payable must be prominently displayed at the top of the screen.• Ledger must load within 2 seconds for up to 5,000 records.
+Alt Flow: No Transactions
+If the supplier has no transactions, the ledger displays: 'No transactions found for this supplier.'
+Exceptions
+E1 — Supplier Not Found: Search dialog provided.E2 — Data Load Failure: System displays a retry prompt.
+3.3 Sprint 3 User Stories
+US-301 — Dashboard Live KPI Panel
+US-301 — Dashboard Live KPI Panel
+Use Case ID
+UC-301
+Use Case Name
+Dashboard Live KPI Panel
+Actor(s)
+Distributor, Admin
+Preconditions
+1. User is authenticated and logged in.2. At least one confirmed sale invoice exists in the system.3. The sale_invoices, sale_invoice_items, batches, and products tables are accessible.
+Postconditions
+1. The dashboard displays real-time Total Sales, Total Profit, and Out-of-Stock product count.2. All figures are sourced from confirmed transactions only.
+User Story
+As a distributor, I want to see live KPI figures for Total Sales, Total Profit, and Out-of-Stock products on the dashboard so that I can assess business performance at a glance without running manual reports.
+Sub User Stories
+• As a distributor, I want to see Total Sales revenue (sum of net_receivable from confirmed invoices) so I know how much has been billed.• As a distributor, I want to see Total Profit (sale rate − purchase cost × quantity across all confirmed lines) so I understand margin performance.• As a distributor, I want to see a count of active products that currently have zero available stock so I know what needs immediate restocking.
+Acceptance Criteria
+• Total Sales card displays the sum of net_receivable from sale_invoices WHERE status = 'confirmed'.• Total Profit card displays the gross margin computed as (sale_rate − purchase_cost_per_unit) × quantity across all confirmed sale_invoice_items.• Out-of-Stock card displays the count of active products whose total quantity_available across all active batches equals zero.• All three cards load concurrently (parallel queries) and display a loading placeholder '—' until data resolves.• Figures are formatted in PKR with locale-appropriate thousand separators.
+Alt Flow(s)
+Alt Flow A — No sales yet: If no confirmed invoices exist, Total Sales and Total Profit display Rs 0 and Out-of-Stock shows the full count of active products with no batches.
+Exceptions
+E1 — electronAPI unavailable: If the Electron IPC bridge is not initialised, the panel renders a red error banner: 'Dashboard error: electronAPI not available'.E2 — Database query failure: If any query throws, the error is caught and displayed in the error banner; other panels are unaffected.
+US-302 — Near-Expiry Batch Alert Panel
+US-302 — Near-Expiry Batch Alert Panel
+Use Case ID
+UC-302
+Use Case Name
+Near-Expiry Batch Alert Panel
+Actor(s)
+Distributor, Admin
+Preconditions
+1. User is authenticated and logged in.2. At least one active batch with a future expiry date and quantity_available > 0 exists.
+Postconditions
+1. The dashboard displays counts of Critical (≤ 30 days), Warning (31–60 days), and Watch (61–90 days) batches.2. An 'All Clear' state is shown when no batches fall within any threshold.
+User Story
+As a distributor, I want to see near-expiry batch counts grouped by severity on the dashboard so that I can prioritise stock clearance and avoid regulatory violations from selling expired medicine.
+Sub User Stories
+• As a distributor, I want a Critical alert card (red) showing batches expiring within 30 days so I can act immediately.• As a distributor, I want a Warning alert card (amber) showing batches expiring within 31–60 days so I can plan proactively.• As a distributor, I want a Watch alert card (yellow) showing batches expiring within 61–90 days for early awareness.• As a distributor, I want to see a green 'No near-expiry alerts' confirmation when all batches are safe so I have peace of mind.
+Acceptance Criteria
+• The panel queries batches WHERE is_active = TRUE AND quantity_available > 0 using configurable day thresholds (default: 30 / 60 / 90).• Critical count uses the range 1–30 days; Warning 31–60 days; Watch 61–90 days.• Each alert card applies a coloured border and background accent only when count > 0; inactive cards render in neutral grey.• When all three counts equal zero, the grid is hidden and replaced by a green 'No near-expiry alerts at this time.' banner with a shield-check icon.• Thresholds are displayed in the panel header (e.g. 'Thresholds: 30/60/90 days') for transparency.• Panel loads with a '—' placeholder and resolves asynchronously without blocking other dashboard sections.
+Alt Flow(s)
+Alt Flow A — All clear: All counts are zero; the individual alert cards are hidden and replaced by the all-clear banner.Alt Flow B — Only some levels triggered: Cards for zero-count levels render in neutral style; only active levels show coloured accents and 'Alert' badges.
+Exceptions
+E1 — electronAPI unavailable: Panel renders a red inline error: 'Unable to load expiry data. Contact administrator.'E2 — Query error: Caught in try/catch; error message displayed in the error state without crashing other panels.
+US-303 — Dashboard Activity Feed & Analytics Chart
+US-303 — Dashboard Activity Feed & Analytics Chart
+Use Case ID
+UC-303
+Use Case Name
+Dashboard Activity Feed & Analytics Chart
+Actor(s)
+Distributor, Admin
+Preconditions
+1. User is authenticated.2. Stock movements and/or sale invoice records exist in the database.
+Postconditions
+1. The dashboard renders a chronological activity feed of recent transactions.2. An analytics chart renders a visual sales trend.
+User Story
+As a distributor, I want to see a recent activity list and a sales analytics chart on the dashboard so that I can review operational history and identify trends without navigating to separate report pages.
+Sub User Stories
+• As a distributor, I want to see a feed of recent stock movements and sales so I can quickly audit what happened on the workstation.• As a distributor, I want a time-series chart of sales data so I can spot revenue trends at a glance.
+Acceptance Criteria
+• ActivityList component renders below the KPI and expiry panels.• AnalyticsChart component renders alongside the activity list.• Both components are independently data-fetched and do not block each other or the KPI panels.• Dashboard layout uses a responsive flex column structure with consistent gap spacing.
+Alt Flow(s)
+Alt Flow A — No activity yet: Components render empty states or placeholder messages when no data exists.
+Exceptions
+E1 — Component-level fetch error: Each component handles its own error state independently.
+US-304 — Backup & Export — Database Snapshot
+US-304 — Full Database Backup (Snapshot)
+Use Case ID
+UC-304
+Use Case Name
+Full Database Backup (Snapshot)
+Actor(s)
+Admin
+Preconditions
+1. Admin is authenticated and on the Backup & Export page.2. The Electron backend has access to the backupDatabase IPC handler.3. The file system is accessible for writing.
+Postconditions
+1. A full portable database backup file is created at the admin-selected path.2. A success toast displays the saved file path.
+User Story
+As an admin, I want to create a full backup of the PostgreSQL database from within the app and receive confirmation of the saved path so that I can protect all pharmacy data against hardware failure or data corruption.
+Sub User Stories
+• As an admin, I want to click a single 'Create Backup' button to trigger a full system backup without needing command-line access.• As an admin, I want a success toast showing the exact file path so I can verify where the backup was saved.• As an admin, I want cancellation (e.g. closing the save dialog) to produce a clear 'Operation cancelled' message rather than an error.
+Acceptance Criteria
+• Clicking 'Create Backup' calls window.electronAPI.backupDatabase().• On success (result.success === true): a green toast displays 'Database backed up successfully to: {path}'.• On cancellation (result.error === 'Backup cancelled'): toast shows 'Operation cancelled'.• On other failure: toast shows 'Backup failed: {error message}'.• The button is disabled and shows 'Generating...' while the operation is in progress.• A loading state (isLoading) prevents concurrent backup requests.
+Alt Flow(s)
+Alt Flow A — User cancels file dialog: The IPC handler returns { success: false, error: 'Backup cancelled' }; the UI shows 'Operation cancelled' without treating it as an error.
+Exceptions
+E1 — File system permission denied: backupDatabase returns { success: false, error: '...' }; toast displays the error message.E2 — IPC handler throws: Caught in the frontend try/catch; toast shows 'Error creating backup: {message}'.
+US-305 — Backup & Export — CSV Data Exports
+US-305 — CSV Data Exports
+Use Case ID
+UC-305
+Use Case Name
+CSV Data Exports
+Actor(s)
+Admin
+Preconditions
+1. Admin is authenticated and on the Backup & Export page.2. exportToCsv IPC handler is registered in the Electron backend.
+Postconditions
+1. A date-stamped CSV file is written to the admin-chosen directory.2. A success toast confirms the export path.
+User Story
+As an admin, I want to export Sales, Customer, and Product data as individual CSV files so that I can analyse business data in external tools like Excel or share it with accountants.
+Sub User Stories
+• As an admin, I want to export the full Sales Ledger to a date-stamped CSV (sales-export-YYYY-MM-DD.csv) for revenue analysis.• As an admin, I want to export the Customer List to CSV (customers-export-YYYY-MM-DD.csv) for account management.• As an admin, I want to export the Product Catalog to CSV (products-export-YYYY-MM-DD.csv) for inventory and pricing audits.
+Acceptance Criteria
+• Three export cards are displayed: Sales Ledger, Customer List, Product Catalog — each with a distinct icon and colour.• Clicking 'Export CSV' on any card calls window.electronAPI.exportToCsv({ table, filename }) where filename is {table}-export-{YYYY-MM-DD}.csv.• On success: green toast shows '{Label} exported successfully to: {path}'.• On cancellation: toast shows 'Operation cancelled'.• On failure: toast shows 'Export failed: {error}'.• All three export buttons share the same isLoading lock — only one operation can run at a time.
+Alt Flow(s)
+Alt Flow A — Admin cancels file dialog: Same graceful cancellation handling as US-304.
+Exceptions
+E1 — Empty table: Export succeeds but produces a header-only CSV; no error is shown.E2 — IPC handler throws: Caught by try/catch; toast shows 'Error exporting data: {message}'.
+US-306 — Settings — Business Identity
+US-306 — Business Identity Configuration
+Use Case ID
+UC-306
+Use Case Name
+Business Identity Configuration
+Actor(s)
+Admin
+Preconditions
+1. Admin is authenticated and on the Settings page.2. The Business tab is active.
+Postconditions
+1. Updated business credentials are saved to localStorage.2. Settings persist across app restarts.
+User Story
+As an admin, I want to configure and save the pharmacy's business identity information so that it is consistently used across all generated invoices, bills, and system reports.
+Sub User Stories
+• As an admin, I want to set Pharmacy Name, Support Email, Contact Phone, Drug Licence, Physical Address, STRN, and NTN.• As an admin, I want changes to persist in localStorage so they survive app restarts without requiring a database round-trip.
+Acceptance Criteria
+• The Business tab renders input fields for: name, email, phone, drugLicense, address (full width), strn, ntn.• Clicking 'Sync Configuration' calls handleSave('Business') which writes the full settings object to localStorage under the key pharmax_app_settings.• On save: a success toast shows 'Business configuration saved.'• On app load: saved settings are read from localStorage and pre-populated into all fields.• A loading spinner replaces the save button text for 600 ms to simulate async persistence.
+Alt Flow(s)
+Alt Flow A — First launch (no saved settings): Default values are used ('Pharmax Solutions', 'contact@pharmax.com', etc.).
+Exceptions
+E1 — localStorage write fails: A red toast shows 'Failed to sync settings.'
+US-307 — Settings — System & Automation
+US-307 — System Workflow Configuration
+Use Case ID
+UC-307
+Use Case Name
+System Workflow Configuration
+Actor(s)
+Admin
+Preconditions
+1. Admin is authenticated and on the Settings page, System tab active.
+Postconditions
+1. Dark mode, notification, and backup preferences are saved and applied.
+User Story
+As an admin, I want to configure system-level preferences including appearance, alerts, and automated backup so that the workstation behaves according to the pharmacy's operational requirements.
+Sub User Stories
+• As an admin, I want to toggle Dark Mode and have it apply immediately to the entire interface.• As an admin, I want to toggle Desktop Notifications to control whether critical stock and expiry alerts are pushed.• As an admin, I want to enable Automated Backup, set its frequency (Daily / Weekly), and choose a destination directory.
+Acceptance Criteria
+• Dark Mode toggle immediately adds/removes the dark class on document.documentElement in addition to saving the preference.• Notification Sound and Desktop Notifications toggles save their state to localStorage.• When Auto Backup is toggled on, additional controls animate in: an Archive Frequency selector (Daily / Weekly) and a directory picker button.• Clicking the folder icon invokes window.electronAPI.selectDirectory() and populates the path display.• Auto Backup preference, frequency, and path are persisted in localStorage.Note: Auto Backup and Desktop Notifications preferences are stored and UI is complete. Background scheduler and actual notification push are deferred to a future sprint.
+Alt Flow(s)
+Alt Flow A — Auto Backup disabled: The frequency and directory sub-controls are hidden via conditional render.
+Exceptions
+E1 — Directory selection cancelled: selectDirectory() returns null; path field retains previous value unchanged.
+US-308 — Settings — Invoicing & Printing
+US-308 — Invoicing & Hardware Configuration
+Use Case ID
+UC-308
+Use Case Name
+Invoicing & Hardware Configuration
+Actor(s)
+Admin
+Preconditions
+1. Admin is authenticated.2. Invoicing or Printing tab is active in Settings.
+Postconditions
+1. Invoice formatting rules and printer configuration are saved to localStorage.
+User Story
+As an admin, I want to customise invoice numbering, tax, currency, footer text, and printer settings so that all bills generated by the system comply with the pharmacy's legal and operational standards.
+Sub User Stories
+• As an admin, I want to set an Invoice Number Prefix, Default Tax Rate (%), Currency symbol, and a Footer Disclaimer message that appears on every bill.• As an admin, I want to choose between POS Thermal (80mm roll) and Standard Desktop (A4/A5) printing modes and register the assigned device name.
+Acceptance Criteria
+• Invoicing tab renders fields for: prefix (e.g. INV-), defaultTax (numeric), currency (e.g. Rs), footerMsg (textarea).• Printing tab renders two selectable printer-type cards (Thermal / Standard) with visual active state (blue border, scaled icon).• A device name input field is rendered below the printer type cards.• All fields persist to localStorage on 'Sync Configuration'.• Active printer type card shows a blue border, filled icon background, and a scale-110 transform; inactive cards are neutral.
+Alt Flow(s)
+Alt Flow A — No printer name entered: Field accepts empty string; no validation is enforced at this stage.
+Exceptions
+E1 — localStorage write fails: Red toast 'Failed to sync settings.'
+US-309 — Settings — Security & Maintenance
+US-309 — Security & Maintenance Controls
+Use Case ID
+UC-309
+Use Case Name
+Security & Maintenance Controls
+Actor(s)
+Admin
+Preconditions
+1. Admin is authenticated.2. Security or Maintenance tab is active in Settings.
+Postconditions
+1. (Factory Reset) All localStorage UI settings are wiped and the app reloads. Database records are unaffected.
+User Story
+As an admin, I want access to security controls and a system maintenance reset so that I can protect workstation access and recover from misconfigured UI settings without affecting pharmacy data.
+Sub User Stories
+• As an admin, I want a 'Modify PIN' action in the Security tab to update my workstation login password.• As an admin, I want a 'Hard Factory Reset' option in the Maintenance tab to wipe all local UI settings and reload to defaults.
+Acceptance Criteria
+• Security tab renders a 'Workstation Password' card with a 'Modify PIN' button.• A 'Multi-Role Licensing' card is rendered but visually disabled (greyscale, cursor-not-allowed, labelled 'Enterprise Only').• Maintenance tab renders a 'Hard Factory Reset' card in a red danger zone with a confirmation dialog before execution.• Confirming the factory reset calls localStorage.removeItem('pharmax_app_settings') and then window.location.reload().• Cancelling the confirmation dialog aborts the reset with no side effects.Note (US-309a): The 'Modify PIN' button UI is implemented. The actual password-change form/modal is deferred to a future sprint.
+Alt Flow(s)
+Alt Flow A — Admin cancels factory reset confirmation: window.confirm() returns false; no action is taken, settings are unchanged.
+Exceptions
+E1 — localStorage.removeItem fails: Browser-level failure; app may not reload cleanly. No custom handling at this stage.
+4. Design
+4a. Architecture Diagram
+4b. Component Diagram
+4c. Data Flow Diagrams
+Level 0 — Context Diagram
+Level 1 — System Processes
+Level 2 — Detailed Process Decomposition
+4d. Activity Diagrams
+Activity diagrams are provided for the three main processes of Sprint 2:
+Activity Diagram 1 — Create Sales Invoice
+Activity Diagram 2 — Process Purchase Return
+Activity Diagram 3 — Record a Payment
+4e. Use Case Diagram
+4f. Sequence Diagrams
+Sequence Diagram 1 - Create Sale Invoice
+Sequence Diagram 2 - Process Purchase Invoice
+Sequence Diagram 3 - Record Payment
+4g. Class Diagram
+5. Architecture
+5.1 Chosen Architecture Pattern
+Pattern: Layered (N-Tier) Architecture with Service Modules + Dependency Injection (CURRENT IMPLEMENTATION)
+Justification
+Layered architecture naturally separates concerns into presentation, business logic, and data access layers, making the desktop Electron application modular and testable.
+Service-oriented design (already implemented) encapsulates business logic into domain-specific modules (authService, productService, saleService, purchaseService, stockService, ledgerService, partyService, systemService), enabling parallel development and easy maintenance.
+Dependency Injection pattern used in main.js ensures services receive database context ({ queryDb, runDb, pool }) at initialization, reducing coupling and improving testability.
+IPC Handler Registration (Electron-specific) sits in each service module, mapping backend logic directly to frontend-accessible channels without requiring a separate router layer.
+ES6 Module System (import/export) provides clean, modern code organization compared to CommonJS.
+This pattern enables future expansion: REST API layer can wrap services, database abstraction via repositories can replace direct queries, or role-based access control can be added at handler level without touching core logic.
+5.2 Architecture Diagram
+6. Actual Implementation
+All screenshots below are taken from the running GUI application.
+Sprint 1 — Authentication & Master Data
+6.1 Login / Sign-Up
+6.2 Products
+6.3 Suppliers
+6.4 Customers
+6.5 Batches
+Sprint 2 — Purchase & Sales Operations  (Completed in Sprint 3)
+6.6 Create Purchase GRN
+6.7 Sales Invoice Creation
+6.8 Purchase Returns
+6.9 Near-Expiry Batch Alerts
+6.10 Supplier Ledger / AP View
+Sprint 3 — Operations Intelligence & Workstation Control
+6.11 Dashboard — KPI Cards
+6.12 Dashboard — Near-Expiry Alert Panel
+6.13 Dashboard — Activity Feed & Analytics Chart
+6.14 Backup & Export — Database Snapshot
+6.15 Settings 
+7. Boundary Value Analysis Testing
+7.1 Equivalence Class Partitioning (ECP)
+A. Sign-Up — Username Input  (Valid range: 1–255 characters)
+Class ID
+Description
+Input Type
+Expected Result
+EC1
+Valid username length (1 to 255 chars)
+Valid
+Success
+EC2
+Empty input (0 characters)
+Invalid
+"Required" Error
+EC3
+Exceeds DB limit (> 255 characters)
+Invalid
+System Rejection
+B. Sign-Up — Password Input  (Valid range: 6–128 characters)
+Class ID
+Description
+Input Type
+Expected Result
+EC4
+Valid password length (6 to 128 chars)
+Valid
+Success
+EC5
+Short password (< 6 characters)
+Invalid
+"Min 6 characters" Error
+EC6
+Empty input (0 characters)
+Invalid
+"Required" Error
+C. Login — Account Security (Lockout)
+Class ID
+Description
+Input Type
+Expected Result
+EC7
+Failed attempts (0 to 4)
+Valid Range
+Allow retry
+EC8
+Failed attempts (>= 5)
+Invalid Range
+"Account temporarily locked"
+7.2 Boundary Value Analysis (BVA)
+Following the Slide 15 pattern — testing at 0, 1, 2, n−1, n, n+1 — boundary tests are applied to each valid range.
+A. Username Boundary Tests  (Target: 1–255 characters)
+Test Case ID
+Input Length
+Boundary Type
+Expected Result
+BVA-U1
+0 characters
+Below Min
+Validation Error
+BVA-U2
+1 character
+Minimum
+Success
+BVA-U3
+2 characters
+Just Above Min
+Success
+BVA-U4
+254 characters
+Just Below Max
+Success
+BVA-U5
+255 characters
+Maximum
+Success
+BVA-U6
+256 characters
+Above Max
+Rejection / Truncation
+B. Password Boundary Tests  (Target: 6–128 characters)
+Test Case ID
+Input Length
+Boundary Type
+Expected Result
+BVA-P1
+0 characters
+Below Min
+Validation Error
+BVA-P2
+5 characters
+Just Below Min
+Validation Error
+BVA-P3
+6 characters
+Minimum
+Success
+BVA-P4
+7 characters
+Just Above Min
+Success
+BVA-P5
+128 characters
+Maximum
+Success
+BVA-P6
+129 characters
+Above Max
+Potential Error
+7.3 Formal Test Cases
+TC ID
+Purpose
+Input Data
+Expected Output
+Actual Output
+Result
+TC-01
+Verify min password length
+User: "admin", Pass: "12345"
+"Min 6 characters"
+"Min 6 characters"
+PASS
+TC-02
+Verify mandatory username
+User: "", Pass: "Valid123"
+"Required"
+"Required"
+PASS
+TC-03
+Verify account lockout trigger
+5 incorrect login attempts
+"Account temporarily locked"
+"Account temporarily locked"
+PASS
+TC-04
+Verify case sensitivity
+User: "Admin" (DB: "admin")
+"Invalid credentials"
+"Invalid credentials"
+PASS
+7.4 Testing Severity Observations
+Failure Scenario
+Severity
+Impact
+Failure to Login (Correct Credentials)
+Critical
+Major system damage / complete access loss.
+Broken Lockout Mechanism
+Major
+Security risk — brute-force attacks possible.
+Missing "Required" validation message
+Minor
+User confusion but no data loss or security breach.
+8. Product Burndown Chart
+9. Trello Board Screenshots
+9.1 Sprint 1 — Trello Board
+9.2 Sprint 2 — Trello Board
+9.3 Sprint 3 — Trello Board
+10. Work Division
+Member
+Role(s)
+Contributions
+Muhammad Abdullah
+Product ManagerFrontend / UI Developer
+Product vision, scope control, and sprint planning. Designed and developed all desktop UI screens, layouts, and components across all three sprints. Ensured visual consistency and usability throughout the application.
+Ali Hasan
+Backend DeveloperScrum MasterDocumentation Lead
+Implemented core backend services and business logic (authentication, sales, purchase, ledger, stock, and system modules). Managed sprint ceremonies, task tracking on Trello, and team coordination. Led documentation including user stories, feature specifications, and the project report.
+Sheraz Malik
+System AnalystDatabase Schema DesignerQA Tester
+Analysed system requirements and translated them into detailed user stories and use cases. Designed the full PostgreSQL database schema including tables, constraints, triggers, and views. Conducted unit and integration testing, performed boundary value analysis, and managed bug tracking.
+11. Lessons Learnt
+The following lessons were drawn from building PharmaX across three sprints — each grounded in a concrete experience from the project rather than abstract theory.
+1. Requirements Engineering & Iterative Development
+We learned that requirements are never complete on day one. Our project evolved across three iterations, and each cycle revealed gaps in the original specification. The original design had no concept of Purchase Returns — this requirement emerged only after implementing the Purchase Invoice module, when we realised pharmacies need to send damaged goods back to suppliers. We had to design a new purchase_returns table, its associated backend service, and frontend UI mid-sprint.
+Takeaway: Agile iteration is not just theory from textbooks — it genuinely saves projects. Trying to lock down every requirement upfront would have produced a system that does not match real pharmacy workflows.
+2. SOLID Principles — Learned the Hard Way
+The most impactful technical lesson was understanding why SOLID principles matter, because we experienced the pain of violating them first. Our initial main.js was a single 1,500+ line file containing every database query, every IPC handler, and all application logic. Adding a new feature meant scrolling through thousands of lines and hoping nothing unrelated broke.
+We refactored into a service-per-domain architecture — authService, productService, partyService, stockService, purchaseService, saleService, ledgerService, and systemService — each following the Single Responsibility Principle. The main.js now only registers services in a few clean lines.
+Takeaway: SOLID is not academic theory — it is the difference between a codebase that grows gracefully and one that becomes unmaintainable within weeks.
+3. Database Design & Schema Evolution
+Designing a normalised relational schema for a real-world domain — pharmacy inventory with batches, expiry dates, and multi-supplier relationships — taught us that ERD diagrams are essential, not optional. Database triggers and constraints (auto-generating invoice numbers, stock movement tracking) push business logic to where it is most reliable: the database itself. Our migrations folder grew as we added purchase_returns, payments, and expenses tables that were not in the original design.
+Takeaway: Spend time on the data model before writing UI code. Every hour invested in schema design saved us days of debugging later.
+4. Security — SQL Injection Is Real
+We discovered actual SQL injection vulnerabilities in our own production code. An open query-db IPC handler allowed any SQL to be executed from the frontend, and an unvalidated table name was interpolated directly into a query string. We fixed both: the open handler was deleted entirely, and an allow-list was introduced for CSV exports so only pre-approved table names can pass through.
+Takeaway: Security is not a feature added at the end — it must be considered from the start. Even in a desktop app with no internet-facing API, the renderer process should never be fully trusted.
+5. Architecture Decisions Have Long-Term Consequences
+Choosing Electron + React + PostgreSQL gave us a powerful stack, but we learned that architectural decisions made early become expensive to change later. PostgreSQL gave us full relational power and triggers but requires a separate database installation for end users. The IPC-based backend provides process isolation and security but adds verbose boilerplate for every new feature. Every decision involves trade-offs.
+Takeaway: There are no free technology choices. Understanding trade-offs is a core software engineering skill.
+6. Testing — Not Just Writing Tests, but Thinking in Boundaries
+Applying Boundary Value Analysis and Equivalence Class Partitioning from our SE lectures to actual code made the concepts tangible. The password minimum length boundary (5→6→7 chars) caught a real edge case in our signup validation. The account lockout boundary (4→5 failed attempts) verified our security mechanism works at the exact threshold. Empty and whitespace input boundaries revealed that .trim() was critical for username validation.
+Takeaway: Testing theory from lectures becomes meaningful only when applied to your own code — discovering bugs you would otherwise have shipped to users.
+7. Version Control & Collaboration
+Working as a team on a shared codebase taught us to commit early and commit often — we lost work early on due to uncommitted changes. Branching matters: the test branch alongside main showed how feature branches prevent destabilising production code. Merge conflicts are normal, not errors, and resolving them is a skill that only improves with practice.
+8. Documentation Is a First-Class Deliverable
+Our project produced multiple documentation artefacts — UML diagrams, architecture documentation, sprint user stories, and a code audit — that were not afterthoughts. They were essential for onboarding team members to modules they did not write, for tracking design decisions (e.g. why FEFO was chosen for batch allocation), and for connecting code to SE concepts in course deliverables.
+Takeaway: Code without documentation is a liability. Documentation without code is fiction. You need both, kept in sync.
+9. UI/UX Matters More Than We Expected
+Even a backend-heavy pharmacy management system lives or dies by its interface. The splash screen was not cosmetic — without it, users thought the app had crashed during the 2–3 second database initialisation. Toast notifications for success and error feedback prevented users from double-submitting invoices. Professional design with proper spacing and iconography increased trust from test users compared to the raw HTML prototype.
+Takeaway: Software engineering is not just about making things work — it is about making things work for people.
+10. Technical Debt Is Inevitable — Managing It Is the Skill
+By the end of the project we had accumulated identifiable technical debt: components exceeding 1,000 lines that need splitting, duplicated toast logic across 8+ files, missing React Error Boundaries, and no server-side input validation on IPC handlers. We tracked this in a code_audit.md file with severity ratings and a prioritised backlog.
+Takeaway: Shipping imperfect code on time while maintaining a clear record of what needs improvement is more professional than endlessly refactoring and never delivering.
+Summary
+#
+Lesson
+SE Concept
+1
+Requirements change — iterate
+Agile, Iterative Development
+2
+Monoliths collapse — modularize
+SOLID, SRP, Clean Architecture
+3
+Schema first, UI second
+Database Design, Normalization
+4
+Never trust user input
+Security Engineering, SQL Injection
+5
+Every tech choice has trade-offs
+Architecture Decision Records
+6
+Test at the boundaries
+BVA, Equivalence Partitioning
+7
+Git is a team survival tool
+Version Control, CI/CD
+8
+Docs are deliverables, not chores
+Software Documentation
+9
+UX is engineering, not decoration
+Human-Computer Interaction
+10
+Track debt, don't ignore it
+Technical Debt Management
