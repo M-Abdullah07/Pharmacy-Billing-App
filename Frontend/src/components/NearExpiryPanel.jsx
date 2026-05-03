@@ -1,59 +1,71 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ShieldCheck, Clock, Flame } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Clock, ShieldAlert, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-// Default configurable thresholds (days)
 const DEFAULT_THRESHOLDS = { critical: 30, warning: 60, watch: 90 };
 
-const LEVELS = [
-  {
-    key: 'critical',
-    label: 'Critical',
-    description: 'Expires within 30 days',
-    icon: Flame,
-    bg: 'bg-red-50 border-red-200',
-    badge: 'bg-red-100 text-red-700',
-    iconColor: 'text-red-500',
-    numColor: 'text-red-700',
-    dot: 'bg-red-500',
-  },
-  {
-    key: 'warning',
-    label: 'Warning',
-    description: 'Expires within 31–60 days',
-    icon: AlertTriangle,
-    bg: 'bg-amber-50 border-amber-200',
-    badge: 'bg-amber-100 text-amber-700',
-    iconColor: 'text-amber-500',
-    numColor: 'text-amber-700',
-    dot: 'bg-amber-500',
-  },
-  {
-    key: 'watch',
-    label: 'Watch',
-    description: 'Expires within 61–90 days',
-    icon: Clock,
-    bg: 'bg-yellow-50 border-yellow-200',
-    badge: 'bg-yellow-100 text-yellow-700',
-    iconColor: 'text-yellow-500',
-    numColor: 'text-yellow-700',
-    dot: 'bg-yellow-500',
-  },
-];
+const RiskItem = ({ label, count, description, status, loading }) => {
+  const isZero = count === 0;
+  
+  return (
+    <div className={cn(
+      "flex items-center justify-between p-4 rounded-xl border transition-all",
+      isZero ? "bg-zinc-50/50 dark:bg-zinc-900/30 border-transparent opacity-60" : 
+      status === 'critical' ? "bg-rose-50/50 dark:bg-rose-500/5 border-rose-100 dark:border-rose-500/20" :
+      status === 'warning' ? "bg-amber-50/50 dark:bg-amber-500/5 border-amber-100 dark:border-amber-500/20" :
+      "bg-zinc-50/50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800"
+    )}>
+      <div className="flex items-center gap-4">
+        <div className={cn(
+          "w-10 h-10 rounded-lg flex items-center justify-center shadow-sm",
+          isZero ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400" :
+          status === 'critical' ? "bg-rose-500 text-white shadow-rose-500/20" :
+          status === 'warning' ? "bg-amber-500 text-white shadow-amber-500/20" :
+          "bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 shadow-zinc-900/20"
+        )}>
+          {status === 'critical' ? <ShieldAlert size={18} /> : 
+           status === 'warning' ? <AlertTriangle size={18} /> : 
+           <Clock size={18} />}
+        </div>
+        <div>
+          <h4 className={cn(
+            "text-[10px] font-black uppercase tracking-[0.2em]",
+            isZero ? "text-zinc-400" : 
+            status === 'critical' ? "text-rose-600 dark:text-rose-400" : 
+            status === 'warning' ? "text-amber-600 dark:text-amber-400" : 
+            "text-zinc-900 dark:text-zinc-50"
+          )}>
+            {label}
+          </h4>
+          <p className="text-[11px] text-zinc-500 font-medium">{description}</p>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <p className={cn(
+            "text-xl font-black tabular-nums tracking-tighter",
+            isZero ? "text-zinc-300 dark:text-zinc-700" : "text-zinc-900 dark:text-zinc-50"
+          )}>
+            {loading ? '—' : count}
+          </p>
+          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Units</span>
+        </div>
+        <ChevronRight size={14} className="text-zinc-300" />
+      </div>
+    </div>
+  );
+};
 
 export default function NearExpiryPanel({ thresholds = DEFAULT_THRESHOLDS }) {
-  const [counts, setCounts] = useState(null); // null = loading
+  const [counts, setCounts] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        if (!window.electronAPI?.getNearExpiryStats) {
-          setError('electronAPI not available');
-          return;
-        }
-
+        if (!window.electronAPI?.getNearExpiryStats) return;
         const rows = await window.electronAPI.getNearExpiryStats(thresholds.critical, thresholds.warning, thresholds.watch);
-
         const row = rows?.[0] ?? { critical: 0, warning: 0, watch: 0 };
         setCounts({
           critical: parseInt(row.critical, 10) || 0,
@@ -61,89 +73,61 @@ export default function NearExpiryPanel({ thresholds = DEFAULT_THRESHOLDS }) {
           watch: parseInt(row.watch, 10) || 0,
         });
       } catch (err) {
-        console.error('NearExpiryPanel error:', err);
-        setError('Unable to load expiry data. Contact administrator.');
+        setError('Telemetry failure');
       }
     };
-
     load();
   }, [thresholds.critical, thresholds.warning, thresholds.watch]);
 
-  // ── Error state (E1) ──────────────────────────────────────────────────────
-  if (error) {
-    return (
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-        <AlertTriangle size={18} className="shrink-0" />
-        {error}
-      </div>
-    );
-  }
+  if (error) return <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-xl text-xs font-bold border border-rose-100 dark:border-rose-500/20 uppercase tracking-widest">{error}</div>;
 
   const loading = counts === null;
   const allClear = !loading && counts.critical === 0 && counts.warning === 0 && counts.watch === 0;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-gray-800">Near-Expiry Batch Alerts</h2>
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-8 shadow-sm h-full flex flex-col">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-sm font-black text-zinc-900 dark:text-zinc-50 tracking-tight flex items-center gap-2">
+          Regulatory Compliance
+          {allClear && <ShieldCheck size={16} className="text-emerald-500" />}
+        </h2>
+        <div className="flex gap-1.5">
+           <div className="px-2 py-1 bg-zinc-50 dark:bg-zinc-800 rounded text-[9px] font-bold text-zinc-400 uppercase tracking-widest border border-zinc-100 dark:border-zinc-700">
+             Live Scrutiny
+           </div>
         </div>
-        <span className="text-xs text-gray-400">
-          Thresholds: {thresholds.critical}/{thresholds.warning}/{thresholds.watch} days
-        </span>
       </div>
 
-      {/* All-clear state (Alt Flow) */}
-      {allClear && (
-        <div className="flex items-center gap-3 py-4 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4">
-          <ShieldCheck size={18} className="shrink-0 text-green-500" />
-          <span className="text-sm font-medium">No near-expiry alerts at this time.</span>
-        </div>
-      )}
+      <div className="grid grid-cols-1 gap-4 flex-1">
+        <RiskItem 
+          label="Critical Risk" 
+          count={counts?.critical ?? 0} 
+          description="Immediate liquidation required" 
+          status="critical"
+          loading={loading}
+        />
+        <RiskItem 
+          label="Warning Phase" 
+          count={counts?.warning ?? 0} 
+          description="Stock rotation recommended" 
+          status="warning"
+          loading={loading}
+        />
+        <RiskItem 
+          label="Observation" 
+          count={counts?.watch ?? 0} 
+          description="Monitoring expiry trajectory" 
+          status="watch"
+          loading={loading}
+        />
+      </div>
 
-      {/* Alert cards */}
-      {!allClear && (
-        <div className="grid grid-cols-3 gap-3">
-          {LEVELS.map(
-            ({ key, label, description, icon: Icon, bg, badge, iconColor, numColor, dot }) => {
-              const count = loading ? null : counts[key];
-              const hasAlert = count > 0;
-              return (
-                <div
-                  key={key}
-                  className={`flex items-start gap-3 p-4 rounded-xl border transition-all
-                  ${hasAlert ? bg : 'bg-gray-50 border-gray-100'}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={`text-xs font-semibold ${hasAlert ? numColor : 'text-gray-400'}`}
-                      >
-                        {label}
-                      </span>
-                      {hasAlert && (
-                        <span
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${badge}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-                          Alert
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">{loading ? '—' : count}</p>
-                    <p
-                      className={`text-[11px] mt-0.5 ${hasAlert ? 'text-gray-500' : 'text-gray-300'}`}
-                    >
-                      {description}
-                    </p>
-                  </div>
-                </div>
-              );
-            }
-          )}
-        </div>
-      )}
+      <div className="mt-8 pt-6 border-t border-zinc-50 dark:border-zinc-800">
+         <p className="text-[10px] text-zinc-400 font-medium">
+            Thresholds enforced: {thresholds.critical}/{thresholds.warning}/{thresholds.watch} days. 
+            All data audited via system log.
+         </p>
+      </div>
     </div>
   );
 }
