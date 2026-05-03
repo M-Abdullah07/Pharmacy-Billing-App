@@ -40,7 +40,7 @@ node_modules/
 jspm_packages/
 
 # Agent Skills (Use setup-skills.ps1 instead)
-.agent/skills/
+# .agent/skills/
 
 # TypeScript v1 declaration files
 typings/
