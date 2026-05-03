@@ -1,19 +1,33 @@
 import pg from "pg";
 const { Pool } = pg;
 
-const pool = process.env.DATABASE_URL
-  ? new Pool({ connectionString: process.env.DATABASE_URL })
-  : new Pool({
-    host: process.env.DB_HOST || "127.0.0.1",
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || "Pharmax",
-    user: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "",
-  });
+// Lazy pool — created on first access so dotenv.config() has already run.
+// ESM static imports are hoisted above any synchronous code, so eager
+// initialization would read undefined env vars.
+let _pool = null;
+function getPool() {
+  if (!_pool) {
+    _pool = new Pool({
+      host: process.env.DB_HOST || "127.0.0.1",
+      port: Number(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME || "Pharmax",
+      user: process.env.DB_USER || "postgres",
+      password: process.env.DB_PASSWORD || "",
+    });
+    _pool.on("error", (err) => {
+      console.error("❌ Unexpected PostgreSQL pool error:", err.message);
+    });
+  }
+  return _pool;
+}
 
-pool.on("error", (err) => {
-  console.error("❌ Unexpected PostgreSQL pool error:", err.message);
-});
+// pool object — methods are bound at call-time via getPool() to avoid
+// losing `this` context that a Proxy getter would cause.
+const pool = {
+  query: (...args) => getPool().query(...args),
+  end:   (...args) => getPool().end(...args),
+  on:    (...args) => getPool().on(...args),
+};
 
 async function testConnection() {
   try {

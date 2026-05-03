@@ -16,7 +16,26 @@ export default defineConfig({
     outDir: '.vite/build', // ✅ matches what package.json "main" expects
     emptyOutDir: false, // ✅ prevents wiping preload build
     rollupOptions: {
-      external: ['electron', 'argon2', 'pg'], // ✅ don't bundle native modules
+      external: [
+        'electron',
+        'argon2',
+        'pg',
+        'dotenv',
+        'path',
+        'fs',
+        'url',
+        'crypto',
+        'os',
+        'child_process',
+        'stream',
+        'util',
+        'events',
+        'net',
+        'tls',
+        'http',
+        'https',
+        /^node:.*/,  // catches any node: protocol imports
+      ],
     },
   },
 });
