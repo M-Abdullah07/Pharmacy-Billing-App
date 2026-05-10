@@ -10,8 +10,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCategories: () => ipcRenderer.invoke('get-categories'),
 
   // ── Products ──────────────────────────────────────────────────────────────
-  getProducts:       ()        => ipcRenderer.invoke('get-products'),
-  getAllProducts:    ()        => ipcRenderer.invoke('get-all-products'),
+  getProducts:            ()        => ipcRenderer.invoke('get-products'),
+  getAllProducts:         ()        => ipcRenderer.invoke('get-all-products'),
+  getProductsWithStock:  ()        => ipcRenderer.invoke('get-products-with-stock'),
   getProductsAlias:  ()        => ipcRenderer.invoke('getProducts'),   // camelCase alias
   addProduct:        (data)    => ipcRenderer.invoke('add-product',        data),
   updateProduct:     (id, data)=> ipcRenderer.invoke('update-product',     id, data),

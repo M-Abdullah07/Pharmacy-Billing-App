@@ -27,5 +27,7 @@ export const legacyApi = {
 
   getCustomers: (...args) => window.electronAPI.getCustomers(...args),
   getProducts: (...args) => window.electronAPI.getProducts(...args),
+  getProductsWithStock: (...args) => window.electronAPI.getProductsWithStock(...args),
+  getSales: (...args) => window.electronAPI.getSales(...args),
   addSale: (...args) => window.electronAPI.addSale(...args),
 };

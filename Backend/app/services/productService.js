@@ -37,6 +37,25 @@ export default function register(ipcMain, db) {
     }
   });
 
+  // Returns products with total quantity_available — used by Add Sale dropdown
+  ipcMain.handle("get-products-with-stock", async () => {
+    try {
+      return await queryDb(
+        `SELECT p.product_id, p.name, p.form, p.uom,
+                p.gst_rate, p.default_sale_rate,
+                COALESCE(SUM(b.quantity_available) FILTER (WHERE b.is_active = TRUE), 0) AS total_stock
+         FROM products p
+         LEFT JOIN batches b ON b.product_id = p.product_id
+         WHERE p.is_active = TRUE
+         GROUP BY p.product_id, p.name, p.form, p.uom, p.gst_rate, p.default_sale_rate
+         ORDER BY p.name`
+      );
+    } catch (err) {
+      console.error("❌ get-products-with-stock error:", err.message);
+      return [];
+    }
+  });
+
   ipcMain.handle("get-all-products", async () => {
     try {
       return await queryDb(
