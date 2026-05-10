@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Search, Download, Printer, Filter, Calendar } from 'lucide-react';
+import { BookOpen, Search, Download, Printer, Filter, Calendar, Wallet } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Pagination } from '@/components/shared/Pagination';
+import Toast from '@/components/shared/Toast';
 
 export default function SupplierLedger() {
   const [payables, setPayables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
 
   // Ledger View State
   const [selectedSupplier, setSelectedSupplier] = useState(null);
@@ -16,10 +18,20 @@ export default function SupplierLedger() {
   const [endDate, setEndDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Payment Form State
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('cash');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [payError, setPayError] = useState('');
+
   // Pagination
   const [currentPagePayables, setCurrentPagePayables] = useState(1);
   const [currentPageLedger, setCurrentPageLedger] = useState(1);
   const itemsPerPage = 10;
+
+  const showToast = (message, type) => setToast({ message, type });
 
   const loadPayables = async () => {
     try {
@@ -28,6 +40,7 @@ export default function SupplierLedger() {
       setPayables(data);
     } catch (error) {
       console.error('Failed to load payables', error);
+      showToast('Failed to load payables', 'error');
     } finally {
       setLoading(false);
     }
@@ -47,6 +60,7 @@ export default function SupplierLedger() {
 
   const handleViewLedger = async (supplier) => {
     setSelectedSupplier(supplier);
+    setShowPayment(false);
     fetchLedger(supplier.supplier_id, startDate, endDate);
   };
 
@@ -57,6 +71,7 @@ export default function SupplierLedger() {
       setLedgerEntries(data);
     } catch (error) {
       console.error('Failed to fetch ledger', error);
+      showToast('Failed to fetch ledger', 'error');
     } finally {
       setLedgerLoading(false);
     }
@@ -65,6 +80,57 @@ export default function SupplierLedger() {
   const handleFilterLedger = () => {
     if (selectedSupplier) {
       fetchLedger(selectedSupplier.supplier_id, startDate, endDate);
+    }
+  };
+
+  const handleRecordPayment = async () => {
+    if (!paymentAmount || Number(paymentAmount) <= 0) {
+      setPayError('Please enter a valid amount.');
+      return;
+    }
+    const maxAmount = Number(selectedSupplier.payable_balance);
+    if (Number(paymentAmount) > maxAmount) {
+      setPayError(`Amount cannot exceed total payable (${formatCurrency(maxAmount)}).`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setPayError('');
+    try {
+      const { getUserId } = require('../utilis/sessions');
+      const userId = getUserId();
+      
+      const res = await window.electronAPI.recordSupplierPayment({
+        supplierId: selectedSupplier.supplier_id,
+        amount: Number(paymentAmount),
+        paymentMode,
+        referenceNo: 'Lump Sum Payment',
+        notes: paymentNotes,
+        userId
+      });
+
+      if (res.success) {
+        showToast('Payment recorded successfully!', 'success');
+        setShowPayment(false);
+        setPaymentAmount('');
+        setPaymentNotes('');
+        
+        // Refresh everything
+        await loadPayables();
+        fetchLedger(selectedSupplier.supplier_id, startDate, endDate);
+        
+        // Update the selected supplier's payable balance locally so UI updates immediately
+        setSelectedSupplier(prev => ({
+          ...prev,
+          payable_balance: Number(prev.payable_balance) - Number(paymentAmount)
+        }));
+      } else {
+        setPayError(res.error || 'Failed to record payment');
+      }
+    } catch (err) {
+      setPayError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -153,7 +219,7 @@ export default function SupplierLedger() {
             Supplier Ledger & Payables
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Track outstanding balances and running accounts.
+            Track outstanding balances and record payments.
           </p>
         </div>
         {!selectedSupplier && (
@@ -190,7 +256,7 @@ export default function SupplierLedger() {
 
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left text-sm text-gray-600">
-              <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b sticky top-0">
+              <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-4 font-medium">Supplier</th>
                   <th className="px-6 py-4 font-medium">City</th>
@@ -260,30 +326,43 @@ export default function SupplierLedger() {
             <div>
               <button
                 onClick={() => setSelectedSupplier(null)}
-                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium mb-1 flex items-center gap-1"
+                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium mb-1 flex items-center gap-1 transition-colors"
               >
                 ← Back to Payables
               </button>
               <h2 className="text-xl font-bold text-indigo-900">{selectedSupplier.name}</h2>
-              <p className="text-indigo-700 text-sm font-medium">
+              <p className="text-indigo-700 text-sm font-medium mt-0.5">
                 Current Payable: {formatCurrency(selectedSupplier.payable_balance)}
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {!showPayment && Number(selectedSupplier.payable_balance) > 0 && (
+                <button
+                  onClick={() => {
+                    setPaymentAmount(selectedSupplier.payable_balance);
+                    setShowPayment(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm mr-2"
+                >
+                  <Wallet size={16} />
+                  Make Payment
+                </button>
+              )}
+              
               <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border shadow-sm">
                 <Calendar size={16} className="text-gray-400" />
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="text-sm border-none focus:ring-0 p-0 text-gray-600"
+                  className="text-sm border-none focus:ring-0 p-0 text-gray-600 outline-none"
                 />
                 <span className="text-gray-400">-</span>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="text-sm border-none focus:ring-0 p-0 text-gray-600"
+                  className="text-sm border-none focus:ring-0 p-0 text-gray-600 outline-none"
                 />
                 <button
                   onClick={handleFilterLedger}
@@ -294,14 +373,14 @@ export default function SupplierLedger() {
               </div>
               <button
                 onClick={handleExportLedgerCSV}
-                className="p-2 border rounded-lg bg-white hover:bg-gray-50 text-gray-600"
+                className="p-2 border rounded-lg bg-white hover:bg-gray-50 text-gray-600 transition-colors"
                 title="Export CSV"
               >
                 <Download size={18} />
               </button>
               <button
                 onClick={handlePrint}
-                className="p-2 border rounded-lg bg-white hover:bg-gray-50 text-gray-600"
+                className="p-2 border rounded-lg bg-white hover:bg-gray-50 text-gray-600 transition-colors"
                 title="Print Ledger"
               >
                 <Printer size={18} />
@@ -309,9 +388,71 @@ export default function SupplierLedger() {
             </div>
           </div>
 
+          {/* Payment Form Expansion */}
+          {showPayment && (
+            <div className="bg-gray-50 border-b border-gray-200 p-4 shrink-0">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-bold text-gray-800">Record General Payment to Supplier</h3>
+                <button onClick={() => setShowPayment(false)} className="text-xs text-gray-500 hover:text-gray-800 font-medium">Close Form</button>
+              </div>
+              
+              <div className="flex gap-4">
+                <div className="w-1/4">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Amount (Rs.)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={Number(selectedSupplier.payable_balance)}
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none"
+                  />
+                </div>
+                <div className="w-1/4">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
+                  <select
+                    value={paymentMode}
+                    onChange={(e) => setPaymentMode(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cheque">Cheque</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Notes / Reference</label>
+                  <input
+                    type="text"
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                    placeholder="Optional details (e.g. Cheque No)"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-xs text-gray-500 italic">
+                  * This payment will instantly reduce your outstanding payable balance.
+                </p>
+                <div className="flex items-center gap-3">
+                  {payError && <span className="text-xs text-red-600 font-medium">{payError}</span>}
+                  <button
+                    onClick={handleRecordPayment}
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Processing...' : 'Confirm Payment'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 overflow-auto">
             <table className="w-full text-left text-sm text-gray-600">
-              <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b sticky top-0">
+              <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 font-medium">Date</th>
                   <th className="px-6 py-3 font-medium">Type</th>
@@ -341,8 +482,8 @@ export default function SupplierLedger() {
                   calculateRunningBalance(ledgerEntries)
                     .slice((currentPageLedger - 1) * itemsPerPage, currentPageLedger * itemsPerPage)
                     .map((entry, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
-                        <td className="px-6 py-3 whitespace-nowrap">{formatDate(entry.date)}</td>
+                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-3 whitespace-nowrap text-gray-900">{formatDate(entry.date)}</td>
                         <td className="px-6 py-3">
                           <span
                             className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -360,13 +501,13 @@ export default function SupplierLedger() {
                         <td className="px-6 py-3 truncate max-w-[200px]" title={entry.notes}>
                           {entry.notes || '-'}
                         </td>
-                        <td className="px-6 py-3 text-right text-red-600">
+                        <td className="px-6 py-3 text-right text-red-600 font-medium">
                           {Number(entry.credit) > 0 ? formatCurrency(entry.credit) : '-'}
                         </td>
-                        <td className="px-6 py-3 text-right text-green-600">
+                        <td className="px-6 py-3 text-right text-green-600 font-medium">
                           {Number(entry.debit) > 0 ? formatCurrency(entry.debit) : '-'}
                         </td>
-                        <td className="px-6 py-3 text-right font-medium text-gray-900">
+                        <td className="px-6 py-3 text-right font-bold text-gray-900">
                           {formatCurrency(entry.running_balance)}
                         </td>
                       </tr>
@@ -375,7 +516,7 @@ export default function SupplierLedger() {
               </tbody>
             </table>
           </div>
-          <div className="p-4 border-t bg-white">
+          <div className="p-4 border-t bg-white shrink-0">
             <Pagination
               totalItems={ledgerEntries.length}
               itemsPerPage={itemsPerPage}
@@ -385,6 +526,8 @@ export default function SupplierLedger() {
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

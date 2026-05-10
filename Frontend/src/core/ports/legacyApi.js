@@ -30,4 +30,9 @@ export const legacyApi = {
   getProductsWithStock: (...args) => window.electronAPI.getProductsWithStock(...args),
   getSales: (...args) => window.electronAPI.getSales(...args),
   addSale: (...args) => window.electronAPI.addSale(...args),
+  recordSalePayment: (...args) => window.electronAPI.recordSalePayment(...args),
+  getOutstandingReceivables: (...args) => window.electronAPI.getOutstandingReceivables(...args),
+  getCustomerLedger: (...args) => window.electronAPI.getCustomerLedger(...args),
+  recordCustomerPayment: (...args) => window.electronAPI.recordCustomerPayment(...args),
+  recordSupplierPayment: (...args) => window.electronAPI.recordSupplierPayment(...args),
 };

@@ -78,6 +78,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Supplier Ledger ───────────────────────────────────────────────────────
   getOutstandingPayables: () => ipcRenderer.invoke('get-outstanding-payables'),
   getSupplierLedger: (supplierId, startDate, endDate) => ipcRenderer.invoke('get-supplier-ledger', supplierId, startDate, endDate),
+  recordSupplierPayment: (data) => ipcRenderer.invoke('record-supplier-payment', data),
+
+  // ── Customer Ledger ───────────────────────────────────────────────────────
+  getOutstandingReceivables: () => ipcRenderer.invoke('get-outstanding-receivables'),
+  getCustomerLedger: (customerId, startDate, endDate) => ipcRenderer.invoke('get-customer-ledger', customerId, startDate, endDate),
+  recordCustomerPayment: (data) => ipcRenderer.invoke('record-customer-payment', data),
 
   // ── Dashboard & Analytics ───────────────────────────────────────────────
   getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
