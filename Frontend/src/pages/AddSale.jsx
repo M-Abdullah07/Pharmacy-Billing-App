@@ -264,7 +264,7 @@ export default function AddSale({ onSaleRecorded }) {
     'w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer transition-all';
 
   return (
-    <div className="w-full h-full flex flex-col gap-4 p-1">
+    <div className="w-full flex flex-col gap-4 p-1 pb-6">
       {/* ── Page Header ────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
