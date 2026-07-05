@@ -104,3 +104,5 @@ backup_*.sql
 
 # reflection file
 reflection.md
+# Vite build output (renderer verification builds)
+Frontend/dist/
