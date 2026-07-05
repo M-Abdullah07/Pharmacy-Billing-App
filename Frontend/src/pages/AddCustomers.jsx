@@ -120,7 +120,8 @@ export default function AddCustomer() {
         result = await facade.route('updateCustomer', editingId, payload);
       } else {
         result = await facade.route('addCustomer', payload);
-        customerId = result.lastID;
+        // add-customer (partyService.js) returns { success, customerId }, not lastID (H14/H15 fix).
+        customerId = result.customerId;
       }
       if (!result.success) {
         if (result.error?.includes('STRN') || result.error?.includes('already registered'))
@@ -233,12 +234,12 @@ export default function AddCustomer() {
   };
 
   const inputCls = (key) =>
-    `w-full px-3 py-2 text-sm border rounded-md bg-white transition-all outline-none
+    `w-full px-3 py-2 text-sm border rounded-md bg-white transition-colors outline-none
      focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400
      ${fieldErrors[key] ? 'border-red-400 bg-red-50' : 'border-gray-200'}`;
 
   const selectCls = (key) =>
-    `w-full px-3 py-2 text-sm border rounded-md bg-white transition-all outline-none
+    `w-full px-3 py-2 text-sm border rounded-md bg-white transition-colors outline-none
      focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 cursor-pointer
      ${fieldErrors[key] ? 'border-red-400 bg-red-50' : 'border-gray-200'}`;
 

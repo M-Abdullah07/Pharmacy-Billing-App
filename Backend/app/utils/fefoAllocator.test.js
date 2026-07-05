@@ -77,7 +77,7 @@ test('FEFO Allocator Specifications', async (t) => {
 
     assert.throws(() => {
       calculateFefoPlan(requestedItems, lockedBatches);
-    }, /Insufficient stock for product: p1/);
+    }, /Insufficient stock for "p1"\. Short by 50 unit\(s\)\./);
   });
 
   await t.test('Should throw an error if no batches exist for a requested product', () => {
@@ -88,7 +88,7 @@ test('FEFO Allocator Specifications', async (t) => {
 
     assert.throws(() => {
       calculateFefoPlan(requestedItems, lockedBatches);
-    }, /Insufficient stock for product: p1/);
+    }, /Insufficient stock for "p1"\. Short by 10 unit\(s\)\./);
   });
 
   await t.test('Should not mutate locked batches input array', () => {

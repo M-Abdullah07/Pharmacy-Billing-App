@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import AppSidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import ErrorBoundary from '@/components/shared/ErrorBoundary';
 import Dashboard from '@/pages/Dashboard';
 import AddSale from '@/pages/AddSale';
 import Login from '@/pages/Login';
-import Areas from '@/pages/AddArea';
 import Customers from '@/pages/AddCustomers';
 import Companies from '@/pages/Companies';
 import Products from '@/pages/Products';
@@ -59,6 +59,12 @@ export default function App() {
   const handleSignup = () => {};
 
   const handleLogout = () => {
+    // H3: clear the server-side session for this webContents (in addition to
+    // the renderer's local UI state / localStorage cache below) so a stale
+    // session can't be reused to call gated IPC handlers after logout.
+    window.electronAPI?.logoutUser?.().catch((err) => {
+      console.error('logout-user failed:', err);
+    });
     setUser(null);
     localStorage.removeItem('pharmax_user');
   };
@@ -74,8 +80,6 @@ export default function App() {
         return <AddSale onSaleRecorded={handleSaleRecorded} />;
       case 'Dashboard':
         return <Dashboard />;
-      case 'Areas':
-        return <Areas />;
       case 'Customers':
         return <Customers />;
       case 'Companies':
@@ -120,7 +124,12 @@ export default function App() {
         <div className="flex flex-1 flex-col justify-center">
           <Header currentPage={activePage} />
           <div className="flex flex-1 items-center justify-center overflow-auto p-2">
-            {renderPage()}
+            <ErrorBoundary
+              key={activePage}
+              onReset={() => setActivePage('Dashboard')}
+            >
+              {renderPage()}
+            </ErrorBoundary>
           </div>
         </div>
       </SidebarProvider>

@@ -30,11 +30,11 @@ export default function Header({ currentPage }) {
            <span className="text-[10px] font-bold text-zinc-300 dark:text-zinc-600 ml-4 group-hover:text-zinc-900 dark:group-hover:text-zinc-50 transition-colors italic">⌘K</span>
         </div>
 
-        <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 rounded-xl">
+        <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 rounded-xl active:scale-[0.97]">
            <Bell size={18} />
         </Button>
 
-        <Button variant="ghost" size="icon" onClick={toggleDark} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 rounded-xl">
+        <Button variant="ghost" size="icon" onClick={toggleDark} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 rounded-xl active:scale-[0.97]">
           {isDark ? (
             <Sun className="w-[18px] h-[18px] text-amber-500" />
           ) : (

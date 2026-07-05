@@ -1,33 +1,46 @@
 import pg from "pg";
+import { getDbConfig } from "../config.js";
 const { Pool } = pg;
 
-// Lazy pool — created on first access so dotenv.config() has already run.
-// ESM static imports are hoisted above any synchronous code, so eager
-// initialization would read undefined env vars.
-let _pool = null;
+// Lazy pool — created on first access so dotenv.config()/config.js resolution
+// has already run. ESM static imports are hoisted above any synchronous code,
+// so eager initialization would read undefined env vars.
+//
+// M20: connection settings (host/port/database/user/password/ssl) now come
+// from config.js's getDbConfig(), which layers dbconfig.json (Electron
+// userData dir) over process.env over hardcoded defaults. This is the single
+// resolution path for both customer-hosted and self-hosted deployments — the
+// only difference between them is the contents of dbconfig.json.
+let _poolPromise = null;
 function getPool() {
-  if (!_pool) {
-    _pool = new Pool({
-      host: process.env.DB_HOST || "127.0.0.1",
-      port: Number(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || "Pharmax",
-      user: process.env.DB_USER || "postgres",
-      password: process.env.DB_PASSWORD || "",
-    });
-    _pool.on("error", (err) => {
-      console.error("❌ Unexpected PostgreSQL pool error:", err.message);
+  if (!_poolPromise) {
+    _poolPromise = getDbConfig().then((cfg) => {
+      const pool = new Pool({
+        host: cfg.host,
+        port: cfg.port,
+        database: cfg.database,
+        user: cfg.user,
+        password: cfg.password,
+        ssl: cfg.ssl,
+      });
+      pool.on("error", (err) => {
+        console.error("❌ Unexpected PostgreSQL pool error:", err.message);
+      });
+      return pool;
     });
   }
-  return _pool;
+  return _poolPromise;
 }
 
 // pool object — methods are bound at call-time via getPool() to avoid
-// losing `this` context that a Proxy getter would cause.
+// losing `this` context that a Proxy getter would cause. getPool() now
+// resolves asynchronously (config file I/O + optional electron import), so
+// every method awaits the shared pool promise before delegating.
 const pool = {
-  query: (...args) => getPool().query(...args),
-  connect: (...args) => getPool().connect(...args),
-  end:   (...args) => getPool().end(...args),
-  on:    (...args) => getPool().on(...args),
+  query:   async (...args) => (await getPool()).query(...args),
+  connect: async (...args) => (await getPool()).connect(...args),
+  end:     async (...args) => (await getPool()).end(...args),
+  on:      async (...args) => (await getPool()).on(...args),
 };
 
 async function testConnection() {

@@ -1,6 +1,6 @@
 {
-  "name": "last one",
-  "productName": "last one",
+  "name": "pharmax",
+  "productName": "pharmax",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",

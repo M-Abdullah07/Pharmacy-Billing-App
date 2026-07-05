@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Auth ──────────────────────────────────────────────────────────────────
   loginUser:  (username, password)       => ipcRenderer.invoke('login-user',  username, password),
   signupUser: (username, password) => ipcRenderer.invoke('signup-user', username, password),
+  logoutUser: () => ipcRenderer.invoke('logout-user'),
 
   // ── Categories (read-only — pre-seeded by schema) ─────────────────────────
   getCategories: () => ipcRenderer.invoke('get-categories'),
@@ -58,6 +59,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPurchaseInvoice:     (id)   => ipcRenderer.invoke('get-purchase-invoice',      id),
   addPurchaseInvoice:     (data) => ipcRenderer.invoke('add-purchase-invoice',      data),
   addPurchaseInvoiceItem: (data) => ipcRenderer.invoke('add-purchase-invoice-item', data),
+  createPurchaseInvoice:  (data) => ipcRenderer.invoke('create-purchase-invoice',   data),
   confirmPurchaseInvoice: (id, userId) => ipcRenderer.invoke('confirm-purchase-invoice', id, userId),
   cancelPurchaseInvoice:  (id)   => ipcRenderer.invoke('cancel-purchase-invoice',   id),
   getBatchesByProduct:    (productId) => ipcRenderer.invoke('get-batches-by-product', productId),

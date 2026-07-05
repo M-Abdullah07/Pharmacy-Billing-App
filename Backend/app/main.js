@@ -1,14 +1,17 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, session } from "electron";
 import path from "path";
-import dotenv from "dotenv";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({
-  path: path.join(__dirname, "..", "..", "..", "Backend", "app", ".env")
-});
+// M20: dotenv loading now happens inside Backend/app/config.js (via db.js's
+// getPool() -> getDbConfig()), which try/catches the dotenv import itself so
+// a missing .env under asar never crashes startup. The old hardcoded
+// `dotenv.config({ path: path.join(__dirname, "..", "..", "..", "Backend", "app", ".env") })`
+// here broke under asar (that relative path doesn't exist inside the
+// packaged app) — removed in favor of the single resolution path in config.js.
 
 import { pool, queryDb, runDb, testConnection } from "./services/db.js";
 
@@ -20,12 +23,19 @@ import purchaseService from "./services/purchaseService.js";
 import saleService from "./services/saleService.js";
 import ledgerService from "./services/ledgerService.js";
 import systemService from "./services/systemService.js";
+import { clearSession } from "./services/session.js";
+
+// M21: log unhandled promise rejections instead of letting them vanish
+// silently (or crash the process with no diagnostic trail).
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ Unhandled promise rejection:", reason);
+});
 
 // ─── App Initialization ────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
   console.log("🚀 Electron app is ready");
-  
+
   // ─── Create Splash Window ──────────────────────────────────────────────────
   const splashWindow = new BrowserWindow({
     width: 500,
@@ -99,7 +109,7 @@ app.whenReady().then(() => {
     </body>
     </html>
   `;
-  
+
   splashWindow.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(splashHtml)}`);
 
   testConnection();
@@ -126,6 +136,13 @@ app.whenReady().then(() => {
     },
   });
 
+  // H3: clear this window's server-side session as soon as its webContents is
+  // gone, so a stale session entry can't linger and be reused if a webContents
+  // id were ever reissued.
+  mainWindow.webContents.on("destroyed", () => {
+    clearSession(mainWindow.webContents.id);
+  });
+
   // ─── Ready to Show Logic ──────────────────────────────────────────────────
   mainWindow.once('ready-to-show', () => {
     setTimeout(() => {
@@ -135,15 +152,40 @@ app.whenReady().then(() => {
     }, 1000); // Small buffer to ensure rendering is smooth
   });
 
-  if (typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined') {
+  // H5/M19: devtools + the dev-server branches are dev-only. Gating them
+  // behind `!app.isPackaged` (rather than just "does a dev URL variable
+  // exist") means a packaged build can never accidentally open devtools or
+  // try to load a dev server, even if those globals were somehow defined.
+  if (!app.isPackaged && typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined') {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
-  } else if (process.env.VITE_DEV_SERVER_URL) {
+  } else if (!app.isPackaged && process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, "..", "..", "dist", "index.html"));
+    // H5/M19: forge-vite's build output puts the renderer at
+    // .vite/renderer/<name>/index.html relative to the project root, and
+    // main.js itself is built to .vite/build/main.js — so from __dirname
+    // (.vite/build) the renderer is at ../renderer/main_window/index.html.
+    // The previous path (path.join(__dirname, "..", "..", "dist", "index.html"))
+    // pointed at a "dist" directory this build never produces.
+    const rendererPath = path.join(__dirname, "..", "renderer", "main_window", "index.html");
+    if (fs.existsSync(rendererPath)) {
+      mainWindow.loadFile(rendererPath);
+    } else {
+      dialog.showErrorBox(
+        "PharmaX — Startup Error",
+        `The application UI could not be found.\n\nExpected renderer at:\n${rendererPath}\n\n` +
+        `This usually means the build is corrupted or incomplete. Please reinstall the application.`
+      );
+      app.quit();
+    }
   }
+}).catch((err) => {
+  // M21: catch any error thrown/rejected anywhere in the whenReady().then(...)
+  // chain above (e.g. a synchronous throw in one of the register() calls) so
+  // it surfaces in the log instead of becoming a silent unhandled rejection.
+  console.error("❌ Fatal error during app initialization:", err);
 });
 
 app.on("window-all-closed", async () => {
@@ -153,7 +195,9 @@ app.on("window-all-closed", async () => {
     console.log("🔵 Platform is not darwin, proceeding...");
 
     try {
-      const { session } = require("electron");
+      // H5: the previous inline `require("electron")` here crashed under ESM
+      // (require is not defined in an ES module). `session` is now imported
+      // at the top of the file instead.
       await session.defaultSession.clearStorageData({
         storages: ["localstorage"],
       });

@@ -1,3 +1,5 @@
+import { requireAuth } from "./session.js";
+import { assertShape } from "../utils/validate.js";
 
 export default function register(ipcMain, db) {
   const { queryDb, runDb, pool } = db;
@@ -31,8 +33,16 @@ export default function register(ipcMain, db) {
     }
   });
 
-  ipcMain.handle("add-batch", async (event, data) => {
+  ipcMain.handle("add-batch", requireAuth(async (event, data) => {
     try {
+      assertShape(data, {
+        product_id: "string",
+        supplier_id: "string",
+        batch_number: "string",
+        mrp: "number>=0",
+        purchase_cost_per_unit: "number>=0",
+        quantity_received: "number>=0",
+      });
       const result = await runDb(
         `INSERT INTO batches
            (product_id, supplier_id, purchase_invoice_id, batch_number,
@@ -59,7 +69,7 @@ export default function register(ipcMain, db) {
       console.error("❌ add-batch error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
   ipcMain.handle("get-batches-by-product", async (event, productId) => {
     try {

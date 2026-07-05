@@ -157,7 +157,7 @@ const Login = ({ onLogin, setSignup }) => {
                     setUsername(e.target.value);
                     if (fieldErrors.username) setFieldErrors((p) => ({ ...p, username: '' }));
                   }}
-                  className={`pl-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-all font-semibold ${fieldErrors.username ? 'border-red-500' : ''}`}
+                  className={`pl-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-colors font-semibold ${fieldErrors.username ? 'border-red-500' : ''}`}
                   placeholder="admin"
                 />
               </div>

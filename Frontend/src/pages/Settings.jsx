@@ -41,12 +41,12 @@ function Toggle({ checked, onCheckedChange }) {
     <button
       type="button"
       onClick={() => onCheckedChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none ring-2 ring-offset-2 ring-transparent focus:ring-blue-500/20 ${
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-out focus:outline-none ring-2 ring-offset-2 ring-transparent focus:ring-blue-500/20 ${
         checked ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-800'
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-all duration-300 ease-in-out ${
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
           checked ? 'translate-x-6' : 'translate-x-1'
         }`}
       />
@@ -158,7 +158,7 @@ export default function Settings() {
           <Button
             onClick={() => handleSave(tabs.find((t) => t.id === activeTab)?.label)}
             disabled={isLoading}
-            className="bg-zinc-900 hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-700 text-white h-12 px-10 rounded-2xl font-black shadow-2xl shadow-blue-500/10 transition-all active:scale-95 flex items-center gap-2"
+            className="bg-zinc-900 hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-700 text-white h-12 px-10 rounded-2xl font-black shadow-2xl shadow-blue-500/10 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-2"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -177,7 +177,7 @@ export default function Settings() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl text-sm font-black transition-all duration-500 group relative ${
+              className={`flex-1 flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl text-sm font-black transition-[background-color,color,box-shadow] duration-200 ease-out group relative ${
                 activeTab === tab.id
                   ? 'bg-zinc-900 text-white dark:bg-blue-600 shadow-lg'
                   : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
@@ -198,7 +198,7 @@ export default function Settings() {
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto px-10 pb-32 pt-6">
         <div className="max-w-6xl mx-auto">
-          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-[250ms] ease-out">
             {/* BUSINESS SECTION */}
             {activeTab === 'profile' && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -232,7 +232,7 @@ export default function Settings() {
                         <Input
                           value={settings[item.cat][item.field]}
                           onChange={(e) => updateField(item.cat, item.field, e.target.value)}
-                          className="h-14 bg-zinc-50 dark:bg-zinc-800 border-transparent focus:bg-white dark:focus:bg-zinc-900 focus:ring-0 focus:border-blue-600 rounded-2xl font-bold transition-all text-zinc-900 dark:text-zinc-100"
+                          className="h-14 bg-zinc-50 dark:bg-zinc-800 border-transparent focus:bg-white dark:focus:bg-zinc-900 focus:ring-0 focus:border-blue-600 rounded-2xl font-bold transition-colors text-zinc-900 dark:text-zinc-100"
                         />
                       </div>
                     ))}
@@ -337,7 +337,7 @@ export default function Settings() {
                     </div>
 
                     {settings.system.autoBackup && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-zinc-100 dark:border-zinc-800 animate-in fade-in slide-in-from-top-6 duration-500">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-zinc-100 dark:border-zinc-800 animate-in fade-in slide-in-from-top-6 duration-[250ms] ease-out">
                         <div className="space-y-3">
                           <Label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">
                             Archive Frequency
@@ -437,7 +437,7 @@ export default function Settings() {
                       <textarea
                         value={settings.invoicing.footerMsg}
                         onChange={(e) => updateField('invoicing', 'footerMsg', e.target.value)}
-                        className="w-full h-32 p-6 bg-zinc-50 dark:bg-zinc-800 rounded-[24px] border-none text-sm font-bold text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-blue-600 outline-none transition-all resize-none"
+                        className="w-full h-32 p-6 bg-zinc-50 dark:bg-zinc-800 rounded-[24px] border-none text-sm font-bold text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-blue-600 outline-none transition-shadow resize-none"
                       />
                     </div>
                   </div>
@@ -471,14 +471,14 @@ export default function Settings() {
                       <button
                         key={p.id}
                         onClick={() => updateField('printing', 'type', p.id)}
-                        className={`p-8 rounded-[32px] border-2 transition-all flex items-center gap-6 group ${
+                        className={`p-8 rounded-[32px] border-2 transition-[border-color,background-color,box-shadow] duration-200 ease-out flex items-center gap-6 group ${
                           settings.printing.type === p.id
                             ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/10 shadow-2xl shadow-blue-500/10'
                             : 'border-zinc-50 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-800/30'
                         }`}
                       >
                         <div
-                          className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                          className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-[transform,background-color,color] duration-200 ease-out ${
                             settings.printing.type === p.id
                               ? 'bg-blue-600 text-white scale-110'
                               : 'bg-white dark:bg-zinc-700 text-zinc-400 group-hover:text-zinc-900'
@@ -532,9 +532,9 @@ export default function Settings() {
                   </p>
                 </div>
                 <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-8 flex items-center justify-between group hover:border-blue-300 transition-all cursor-pointer shadow-sm">
+                  <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200/60 dark:border-zinc-800 p-8 flex items-center justify-between group hover:border-blue-300 transition-colors cursor-pointer shadow-sm">
                     <div className="flex items-center gap-6">
-                      <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center transition-all group-hover:scale-110 duration-500 group-hover:bg-blue-600 group-hover:text-white">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center transition-[transform,background-color,color] duration-200 ease-out group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white">
                         <UserCog size={28} />
                       </div>
                       <div>

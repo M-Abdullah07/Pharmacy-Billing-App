@@ -4,6 +4,7 @@ import { facade } from '@/core/facade/createFacade';
 import Toast from '@/components/shared/Toast';
 import { Pagination } from '@/components/shared/Pagination';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { getUserId } from '@/utilis/sessions';
 
 export default function CreditDues() {
   const [customers, setCustomers] = useState([]);
@@ -13,6 +14,7 @@ export default function CreditDues() {
   // Ledger View State
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [ledgerEntries, setLedgerEntries] = useState([]);
+  const [ledgerOpeningBalance, setLedgerOpeningBalance] = useState(0);
   const [ledgerLoading, setLedgerLoading] = useState(false);
 
   const [startDate, setStartDate] = useState('');
@@ -68,7 +70,15 @@ export default function CreditDues() {
     try {
       setLedgerLoading(true);
       const data = await facade.route('getCustomerLedger', customerId, start, end);
-      setLedgerEntries(Array.isArray(data) ? data : []);
+      // get-customer-ledger returns { openingBalance, entries } (M30). Fall back to the
+      // old bare-array shape defensively in case a stale build of the handler responds.
+      if (Array.isArray(data)) {
+        setLedgerEntries(data);
+        setLedgerOpeningBalance(0);
+      } else {
+        setLedgerEntries(Array.isArray(data?.entries) ? data.entries : []);
+        setLedgerOpeningBalance(Number(data?.openingBalance) || 0);
+      }
     } catch (error) {
       showToast('Failed to fetch ledger: ' + error.message, 'error');
     } finally {
@@ -83,8 +93,10 @@ export default function CreditDues() {
   };
 
   const calculateRunningBalance = (entries) => {
-    // For customers, debit increases receivable (Sale), credit decreases (Payment/Return)
-    let balance = 0;
+    // For customers, debit increases receivable (Sale), credit decreases (Payment/Return).
+    // Seed with the opening balance (M30) so the running total reflects history before
+    // the filtered date range instead of silently starting at zero.
+    let balance = ledgerOpeningBalance;
     return entries.map((entry) => {
       const cr = Number(entry.credit) || 0;
       const dr = Number(entry.debit) || 0;
@@ -175,7 +187,6 @@ export default function CreditDues() {
     setIsSubmitting(true);
     setPayError('');
     try {
-      const { getUserId } = require('../utilis/sessions');
       const userId = getUserId();
       
       const res = await facade.route('recordCustomerPayment', {
@@ -470,6 +481,12 @@ export default function CreditDues() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {!ledgerLoading && ledgerOpeningBalance !== 0 && (
+                  <tr className="bg-gray-50/70 italic text-gray-500">
+                    <td className="px-6 py-2" colSpan="6">Opening Balance (before selected period)</td>
+                    <td className="px-6 py-2 text-right font-semibold">{formatCurrency(ledgerOpeningBalance)}</td>
+                  </tr>
+                )}
                 {ledgerLoading ? (
                   <tr>
                     <td colSpan="7" className="text-center py-8">

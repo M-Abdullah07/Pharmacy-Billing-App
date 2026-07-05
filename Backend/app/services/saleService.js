@@ -2,26 +2,61 @@ import path from "path";
 import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { calculateFefoPlan } from "../utils/fefoAllocator.js";
+import { requireAuth } from "./session.js";
+import { assertShape } from "../utils/validate.js";
 
 export default function register(ipcMain, db) {
   const { queryDb, runDb, pool } = db;
 
-  ipcMain.handle("add-sale", async (event, data) => {
+  ipcMain.handle("add-sale", requireAuth(async (event, data) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-  
+
       if (!data.items || data.items.length === 0) {
         throw new Error("No items in sale.");
       }
       if (!data.userId) {
         throw new Error("User ID required to confirm sale.");
       }
-  
+      // M7: isCredit must be a real boolean — truthy strings/numbers/undefined are rejected
+      // rather than silently coerced, since this flag controls whether the sale is
+      // recorded as fully paid or as an outstanding receivable.
+      if (typeof data.isCredit !== "boolean") {
+        throw new Error("isCredit must be a boolean (true or false).");
+      }
+
+      // H4: reject non-finite/negative quantities up front (per-item — items'
+      // shape varies enough that a per-line assertShape call is clearer than
+      // trying to express it as a top-level rule).
+      for (const item of data.items) {
+        assertShape(item, { productId: "string", quantity: "number>=0" });
+      }
+
+      // H3: server-side session userId wins over whatever the frontend sent,
+      // but keep accepting data.userId as a fallback so callers/tests that
+      // invoke this handler without going through requireAuth's session
+      // machinery (e.g. direct ipcMain mocks) keep working.
+      const effectiveUserId = event.locals?.session?.userId ?? data.userId;
+      data = { ...data, userId: effectiveUserId };
+
       // 1. Sort productIds for deterministic locking
       const productIds = [...new Set(data.items.map(item => item.productId))];
       productIds.sort();
-  
+
+      // M8: Lock the customer row before any credit decision so concurrent sales against
+      // the same customer serialize on the credit-limit check (same pattern already used
+      // by the DB trigger fn_check_credit_limit for status transitions).
+      const customerRes = await client.query(`
+        SELECT customer_id, credit_limit, opening_balance
+        FROM customers WHERE customer_id = $1 FOR UPDATE
+      `, [data.customerId]);
+      if (!customerRes.rows.length) {
+        throw new Error("Customer not found.");
+      }
+      const customer = customerRes.rows[0];
+      const creditLimit = Number(customer.credit_limit);
+
       // 2. Lock batches for requested products using FEFO order
       const lockRes = await client.query(`
         SELECT b.batch_id, b.product_id, b.quantity_available, b.mrp,
@@ -29,12 +64,40 @@ export default function register(ipcMain, db) {
         FROM batches b
         JOIN products p ON p.product_id = b.product_id
         WHERE b.product_id = ANY($1::uuid[]) AND b.quantity_available > 0 AND b.is_active = TRUE
+          AND b.expiry_date >= CURRENT_DATE
         ORDER BY b.product_id, b.expiry_date ASC
         FOR UPDATE
       `, [productIds]);
-  
+
       // 3. Pure JS FEFO allocation
       const allocationPlan = calculateFefoPlan(data.items, lockRes.rows);
+
+      // M8: Enforce credit_limit for credit sales. credit_limit = 0 (the schema default)
+      // means "no limit configured" — consistent with the existing DB trigger
+      // fn_check_credit_limit, which only guards when credit_limit > 0. A positive limit
+      // is a hard block here (the DB trigger only warns; this is the stricter enforcement
+      // point requested for M8).
+      if (data.isCredit && creditLimit > 0) {
+        const netReceivable = allocationPlan.reduce((sum, item) => {
+          const lineTotal = Math.round(item.quantity * item.sale_rate * (1 - item.discountPct / 100) * 100) / 100;
+          const taxAmount = Math.round(lineTotal * (item.gst_rate / 100) * 100) / 100;
+          return sum + lineTotal + taxAmount;
+        }, 0);
+
+        const outstandingRes = await client.query(`
+          SELECT COALESCE(SUM(balance_due), 0) AS outstanding
+          FROM sale_invoices
+          WHERE customer_id = $1 AND status = 'confirmed'
+        `, [data.customerId]);
+        const currentOutstanding = Number(customer.opening_balance) + Number(outstandingRes.rows[0].outstanding);
+
+        if (currentOutstanding + netReceivable > creditLimit) {
+          throw new Error(
+            `Credit limit exceeded for this customer. Outstanding: ${currentOutstanding.toFixed(2)}, ` +
+            `this sale: ${netReceivable.toFixed(2)}, limit: ${creditLimit.toFixed(2)}.`
+          );
+        }
+      }
   
       // 4. Create sale invoice parent
       const invoiceResult = await client.query(`
@@ -131,7 +194,7 @@ export default function register(ipcMain, db) {
     } finally {
       client.release();
     }
-  });
+  }));
 
   ipcMain.handle("get-sales", async () => {
     try {

@@ -35,9 +35,22 @@ CREATE SEQUENCE IF NOT EXISTS sale_invoice_num_seq;
 
 -- "Backfill" the sequence so it starts ABOVE your highest existing invoice number.
 -- This prevents "duplicate key" errors on your next sale.
-SELECT setval('sale_invoice_num_seq', 
+--
+-- BUG FIX (H1/M15/M16, 2026-07-05): the original expression used
+-- `regexp_replace(invoice_number, '\D', '', 'g')`, which strips ALL non-digit
+-- characters from the ENTIRE string — including the year segment. For
+-- 'INV-2026-000012' that concatenates to '2026000012' instead of the intended
+-- running sequence '000012', inflating the backfilled sequence value by ~6
+-- orders of magnitude and corrupting the zero-padding assumption baked into
+-- the DEFAULT expression below (lpad(..., 6, '0')). Fixed to extract only the
+-- numeric segment AFTER the last '-' (the actual running number), falling
+-- back safely to 0 for any invoice_number that doesn't match the 'INV-YYYY-######'
+-- shape.
+SELECT setval('sale_invoice_num_seq',
     COALESCE(
-        (SELECT MAX(NULLIF(regexp_replace(invoice_number, '\D', '', 'g'), '')::BIGINT) FROM sale_invoices), 
+        (SELECT MAX(NULLIF(regexp_replace(split_part(invoice_number, '-', 3), '\D', '', 'g'), '')::BIGINT)
+         FROM sale_invoices
+         WHERE invoice_number ~ '^INV-\d{4}-\d+$'),
         0
     ) + 1
 );

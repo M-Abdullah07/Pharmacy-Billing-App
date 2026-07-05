@@ -1,3 +1,4 @@
+import { requireAuth } from "./session.js";
 
 export default function register(ipcMain, db) {
   const { queryDb, runDb, pool } = db;
@@ -39,7 +40,7 @@ export default function register(ipcMain, db) {
     }
   });
 
-  ipcMain.handle("add-supplier", async (event, data) => {
+  ipcMain.handle("add-supplier", requireAuth(async (event, data) => {
     try {
       const result = await runDb(
         `INSERT INTO suppliers
@@ -65,9 +66,9 @@ export default function register(ipcMain, db) {
       console.error("❌ add-supplier error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("update-supplier", async (event, id, data) => {
+  ipcMain.handle("update-supplier", requireAuth(async (event, id, data) => {
     try {
       await runDb(
         `UPDATE suppliers
@@ -92,9 +93,9 @@ export default function register(ipcMain, db) {
       console.error("❌ update-supplier error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("deactivate-supplier", async (event, id) => {
+  ipcMain.handle("deactivate-supplier", requireAuth(async (event, id) => {
     try {
       await runDb(
         `UPDATE suppliers
@@ -107,7 +108,7 @@ export default function register(ipcMain, db) {
       console.error("❌ deactivate-supplier error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
   ipcMain.handle("get-customers", async () => {
     try {
@@ -146,7 +147,7 @@ export default function register(ipcMain, db) {
     }
   });
 
-  ipcMain.handle("add-customer", async (event, data) => {
+  ipcMain.handle("add-customer", requireAuth(async (event, data) => {
     try {
       const result = await runDb(
         `INSERT INTO customers
@@ -175,9 +176,9 @@ export default function register(ipcMain, db) {
       console.error("❌ add-customer error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("update-customer", async (event, id, data) => {
+  ipcMain.handle("update-customer", requireAuth(async (event, id, data) => {
     try {
       await runDb(
         `UPDATE customers
@@ -205,9 +206,9 @@ export default function register(ipcMain, db) {
       console.error("❌ update-customer error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("delete-customer", async (event, id) => {
+  ipcMain.handle("delete-customer", requireAuth(async (event, id) => {
     try {
       await runDb(
         `UPDATE customers
@@ -220,9 +221,9 @@ export default function register(ipcMain, db) {
       console.error("❌ delete-customer error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("add-contact-person", async (event, data) => {
+  ipcMain.handle("add-contact-person", requireAuth(async (event, data) => {
     try {
       const result = await runDb(
         `INSERT INTO contact_persons
@@ -244,7 +245,7 @@ export default function register(ipcMain, db) {
       console.error("❌ add-contact-person error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
   ipcMain.handle("get-contact-persons", async (event, entityType, entityId) => {
     try {
@@ -261,7 +262,7 @@ export default function register(ipcMain, db) {
     }
   });
 
-  ipcMain.handle("delete-contact-person", async (event, contactId) => {
+  ipcMain.handle("delete-contact-person", requireAuth(async (event, contactId) => {
     try {
       await runDb(
         `DELETE FROM contact_persons WHERE contact_id = $1`,
@@ -272,9 +273,9 @@ export default function register(ipcMain, db) {
       console.error("❌ delete-contact-person error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("reactivate-supplier", async (event, id) => {
+  ipcMain.handle("reactivate-supplier", requireAuth(async (event, id) => {
     try {
       await runDb(
         `UPDATE suppliers
@@ -287,9 +288,9 @@ export default function register(ipcMain, db) {
       console.error("❌ reactivate-supplier error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("reactivate-customer", async (event, id) => {
+  ipcMain.handle("reactivate-customer", requireAuth(async (event, id) => {
     try {
       await runDb(
         `UPDATE customers
@@ -302,7 +303,7 @@ export default function register(ipcMain, db) {
       console.error("❌ reactivate-customer error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
   ipcMain.handle("get-companies", async () => {
     try {
@@ -319,7 +320,7 @@ export default function register(ipcMain, db) {
     }
   });
 
-  ipcMain.handle("add-company", async (event, data) => {
+  ipcMain.handle("add-company", requireAuth(async (event, data) => {
     try {
       await runDb(
         `INSERT INTO suppliers (name, city, ntn)
@@ -331,5 +332,5 @@ export default function register(ipcMain, db) {
       console.error("❌ add-company error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 }

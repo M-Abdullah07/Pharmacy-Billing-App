@@ -1,4 +1,7 @@
-const GST_SLABS = new Set([0, 5, 12, 18, 28]);
+// H13: FBR (Pakistan) GST slabs, not Indian GST slabs. Keep in sync with
+// Frontend/src/pages/products/productModel.js GST_SLABS. CONFIRM against
+// current FBR notifications/SROs before relying on these for real invoicing.
+const GST_SLABS = new Set([0, 1, 18]);
 
 function asNumber(value, fallback = 0) {
   const n = Number(value);

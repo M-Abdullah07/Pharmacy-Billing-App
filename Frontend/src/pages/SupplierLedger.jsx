@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Search, Download, Printer, Filter, Calendar, Wallet } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { getUserId } from '@/utilis/sessions';
 import { Pagination } from '@/components/shared/Pagination';
 import Toast from '@/components/shared/Toast';
 
@@ -12,6 +13,7 @@ export default function SupplierLedger() {
   // Ledger View State
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [ledgerEntries, setLedgerEntries] = useState([]);
+  const [ledgerOpeningBalance, setLedgerOpeningBalance] = useState(0);
   const [ledgerLoading, setLedgerLoading] = useState(false);
 
   const [startDate, setStartDate] = useState('');
@@ -68,7 +70,15 @@ export default function SupplierLedger() {
     try {
       setLedgerLoading(true);
       const data = await window.electronAPI.getSupplierLedger(supplierId, start, end);
-      setLedgerEntries(data);
+      // get-supplier-ledger returns { openingBalance, entries } (M30). Fall back to the
+      // old bare-array shape defensively in case a stale build of the handler responds.
+      if (Array.isArray(data)) {
+        setLedgerEntries(data);
+        setLedgerOpeningBalance(0);
+      } else {
+        setLedgerEntries(Array.isArray(data?.entries) ? data.entries : []);
+        setLedgerOpeningBalance(Number(data?.openingBalance) || 0);
+      }
     } catch (error) {
       console.error('Failed to fetch ledger', error);
       showToast('Failed to fetch ledger', 'error');
@@ -97,7 +107,6 @@ export default function SupplierLedger() {
     setIsSubmitting(true);
     setPayError('');
     try {
-      const { getUserId } = require('../utilis/sessions');
       const userId = getUserId();
       
       const res = await window.electronAPI.recordSupplierPayment({
@@ -135,8 +144,10 @@ export default function SupplierLedger() {
   };
 
   const calculateRunningBalance = (entries) => {
-    // In our simplified ledger, credit increases payable (purchase), debit decreases (payment/return)
-    let balance = 0;
+    // In our simplified ledger, credit increases payable (purchase), debit decreases (payment/return).
+    // Seed with the opening balance (M30) so the running total reflects history before
+    // the filtered date range instead of silently starting at zero.
+    let balance = ledgerOpeningBalance;
     return entries.map((entry) => {
       const cr = Number(entry.credit) || 0;
       const dr = Number(entry.debit) || 0;
@@ -466,6 +477,12 @@ export default function SupplierLedger() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {!ledgerLoading && ledgerOpeningBalance !== 0 && (
+                  <tr className="bg-gray-50/70 italic text-gray-500">
+                    <td className="px-6 py-2" colSpan="6">Opening Balance (before selected period)</td>
+                    <td className="px-6 py-2 text-right font-semibold">{formatCurrency(ledgerOpeningBalance)}</td>
+                  </tr>
+                )}
                 {ledgerLoading ? (
                   <tr>
                     <td colSpan="7" className="text-center py-8">

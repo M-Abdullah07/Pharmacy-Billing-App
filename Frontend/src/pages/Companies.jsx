@@ -156,7 +156,8 @@ export default function Companies() {
         result = await window.electronAPI.updateSupplier(editingId, payload);
       } else {
         result = await window.electronAPI.addSupplier(payload);
-        supplierId = result.lastID;
+        // add-supplier (partyService.js) returns { success, supplierId }, not lastID (H14/H15 fix).
+        supplierId = result.supplierId;
       }
       if (!result.success) {
         if (result.error?.includes('STRN') || result.error?.includes('already registered'))

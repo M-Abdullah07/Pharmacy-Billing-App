@@ -232,10 +232,15 @@ CREATE TABLE IF NOT EXISTS products (
                                                         -- e.g. 10 tablets per strip
 
     -- Regulatory (Pakistan-specific)
-    hsn_code                TEXT,                       -- HSN/HS code for FBR tax invoicing (mandatory for GST bills)
+    hsn_code                TEXT,                       -- HS (Harmonized System / WCO) code for FBR tax invoicing (mandatory for GST bills)
+    -- H13: was CHECK (gst_rate IN (0, 5, 12, 18, 28)) — those are INDIAN GST
+    -- slabs and do not apply in Pakistan. Replaced with FBR-relevant slabs:
+    -- 0 = Exempt, 1 = pharma reduced rate (Finance Act 2022), 18 = Standard.
+    -- CONFIRM these against the current FBR notification/SRO before relying
+    -- on them for real invoicing — tax law changes and this can go stale.
     gst_rate                NUMERIC(5,2)    NOT NULL DEFAULT 0.00
-                                            CHECK (gst_rate IN (0, 5, 12, 18, 28)),
-                                                        -- FBR GST slabs: 0 / 5 / 12 / 18 / 28
+                                            CHECK (gst_rate IN (0, 1, 18)),
+                                                        -- FBR GST slabs: 0 (Exempt) / 1 (Pharma reduced rate) / 18 (Standard)
     drug_schedule           drug_schedule   NOT NULL DEFAULT 'OTC',
     drap_registration_no    TEXT,                       -- Product-level DRAP registration number
     requires_prescription   BOOLEAN         NOT NULL DEFAULT FALSE,
@@ -289,8 +294,8 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 COMMENT ON TABLE  products                       IS 'Medicine master. Central entity. Deactivated products are hidden from transaction screens but retained for history.';
-COMMENT ON COLUMN products.hsn_code              IS 'Harmonised System Nomenclature code. Mandatory for FBR-compliant GST invoicing in Pakistan.';
-COMMENT ON COLUMN products.gst_rate              IS 'FBR GST slab. Most medicines in Pakistan are 0% (exempt); confirm with FBR schedules.';
+COMMENT ON COLUMN products.hsn_code              IS 'HS (Harmonized System / WCO) code. Mandatory for FBR-compliant GST invoicing in Pakistan. Column name kept as hsn_code for backward compatibility; UI label is "HS Code".';
+COMMENT ON COLUMN products.gst_rate              IS 'FBR GST slab (0 Exempt / 1 pharma reduced rate / 18 Standard). Most medicines in Pakistan are 0% (exempt); CONFIRM current rate against live FBR notifications/SROs before billing — do not treat this as legal/tax advice.';
 COMMENT ON COLUMN products.drug_schedule         IS 'DRAP drug schedule. X = controlled. H1 = psychotropic. H = Rx-only. G = caution. OTC = unrestricted.';
 COMMENT ON COLUMN products.generic_formula       IS 'Active ingredient(s) with strength. e.g. ''Paracetamol 500mg''. Pakistan doctors prescribe by generic; this enables cross-brand substitution search when a brand is out of stock.';
 COMMENT ON COLUMN products.default_sale_rate     IS 'Distributor standard sale rate. NOT MRP (MRP is batch-level, printed on pack).';
@@ -470,6 +475,11 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     discount_amount     NUMERIC(15,2)   NOT NULL DEFAULT 0.00 CHECK (discount_amount >= 0),
     tax_amount          NUMERIC(15,2)   NOT NULL DEFAULT 0.00 CHECK (tax_amount >= 0),
     net_payable         NUMERIC(15,2)   NOT NULL DEFAULT 0.00 CHECK (net_payable >= 0),
+    -- M1 (v3.1.0 migration, 2026-07-05): mirrors sale_invoices.amount_paid/balance_due so
+    -- record-supplier-payment can FIFO-allocate against individual invoices instead of
+    -- leaving purchase_invoices untouched.
+    amount_paid         NUMERIC(15,2)   NOT NULL DEFAULT 0.00 CHECK (amount_paid >= 0),
+    balance_due         NUMERIC(15,2)   GENERATED ALWAYS AS (net_payable - amount_paid) STORED,
     notes               TEXT,
     created_by          UUID            REFERENCES users(user_id) ON DELETE SET NULL,
     confirmed_by        UUID            REFERENCES users(user_id) ON DELETE SET NULL,
@@ -481,12 +491,14 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     CONSTRAINT chk_purchase_invoice_confirmed CHECK (
         (status = 'confirmed' AND confirmed_by IS NOT NULL AND confirmed_at IS NOT NULL) OR
         (status != 'confirmed')
-    )
+    ),
+    CONSTRAINT chk_purchase_invoice_payment CHECK (amount_paid <= net_payable)
 );
 
 COMMENT ON TABLE  purchase_invoices             IS 'GRN (Goods Receipt Note / مال وصولی). Foundation of supplier ledger and payables.';
 COMMENT ON COLUMN purchase_invoices.invoice_number IS 'The supplier''s own printed invoice number. Unique per supplier to prevent duplicate GRN entry.';
 COMMENT ON COLUMN purchase_invoices.subtotal    IS 'Intentionally denormalised. Snapshot of line-item sum at time of confirmation. Immutable after status = confirmed.';
+COMMENT ON COLUMN purchase_invoices.balance_due IS 'GENERATED column: net_payable − amount_paid. Added in v3.1.0 (M1) to support per-invoice supplier payment allocation.';
 
 
 -- ============================================================
@@ -1176,13 +1188,20 @@ CREATE INDEX IF NOT EXISTS idx_price_history_product  ON product_price_history (
 -- ============================================================
 
 -- Stock summary (the primary inventory dashboard query)
+-- NOTE (H1/M15/M16, 2026-07-05): this view previously drifted from the live database —
+-- the file had `LEFT JOIN suppliers s ON s.supplier_id = p.manufacturer_id` with
+-- `is_imported` hardcoded to FALSE. That join is nonsensical (products.manufacturer_id
+-- references manufacturers, never suppliers) and does not match what has actually been
+-- running in production since v3.0. The definition below was captured directly from
+-- `pg_get_viewdef('v_stock_summary')` on the live DB and is now the source of truth.
 CREATE OR REPLACE VIEW v_stock_summary AS
 SELECT
     p.product_id,
     p.name                                          AS product_name,
     p.generic_formula,
-    s.name                                          AS manufacturer_name,
-    FALSE                                           AS is_imported,
+    m.name                                          AS manufacturer_name,
+    m.country                                       AS manufacturer_country,
+    m.country <> 'Pakistan'                         AS is_imported,
     c.name                                          AS category_name,
     p.form,
     p.uom,
@@ -1209,11 +1228,11 @@ SELECT
         ELSE 'normal'
     END                                             AS stock_status
 FROM products p
-LEFT JOIN suppliers s   ON s.supplier_id = p.manufacturer_id
-LEFT JOIN categories c  ON c.category_id = p.category_id
-LEFT JOIN batches b     ON b.product_id = p.product_id
+JOIN manufacturers m     ON m.manufacturer_id = p.manufacturer_id
+LEFT JOIN categories c   ON c.category_id = p.category_id
+LEFT JOIN batches b      ON b.product_id = p.product_id
 WHERE p.is_active = TRUE
-GROUP BY p.product_id, p.name, p.generic_formula, s.name, c.name,
+GROUP BY p.product_id, p.name, p.generic_formula, m.name, m.country, c.name,
          p.form, p.uom, p.drug_schedule, p.requires_prescription,
          p.shelf_no, p.default_sale_rate;
 
@@ -1249,53 +1268,84 @@ WHERE b.is_active = TRUE
 ORDER BY days_to_expiry ASC;
 
 -- Customer AR ledger (accounts receivable ageing)
+-- C4/H7 fix (v3.1.0 migration, 2026-07-05): the previous version LEFT JOINed
+-- sale_invoices AND payments directly onto customers in one query. Both joins fan
+-- out independently, so a customer with N invoices and M payments produced N*M
+-- rows, inflating every SUM() by the other side's row count. Fixed by
+-- pre-aggregating invoices and payments in separate CTEs before joining.
+-- M18: ageing buckets age each individual unpaid invoice by its own due_date
+-- (via FILTER on the per-invoice row in invoice_agg), not the customer's lumped
+-- total — this was already correct in spirit; the fan-out fix keeps it correct
+-- in practice by removing the row-multiplication that corrupted the sums.
 CREATE OR REPLACE VIEW v_customer_ar AS
+WITH invoice_agg AS (
+    SELECT
+        customer_id,
+        SUM(net_receivable) FILTER (WHERE status = 'confirmed')                                    AS total_invoiced,
+        SUM(balance_due) FILTER (
+            WHERE status = 'confirmed' AND due_date >= CURRENT_DATE AND due_date < CURRENT_DATE + 30
+        )                                                                                          AS bucket_0_30,
+        SUM(balance_due) FILTER (
+            WHERE status = 'confirmed' AND due_date >= CURRENT_DATE - 30 AND due_date < CURRENT_DATE
+        )                                                                                          AS bucket_31_60,
+        SUM(balance_due) FILTER (
+            WHERE status = 'confirmed' AND due_date >= CURRENT_DATE - 60 AND due_date < CURRENT_DATE - 30
+        )                                                                                          AS bucket_61_90,
+        SUM(balance_due) FILTER (
+            WHERE status = 'confirmed' AND due_date < CURRENT_DATE - 60
+        )                                                                                          AS bucket_90_plus
+    FROM sale_invoices
+    GROUP BY customer_id
+),
+payment_agg AS (
+    SELECT party_id, SUM(amount) AS total_received
+    FROM payments
+    WHERE direction = 'received'
+    GROUP BY party_id
+)
 SELECT
     c.customer_id,
     c.name                                          AS customer_name,
     c.credit_limit,
     c.territory,
     c.customer_type,
-    COALESCE(SUM(si.net_receivable) FILTER (
-        WHERE si.status = 'confirmed'), 0) + c.opening_balance
-        - COALESCE(SUM(p.amount) FILTER (
-        WHERE p.direction = 'received'), 0)         AS outstanding_balance,
-    COALESCE(SUM(si.balance_due) FILTER (
-        WHERE si.status = 'confirmed'
-          AND si.due_date >= CURRENT_DATE
-          AND si.due_date < CURRENT_DATE + 30), 0) AS bucket_0_30,
-    COALESCE(SUM(si.balance_due) FILTER (
-        WHERE si.status = 'confirmed'
-          AND si.due_date >= CURRENT_DATE - 30
-          AND si.due_date < CURRENT_DATE), 0)       AS bucket_31_60,
-    COALESCE(SUM(si.balance_due) FILTER (
-        WHERE si.status = 'confirmed'
-          AND si.due_date >= CURRENT_DATE - 60
-          AND si.due_date < CURRENT_DATE - 30), 0)  AS bucket_61_90,
-    COALESCE(SUM(si.balance_due) FILTER (
-        WHERE si.status = 'confirmed'
-          AND si.due_date < CURRENT_DATE - 60), 0)  AS bucket_90_plus
+    c.opening_balance + COALESCE(ia.total_invoiced, 0) - COALESCE(pa.total_received, 0)
+                                                     AS outstanding_balance,
+    COALESCE(ia.bucket_0_30, 0)                     AS bucket_0_30,
+    COALESCE(ia.bucket_31_60, 0)                    AS bucket_31_60,
+    COALESCE(ia.bucket_61_90, 0)                    AS bucket_61_90,
+    COALESCE(ia.bucket_90_plus, 0)                  AS bucket_90_plus
 FROM customers c
-LEFT JOIN sale_invoices si ON si.customer_id = c.customer_id
-LEFT JOIN payments p       ON p.party_id = c.customer_id AND p.direction = 'received'
-WHERE c.is_active = TRUE
-GROUP BY c.customer_id, c.name, c.credit_limit, c.territory, c.customer_type, c.opening_balance;
+LEFT JOIN invoice_agg ia ON ia.customer_id = c.customer_id
+LEFT JOIN payment_agg pa ON pa.party_id = c.customer_id
+WHERE c.is_active = TRUE;
 
 -- Supplier AP ledger (accounts payable)
+-- C4/H7 fix (v3.1.0 migration, 2026-07-05): same fan-out bug and same fix as
+-- v_customer_ar above — purchase_invoices and payments are pre-aggregated in
+-- separate CTEs before joining onto suppliers.
 CREATE OR REPLACE VIEW v_supplier_ap AS
+WITH invoice_agg AS (
+    SELECT supplier_id, SUM(net_payable) FILTER (WHERE status = 'confirmed') AS total_invoiced
+    FROM purchase_invoices
+    GROUP BY supplier_id
+),
+payment_agg AS (
+    SELECT party_id, SUM(amount) AS total_paid
+    FROM payments
+    WHERE direction = 'paid'
+    GROUP BY party_id
+)
 SELECT
     s.supplier_id,
     s.name                                          AS supplier_name,
     s.credit_period_days,
-    COALESCE(SUM(pi.net_payable) FILTER (
-        WHERE pi.status = 'confirmed'), 0) + s.opening_balance
-        - COALESCE(SUM(p.amount) FILTER (
-        WHERE p.direction = 'paid'), 0)             AS outstanding_payable
+    s.opening_balance + COALESCE(ia.total_invoiced, 0) - COALESCE(pa.total_paid, 0)
+                                                     AS outstanding_payable
 FROM suppliers s
-LEFT JOIN purchase_invoices pi ON pi.supplier_id = s.supplier_id
-LEFT JOIN payments p           ON p.party_id = s.supplier_id AND p.direction = 'paid'
-WHERE s.is_active = TRUE
-GROUP BY s.supplier_id, s.name, s.credit_period_days, s.opening_balance;
+LEFT JOIN invoice_agg ia ON ia.supplier_id = s.supplier_id
+LEFT JOIN payment_agg pa ON pa.party_id = s.supplier_id
+WHERE s.is_active = TRUE;
 
 -- Controlled substances stock (DRAP compliance view)
 CREATE OR REPLACE VIEW v_controlled_stock AS

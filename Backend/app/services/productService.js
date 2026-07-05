@@ -1,3 +1,4 @@
+import { requireAuth } from "./session.js";
 
 export default function register(ipcMain, db) {
   const { queryDb, runDb, pool } = db;
@@ -95,7 +96,7 @@ export default function register(ipcMain, db) {
     }
   });
 
-  ipcMain.handle("add-product", async (event, data) => {
+  ipcMain.handle("add-product", requireAuth(async (event, data) => {
     try {
       const result = await runDb(
         `INSERT INTO products (
@@ -128,9 +129,9 @@ export default function register(ipcMain, db) {
       console.error("❌ add-product error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("update-product", async (event, id, data) => {
+  ipcMain.handle("update-product", requireAuth(async (event, id, data) => {
     try {
       await runDb(
         `UPDATE products
@@ -162,9 +163,9 @@ export default function register(ipcMain, db) {
       console.error("❌ update-product error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("deactivate-product", async (event, id) => {
+  ipcMain.handle("deactivate-product", requireAuth(async (event, id) => {
     try {
       await runDb(
         `UPDATE products
@@ -177,9 +178,9 @@ export default function register(ipcMain, db) {
       console.error("❌ deactivate-product error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("reactivate-product", async (event, id) => {
+  ipcMain.handle("reactivate-product", requireAuth(async (event, id) => {
     try {
       await runDb(
         `UPDATE products
@@ -192,9 +193,9 @@ export default function register(ipcMain, db) {
       console.error("❌ reactivate-product error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
-  ipcMain.handle("reactivate-manufacturer", async (event, id) => {
+  ipcMain.handle("reactivate-manufacturer", requireAuth(async (event, id) => {
     try {
       await runDb(
         `UPDATE manufacturers
@@ -207,5 +208,5 @@ export default function register(ipcMain, db) {
       console.error("❌ reactivate-manufacturer error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 }

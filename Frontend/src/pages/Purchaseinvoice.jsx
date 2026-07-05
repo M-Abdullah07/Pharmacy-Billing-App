@@ -86,27 +86,18 @@ export default function PurchaseInvoice() {
   };
 
   // ── Save as draft ───────────────────────────────────────────────────────────
+  // H17/M28: header + all line items are now created in ONE transactional IPC
+  // call (create-purchase-invoice) instead of add-purchase-invoice followed by
+  // N separate add-purchase-invoice-item calls — eliminating the window where
+  // a GRN header could be left with zero/partial items if the renderer
+  // crashed or the user navigated away mid-sequence.
   const handleSaveDraft = async () => {
     if (!validate()) return;
     setSaving(true);
     try {
-      // 1. Create invoice header
-      const invoiceResult = await facade.route('addPurchaseInvoice', { header, lines });
-
-      if (!invoiceResult.success) {
-        if (invoiceResult.error?.includes('already exists'))
-          setHeaderErrors((prev) => ({ ...prev, invoice_number: invoiceResult.error }));
-        else showToast(invoiceResult.error || 'Failed to save GRN.', 'error');
-        return;
-      }
-
-      const invoiceId = invoiceResult.purchaseInvoiceId;
-
-      // 2. Save all line items (all are new batches — no existing batch mode)
-      for (const line of lines) {
+      const items = lines.map((line) => {
         const lineCalc = calcLine(line);
-        await facade.route('addPurchaseInvoiceItem', {
-          purchase_invoice_id: invoiceId,
+        return {
           product_id: line.product_id,
           batch_number: line.batch_number,
           manufacturing_date: line.manufacturing_date,
@@ -118,7 +109,23 @@ export default function PurchaseInvoice() {
           gst_rate: Number(line.gst_rate) || 0,
           line_total: lineCalc.base,
           tax_amount: lineCalc.tax,
-        });
+        };
+      });
+
+      const result = await facade.route('createPurchaseInvoice', {
+        supplier_id: header.supplier_id,
+        invoice_number: header.invoice_number,
+        invoice_date: header.invoice_date,
+        received_date: header.received_date,
+        notes: header.notes,
+        items,
+      });
+
+      if (!result.success) {
+        if (result.error?.includes('already exists'))
+          setHeaderErrors((prev) => ({ ...prev, invoice_number: result.error }));
+        else showToast(result.error || 'Failed to save GRN.', 'error');
+        return;
       }
 
       showToast('GRN saved as draft successfully.', 'success');

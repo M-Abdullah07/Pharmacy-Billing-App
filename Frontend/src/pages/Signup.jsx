@@ -160,7 +160,7 @@ const Signup = ({ onSignup, setSignup }) => {
                     setUsername(e.target.value);
                     if (fieldErrors.username) setFieldErrors((p) => ({ ...p, username: '' }));
                   }}
-                  className={`pl-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-all font-semibold ${fieldErrors.username ? 'border-red-500' : ''}`}
+                  className={`pl-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-colors font-semibold ${fieldErrors.username ? 'border-red-500' : ''}`}
                   placeholder="e.g. manager_01"
                 />
               </div>
@@ -193,7 +193,7 @@ const Signup = ({ onSignup, setSignup }) => {
                     setPassword(e.target.value);
                     if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: '' }));
                   }}
-                  className={`pl-11 pr-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-all font-semibold ${fieldErrors.password ? 'border-red-500' : ''}`}
+                  className={`pl-11 pr-11 h-13 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:border-blue-600 focus:ring-0 transition-colors font-semibold ${fieldErrors.password ? 'border-red-500' : ''}`}
                   placeholder="Min 6 characters"
                 />
                 <button
@@ -210,7 +210,7 @@ const Signup = ({ onSignup, setSignup }) => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-13 bg-zinc-900 hover:bg-black text-white dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xl font-bold shadow-xl shadow-zinc-200 dark:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full h-13 bg-zinc-900 hover:bg-black text-white dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xl font-bold shadow-xl shadow-zinc-200 dark:shadow-none transition-[background-color,transform] duration-150 ease-out active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

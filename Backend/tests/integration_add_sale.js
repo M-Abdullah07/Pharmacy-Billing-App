@@ -119,6 +119,7 @@ test('Integration Test: Axis 4 add-sale Transaction Orchestration', async (t) =>
         FROM batches b
         JOIN products p ON p.product_id = b.product_id
         WHERE b.product_id = ANY($1::uuid[]) AND b.quantity_available > 0 AND b.is_active = TRUE
+          AND b.expiry_date >= CURRENT_DATE
         ORDER BY b.product_id, b.expiry_date ASC
         FOR UPDATE
       `, [productIds]);

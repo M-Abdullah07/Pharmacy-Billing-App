@@ -98,5 +98,9 @@ Frontend/.vite/
 # Electron-Forge
 out/
 
+# Database dumps — never commit real data or credentials (audit C3/H10)
+backup_*.sql
+*.dump
+
 # reflection file
 reflection.md

@@ -66,7 +66,10 @@ const navigation = {
 export default function AppSidebar({ onNavigate, onLogout, username }) {
   const NavItem = ({ item }) => (
     <SidebarMenuItem key={item.title}>
-      <SidebarMenuButton asChild className="cursor-pointer">
+      <SidebarMenuButton
+        asChild
+        className="cursor-pointer transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
+      >
         <a onClick={() => onNavigate(item.title)}>
           {item.icon && <item.icon />}
           <span>{item.title}</span>
@@ -162,7 +165,7 @@ export default function AppSidebar({ onNavigate, onLogout, username }) {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-zinc-100 dark:data-[state=open]:bg-zinc-800 transition-colors"
+                  className="data-[state=open]:bg-zinc-100 dark:data-[state=open]:bg-zinc-800 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage

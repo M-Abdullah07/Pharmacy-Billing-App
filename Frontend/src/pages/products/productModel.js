@@ -1,4 +1,12 @@
-export const GST_SLABS = [0, 5, 12, 18, 28];
+// H13: Pakistan FBR GST slabs (NOT Indian GST slabs — 0/5/12/18/28 was wrong
+// for this market). Current FBR-relevant slabs for pharmaceutical retail:
+//   0  = Exempt (most registered medicines under the Sixth Schedule)
+//   1  = Reduced rate for finished pharmaceutical goods (Finance Act 2022)
+//   18 = Standard rate (non-exempt goods, e.g. cosmetics/non-drug items sold by a pharmacy)
+// IMPORTANT: these values must be confirmed against the CURRENT FBR
+// notification/SRO in force before this is used to bill a real customer —
+// tax law changes via SROs and Finance Acts and this list can go stale.
+export const GST_SLABS = [0, 1, 18];
 export const DRUG_SCHEDULES = ['OTC', 'G', 'H', 'H1', 'X'];
 export const UOM_OPTIONS = ['Strip', 'Bottle', 'Vial', 'Sachet', 'Piece', 'Box', 'Ampoule'];
 export const FORM_OPTIONS = [

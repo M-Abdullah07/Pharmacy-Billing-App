@@ -13,6 +13,7 @@ export const legacyApi = {
   getPurchaseInvoice: (...args) => window.electronAPI.getPurchaseInvoice(...args),
   addPurchaseInvoice: (...args) => window.electronAPI.addPurchaseInvoice(...args),
   addPurchaseInvoiceItem: (...args) => window.electronAPI.addPurchaseInvoiceItem(...args),
+  createPurchaseInvoice: (...args) => window.electronAPI.createPurchaseInvoice(...args),
   confirmPurchaseInvoice: (...args) => window.electronAPI.confirmPurchaseInvoice(...args),
   cancelPurchaseInvoice: (...args) => window.electronAPI.cancelPurchaseInvoice(...args),
 

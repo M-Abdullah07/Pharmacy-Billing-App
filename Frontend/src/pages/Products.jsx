@@ -428,7 +428,7 @@ export default function Products() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    HSN Code <span className="text-red-500">*</span>
+                    HS Code <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -444,6 +444,9 @@ export default function Products() {
               </div>
 
               {/* Row 3 */}
+              {/* H13: GST_SLABS (productModel.js) holds FBR-relevant slabs (0/1/18), not
+                  Indian GST slabs. Owner must verify these against the current FBR
+                  notification/SRO before this is used to bill a real customer. */}
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">

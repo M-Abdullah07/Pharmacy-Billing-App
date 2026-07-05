@@ -16,14 +16,14 @@ export function Pagination({ totalItems, itemsPerPage, currentPage, onPageChange
         <button
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
-          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100"
+          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
         >
           <ChevronsLeft size={16} />
         </button>
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100"
+          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
         >
           <ChevronLeft size={16} />
         </button>
@@ -33,14 +33,14 @@ export function Pagination({ totalItems, itemsPerPage, currentPage, onPageChange
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100"
+          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
         >
           <ChevronRight size={16} />
         </button>
         <button
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
-          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100"
+          className="p-1 rounded-md border disabled:opacity-50 hover:bg-gray-100 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
         >
           <ChevronsRight size={16} />
         </button>

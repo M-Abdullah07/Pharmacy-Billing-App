@@ -1,4 +1,5 @@
 import * as argon2 from "argon2";
+import { setSession, getSession, clearSession } from "./session.js";
 
 export default function register(ipcMain, db) {
   const { queryDb, runDb, pool } = db;
@@ -99,6 +100,12 @@ export default function register(ipcMain, db) {
         [user.user_id]
       );
   
+      // H3/H4: establish server-side session for this webContents on success,
+      // keyed by event.sender.id (not anything the renderer can spoof).
+      if (event?.sender?.id !== undefined) {
+        setSession(event.sender.id, { userId: user.user_id, username });
+      }
+
       return { success: true, userId: user.user_id };
     } catch (err) {
       console.error("❌ login-user error:", err.message);
@@ -106,17 +113,57 @@ export default function register(ipcMain, db) {
     }
   });
 
+  ipcMain.handle("logout-user", async (event) => {
+    try {
+      if (event?.sender?.id !== undefined) {
+        clearSession(event.sender.id);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error("❌ logout-user error:", err.message);
+      return { success: false, error: "Service unavailable. Contact administrator." };
+    }
+  });
+
+  // H18: signup-user is no longer open to anyone. It is only permitted when:
+  //   (a) the users table is empty (first-run bootstrap — there is no admin
+  //       yet, so nobody could be "logged in" to gate this behind), OR
+  //   (b) the caller already has an authenticated session (an existing user
+  //       adding a colleague).
+  // This handler is intentionally NOT wrapped in requireAuth() (which would
+  // make bootstrap impossible — you can't log in before any user exists), and
+  // instead inlines the "first user OR already authenticated" check itself.
   ipcMain.handle("signup-user", async (event, username, password) => {
     try {
+      const countRows = await queryDb(`SELECT COUNT(*) AS count FROM users`);
+      const isFirstRun = Number(countRows[0]?.count ?? 0) === 0;
+
+      if (!isFirstRun) {
+        const senderId = event?.sender?.id;
+        const session = senderId !== undefined ? getSession(senderId) : null;
+        if (!session) {
+          return {
+            success: false,
+            error: "You must be logged in to create a new account.",
+          };
+        }
+      }
+
+      // Backend-side password policy (mirrors the frontend's min-length
+      // check — kept intentionally simple, no regex zoo).
+      if (typeof password !== "string" || password.length < 8) {
+        return { success: false, error: "Password must be at least 8 characters." };
+      }
+
       const existing = await queryDb(
         `SELECT user_id FROM users WHERE username = $1`, [username]
       );
       if (existing.length > 0) {
         return { success: false, error: "Username already exists." };
       }
-  
+
       const hash = await argon2.hash(password, { type: argon2.argon2id });
-  
+
       const result = await runDb(
         `INSERT INTO users (username, password_hash)
          VALUES ($1, $2) RETURNING user_id`,

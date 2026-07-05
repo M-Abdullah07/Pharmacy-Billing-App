@@ -1,11 +1,12 @@
 import { dialog, app } from "electron";
 import fs from "fs";
 import path from "path";
+import { requireAuth } from "./session.js";
 
 export default function register(ipcMain, db) {
   const { queryDb, runDb, pool } = db;
 
-  ipcMain.handle("backup-database", async () => {
+  ipcMain.handle("backup-database", requireAuth(async () => {
     try {
       const tables = ["users", "products", "categories", "suppliers", "customers", "batches", "stock_movements", "sale_invoices", "sale_invoice_items"];
       const backupData = {};
@@ -21,7 +22,6 @@ export default function register(ipcMain, db) {
       });
   
       if (filePath) {
-        const fs = require('fs');
         fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2));
         return { success: true, path: filePath };
       }
@@ -30,7 +30,7 @@ export default function register(ipcMain, db) {
       console.error("❌ backup-database error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
   // ─── Security: strict allow-list prevents SQL injection via table name ────
   const EXPORTABLE_TABLES = new Set([
@@ -39,7 +39,7 @@ export default function register(ipcMain, db) {
     "stock_movements", "sale_invoice_items", "purchase_invoice_items",
   ]);
 
-  ipcMain.handle("export-to-csv", async (event, { table, filename }) => {
+  ipcMain.handle("export-to-csv", requireAuth(async (event, { table, filename }) => {
     try {
       // Map public-facing names to actual table names
       const tableAliases = { sales: "sale_invoices", purchases: "purchase_invoices" };
@@ -79,7 +79,7 @@ export default function register(ipcMain, db) {
       console.error("❌ export-to-csv error:", err.message);
       return { success: false, error: err.message };
     }
-  });
+  }));
 
   // ❌ REMOVED: 'query-db' open handler deleted — arbitrary SQL execution from
   //    the renderer is a critical SQL-injection vector. Use typed service
@@ -150,6 +150,14 @@ export default function register(ipcMain, db) {
 
   ipcMain.handle("get-analytics-chart-data", async () => {
     try {
+      // C4/H7/M18 fix: the previous version LEFT JOINed sale_invoices AND
+      // purchase_invoices to the same `months` row in a single query. Because both
+      // joins fan out independently, a month with N confirmed sales and M confirmed
+      // purchases produced N*M result rows for that month, inflating both
+      // SUM(net_receivable) and SUM(net_payable) by the other side's row count.
+      // Fix: aggregate sales and purchases per month in separate CTEs first, then
+      // join the two already-aggregated (one-row-per-month) results onto the
+      // month series — no fan-out possible.
       return await queryDb(`
         WITH months AS (
             SELECT generate_series(
@@ -157,15 +165,26 @@ export default function register(ipcMain, db) {
                 date_trunc('month', CURRENT_DATE),
                 '1 month'
             ) AS month
+        ),
+        monthly_sales AS (
+            SELECT date_trunc('month', invoice_date) AS month, SUM(net_receivable) AS total
+            FROM sale_invoices
+            WHERE status = 'confirmed'
+            GROUP BY date_trunc('month', invoice_date)
+        ),
+        monthly_purchases AS (
+            SELECT date_trunc('month', invoice_date) AS month, SUM(net_payable) AS total
+            FROM purchase_invoices
+            WHERE status = 'confirmed'
+            GROUP BY date_trunc('month', invoice_date)
         )
         SELECT
             to_char(m.month, 'FMMonth') AS month,
-            COALESCE(SUM(s.net_receivable), 0) AS sales,
-            COALESCE(SUM(p.net_payable), 0) AS purchases
+            COALESCE(ms.total, 0) AS sales,
+            COALESCE(mp.total, 0) AS purchases
         FROM months m
-        LEFT JOIN sale_invoices s ON date_trunc('month', s.invoice_date) = m.month AND s.status = 'confirmed'
-        LEFT JOIN purchase_invoices p ON date_trunc('month', p.invoice_date) = m.month AND p.status = 'confirmed'
-        GROUP BY m.month
+        LEFT JOIN monthly_sales ms ON ms.month = m.month
+        LEFT JOIN monthly_purchases mp ON mp.month = m.month
         ORDER BY m.month
       `);
     } catch (err) {

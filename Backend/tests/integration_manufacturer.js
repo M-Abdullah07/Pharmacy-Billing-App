@@ -166,7 +166,7 @@ test('Integration Test: Manufacturer Lifecycle & Relationship Integrity', async 
         INSERT INTO products
           (name, manufacturer_id, category_id, form, uom, quantity_in_uom,
            gst_rate, drug_schedule, generic_formula)
-        VALUES ($1, $2, $3, 'Injection', 'Vial', 1, 12, 'H', 'Insulin Glargine 100U/ml')
+        VALUES ($1, $2, $3, 'Injection', 'Vial', 1, 1, 'H', 'Insulin Glargine 100U/ml')
         RETURNING product_id
       `, [`Imported Product ${timestamp}`, importedManufacturerId, categoryId]);
       productId2 = prod2Res.rows[0].product_id;
